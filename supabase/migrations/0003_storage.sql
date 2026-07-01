@@ -2,6 +2,8 @@
 -- Object path convention: {user_id}/{note_id}/<file>. The first path segment must equal
 -- the caller's uid, so users can only touch their own files. MIME + size limits enforced here.
 
+-- TODO(Phase 3): align allowed_mime_types with what expo-audio actually emits/infers for .m4a
+-- (e.g. 'audio/x-m4a'); 'audio/m4a' is non-standard and may not match, rejecting uploads.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
   ('audio',    'audio',    false, 52428800, array['audio/m4a','audio/mp4','audio/aac','audio/mpeg']),

@@ -3,31 +3,16 @@ import { useEffect } from "react";
 import { useSessionStore } from "./session-store";
 
 /**
- * Bootstraps the auth gate: loads the persisted session once and subscribes to auth changes.
- * Call this exactly once, at the root layout.
+ * Bootstraps the auth gate by subscribing to auth changes. supabase-js emits an
+ * `INITIAL_SESSION` event immediately on subscribe, which resolves the initial session (or
+ * null), so no separate getSession() call is needed. Call this exactly once, at the root layout.
  */
 export function useAuthBootstrap(): void {
   const setSession = useSessionStore((s) => s.setSession);
 
   useEffect(() => {
-    let active = true;
-
-    AuthRepository.getSession()
-      .then((session) => {
-        if (active) setSession(session);
-      })
-      .catch(() => {
-        if (active) setSession(null);
-      });
-
-    const unsubscribe = AuthRepository.onAuthStateChange((session) => {
-      if (active) setSession(session);
-    });
-
-    return () => {
-      active = false;
-      unsubscribe();
-    };
+    const unsubscribe = AuthRepository.onAuthStateChange(setSession);
+    return unsubscribe;
   }, [setSession]);
 }
 
