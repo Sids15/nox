@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "jsx": "react-jsx",
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "@nox/types": ["packages/types/src"],
+      "@nox/utils": ["packages/utils/src"],
+      "@nox/ui": ["packages/ui/src"],
+      "@nox/db": ["packages/db/src"],
+      "@nox/api": ["packages/api/src"],
+      "@nox/features": ["packages/features/src"]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# Expo/Metro resolves Babel presets & plugins against a flat node_modules tree, so use the
+# hoisted linker (Bun's isolated layout breaks babel-preset-expo plugin resolution).
+[install]
+linker = "hoisted"

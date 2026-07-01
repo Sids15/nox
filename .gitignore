@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Secrets & environment — NEVER commit real values (see rules.md)
+.env
+.env.*
+!.env.example
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+*.orig.*
+apps/*/.expo/
+apps/*/dist/
+apps/*/ios/
+apps/*/android/
+apps/*/.expo-shared/
+
+# Native signing / secrets
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.cer
+google-services.json
+GoogleService-Info.plist
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+**/.supabase/
+
+# Build / cache
+*.tsbuildinfo
+.cache/
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
