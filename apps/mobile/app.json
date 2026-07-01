@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Nox",
+    "slug": "nox",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nox",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nox.app"
+    },
+    "android": {
+      "package": "com.nox.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#12110E",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "@sentry/react-native"
+    ]
+  }
+}
