@@ -39,6 +39,7 @@ function RootNavigator() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="task/[id]" />
     </Stack>
   );
 }
