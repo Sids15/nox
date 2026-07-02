@@ -82,7 +82,9 @@
       "version": "1.0.0",
       "dependencies": {
         "@nox/api": "workspace:*",
+        "@nox/db": "workspace:*",
         "@nox/types": "workspace:*",
+        "@nox/utils": "workspace:*",
         "zustand": "^5.0.0",
       },
       "devDependencies": {
@@ -90,6 +92,7 @@
       },
       "peerDependencies": {
         "@supabase/supabase-js": "^2",
+        "@tanstack/react-query": "^5",
         "react": "*",
       },
     },
