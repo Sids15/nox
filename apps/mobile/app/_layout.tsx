@@ -1,3 +1,4 @@
+import "react-native-gesture-handler";
 import "react-native-url-polyfill/auto";
 import "../global.css";
 
@@ -8,6 +9,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { initSentry } from "../lib/sentry";
@@ -36,20 +38,23 @@ function RootNavigator() {
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }
 
 export default function RootLayout() {
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister: queryPersister }}
-    >
-      <SafeAreaProvider>
-        <StatusBar style="light" />
-        <RootNavigator />
-      </SafeAreaProvider>
-    </PersistQueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister: queryPersister }}
+      >
+        <SafeAreaProvider>
+          <StatusBar style="light" />
+          <RootNavigator />
+        </SafeAreaProvider>
+      </PersistQueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
