@@ -1,5 +1,5 @@
 import { useAuth } from "@nox/features";
-import { lamplight } from "@nox/ui";
+import { dark } from "@nox/ui";
 import { Redirect, Tabs } from "expo-router";
 
 export const unstable_settings = { initialRouteName: "tasks" };
@@ -13,11 +13,11 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: lamplight.surface,
-          borderTopColor: lamplight.border,
+          backgroundColor: dark.surface,
+          borderTopColor: dark.line,
         },
-        tabBarActiveTintColor: lamplight.accent,
-        tabBarInactiveTintColor: lamplight.ink.muted,
+        tabBarActiveTintColor: dark.accent,
+        tabBarInactiveTintColor: dark.ink3,
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Ideas" }} />

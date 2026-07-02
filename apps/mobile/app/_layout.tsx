@@ -3,7 +3,7 @@ import "../global.css";
 
 import { queryClient, queryPersister } from "@nox/db";
 import { useAuthBootstrap, useSessionStore } from "@nox/features";
-import { lamplight } from "@nox/ui";
+import { dark } from "@nox/ui";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -21,7 +21,7 @@ function RootNavigator() {
   if (status === "loading") {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
-        <ActivityIndicator color={lamplight.accent} />
+        <ActivityIndicator color={dark.accent} />
       </View>
     );
   }
@@ -30,7 +30,7 @@ function RootNavigator() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: lamplight.bg },
+        contentStyle: { backgroundColor: dark.bg },
       }}
     >
       <Stack.Screen name="index" />

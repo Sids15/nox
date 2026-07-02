@@ -1,3 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Nox theme variables — RGB channel triples consumed by the Tailwind preset as
+ * `rgb(var(--x) / <alpha>)`. Dark is the default (:root); the light theme is staged behind
+ * prefers-color-scheme and stays dormant while the app forces dark (app.json userInterfaceStyle).
+ * Accent + semantic colors are theme-independent. Runtime accent switching (later) overrides
+ * --accent on a root wrapper via NativeWind's vars().
+ */
+@layer base {
+  :root {
+    --bg: 12 12 19; /* #0C0C13 */
+    --surface: 20 20 29; /* #14141D */
+    --elev: 27 27 38; /* #1B1B26 */
+    --sheet: 24 24 34; /* #181822 */
+    --ink: 241 241 247; /* #F1F1F7 primary text */
+    --ink-dim: 228 228 245; /* base for text2 (.62) / text3 (.34) */
+    --line: 255 255 255; /* hairline, applied at .075 */
+    --chip: 255 255 255; /* subtle fill, applied at .06 */
+    --tabbar: 23 23 33; /* floating tab bar, applied at .86 + blur */
+
+    --accent: 124 111 242; /* #7C6FF2 violet (default; user-switchable) */
+    --on-accent: 255 255 255;
+
+    --critical: 214 69 69; /* #D64545 */
+    --high: 210 96 74; /* #D2604A — high / destructive / overdue */
+    --medium: 201 138 43; /* #C98A2B — medium / carried-over */
+    --success: 47 157 114; /* #2F9D72 — success / synced */
+    --info: 76 127 224; /* #4C7FE0 — info / exploring */
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: 244 244 247; /* #F4F4F7 */
+      --surface: 255 255 255;
+      --elev: 255 255 255;
+      --sheet: 255 255 255;
+      --ink: 23 23 31; /* #17171F */
+      --ink-dim: 28 28 42; /* base for light text2/text3 */
+      --line: 22 22 40;
+      --chip: 22 22 40;
+      --tabbar: 255 255 255;
+    }
+  }
+}

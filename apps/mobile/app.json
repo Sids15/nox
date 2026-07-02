@@ -15,7 +15,7 @@
     "android": {
       "package": "com.nox.app",
       "adaptiveIcon": {
-        "backgroundColor": "#12110E",
+        "backgroundColor": "#0C0C13",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

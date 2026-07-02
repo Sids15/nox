@@ -1,4 +1,4 @@
-const lamplight = require("../../packages/ui/tailwind-preset.js");
+const noxPreset = require("../../packages/ui/tailwind-preset.js");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -7,5 +7,5 @@ module.exports = {
     "./components/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
-  presets: [require("nativewind/preset"), lamplight],
+  presets: [require("nativewind/preset"), noxPreset],
 };
