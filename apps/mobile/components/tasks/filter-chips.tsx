@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { Modal, Pressable, Text, View } from "react-native";
 
 export type StatusFilter = "all" | "active" | "completed";
 export type PriorityFilter = "all" | "high" | "medium" | "low";
@@ -12,46 +13,105 @@ export interface TaskFilters {
 
 export const DEFAULT_FILTERS: TaskFilters = { status: "all", priority: "all", time: "all" };
 
-// Cycle order + display label per filter. Index 0 is the neutral ("all") state.
-const STATUS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "Status" },
+// Dropdown options per filter. "all" is the neutral reset.
+const STATUS_OPTS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "active", label: "Active" },
   { value: "completed", label: "Completed" },
 ];
-const PRIORITY: { value: PriorityFilter; label: string }[] = [
-  { value: "all", label: "Priority" },
+const PRIORITY_OPTS: { value: PriorityFilter; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "high", label: "High" },
   { value: "medium", label: "Medium" },
   { value: "low", label: "Low" },
 ];
-const TIME: { value: TimeFilter; label: string }[] = [
-  { value: "all", label: "Time" },
+const TIME_OPTS: { value: TimeFilter; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "timed", label: "Timed" },
   { value: "allday", label: "All-day" },
 ];
 
-function next<T extends { value: string }>(options: T[], current: string): T {
-  const i = options.findIndex((o) => o.value === current);
-  return options[(i + 1) % options.length]!;
-}
+/** A filter chip that keeps its category label (Status/Priority/Time) and opens a small dropdown to
+ *  pick a value. The chip turns accent when a non-default value is active — matching the handoff. */
+function Chip<T extends string>({
+  label,
+  value,
+  options,
+  onSelect,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onSelect: (value: T) => void;
+}) {
+  const active = value !== "all";
+  const ref = useRef<View>(null);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
 
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const openMenu = () => {
+    ref.current?.measureInWindow((x, y, _w, h) => {
+      setPos({ x, y: y + h + 6 });
+      setOpen(true);
+    });
+  };
+
   return (
-    <Pressable
-      onPress={onPress}
-      className={`rounded-pill border px-3.5 py-2 ${
-        active ? "border-accent-line bg-accent-soft" : "border-line bg-chip"
-      }`}
-    >
-      <Text className={`text-[12.5px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>
-        {label}
-      </Text>
-    </Pressable>
+    <>
+      <Pressable
+        ref={ref}
+        onPress={openMenu}
+        className={`rounded-pill border px-4 py-2 ${
+          active ? "border-accent/[0.45] bg-accent/[0.14]" : "border-line bg-chip"
+        }`}
+      >
+        <Text className={`text-[12.5px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>
+          {label}
+        </Text>
+      </Pressable>
+
+      <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable className="flex-1" onPress={() => setOpen(false)}>
+          <View
+            style={{
+              position: "absolute",
+              left: pos.x,
+              top: pos.y,
+              minWidth: 150,
+              shadowColor: "#000",
+              shadowOpacity: 0.4,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 12 },
+              elevation: 12,
+            }}
+            className="border-line bg-elev rounded-input overflow-hidden border py-1"
+          >
+            {options.map((o) => (
+              <Pressable
+                key={o.value}
+                onPress={() => {
+                  onSelect(o.value);
+                  setOpen(false);
+                }}
+                className="px-4 py-2.5"
+              >
+                <Text
+                  className={`text-[13.5px] ${
+                    o.value === value ? "text-accent font-semibold" : "text-ink"
+                  }`}
+                >
+                  {o.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
-/** Status / Priority / Time filters. Each chip cycles through its options on tap; a non-neutral
- *  value tints the chip with the accent. Filtering itself happens in the Tasks screen. */
+/** Status / Priority / Time filters. Filtering itself happens in the Tasks screen. */
 export function FilterChips({
   filters,
   onChange,
@@ -59,26 +119,25 @@ export function FilterChips({
   filters: TaskFilters;
   onChange: (next: TaskFilters) => void;
 }) {
-  const status = STATUS.find((o) => o.value === filters.status)!;
-  const priority = PRIORITY.find((o) => o.value === filters.priority)!;
-  const time = TIME.find((o) => o.value === filters.time)!;
-
   return (
     <View className="flex-row gap-2">
       <Chip
-        label={status.label}
-        active={filters.status !== "all"}
-        onPress={() => onChange({ ...filters, status: next(STATUS, filters.status).value })}
+        label="Status"
+        value={filters.status}
+        options={STATUS_OPTS}
+        onSelect={(status) => onChange({ ...filters, status })}
       />
       <Chip
-        label={priority.label}
-        active={filters.priority !== "all"}
-        onPress={() => onChange({ ...filters, priority: next(PRIORITY, filters.priority).value })}
+        label="Priority"
+        value={filters.priority}
+        options={PRIORITY_OPTS}
+        onSelect={(priority) => onChange({ ...filters, priority })}
       />
       <Chip
-        label={time.label}
-        active={filters.time !== "all"}
-        onPress={() => onChange({ ...filters, time: next(TIME, filters.time).value })}
+        label="Time"
+        value={filters.time}
+        options={TIME_OPTS}
+        onSelect={(time) => onChange({ ...filters, time })}
       />
     </View>
   );

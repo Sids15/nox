@@ -8,18 +8,18 @@ import ReanimatedSwipeable, {
 
 function CompleteAction() {
   return (
-    <View className="bg-success w-[92px] flex-row items-center justify-center">
-      <Check size={18} color={dark.onAccent} strokeWidth={2.5} />
-      <Text className="ml-1 font-mono text-[10px] font-bold text-white">Done</Text>
+    <View className="bg-success w-[76px] flex-col items-center justify-center gap-1">
+      <Check size={17} color={dark.onAccent} strokeWidth={2.2} />
+      <Text className="text-[10px] font-bold text-white">Done</Text>
     </View>
   );
 }
 
 function DeleteAction() {
   return (
-    <View className="bg-high w-[92px] flex-row items-center justify-center">
-      <Trash2 size={18} color={dark.onAccent} strokeWidth={2} />
-      <Text className="ml-1 font-mono text-[10px] font-bold text-white">Delete</Text>
+    <View className="bg-high w-[76px] flex-col items-center justify-center gap-1">
+      <Trash2 size={17} color={dark.onAccent} strokeWidth={1.8} />
+      <Text className="text-[10px] font-bold text-white">Delete</Text>
     </View>
   );
 }

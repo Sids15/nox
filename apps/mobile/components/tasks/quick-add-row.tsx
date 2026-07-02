@@ -24,15 +24,15 @@ export function QuickAddRow({
 }) {
   if (!active) {
     return (
-      <Pressable onPress={onActivate} className="flex-row items-center px-4 py-3">
-        <Plus size={18} color={dark.ink3} strokeWidth={2} />
-        <Text className="text-ink-3 ml-3 text-[15px]">Add task</Text>
+      <Pressable onPress={onActivate} className="flex-row items-center gap-[10px] px-4 py-[10px]">
+        <Plus size={14} color={dark.ink3} strokeWidth={2} />
+        <Text className="text-ink-3 text-[14px] font-medium">Add task</Text>
       </Pressable>
     );
   }
 
   return (
-    <View className="flex-row items-center px-4 py-3">
+    <View className="flex-row items-center px-4 py-[10px]">
       <View className="border-ink-3 h-[22px] w-[22px] rounded-full border-[1.5px]" />
       <TextInput
         autoFocus

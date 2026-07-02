@@ -36,7 +36,7 @@ export function SegmentedControl<T extends string>({
             accessibilityState={{ selected: active }}
           >
             <Text
-              className="text-[13px] font-semibold"
+              className={`text-[13px] ${active ? "font-bold" : "font-semibold"}`}
               style={{ color: active ? (o.color ?? dark.ink) : dark.ink3 }}
             >
               {o.label}

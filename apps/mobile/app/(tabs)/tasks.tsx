@@ -3,8 +3,8 @@ import type { Task } from "@nox/types";
 import { dark } from "@nox/ui";
 import { dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { Bell, ChevronDown, ChevronRight } from "lucide-react-native";
-import { useMemo, useState, type ReactNode } from "react";
+import { Bell, ChevronDown, ChevronRight, Plus } from "lucide-react-native";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileAvatar } from "../../components/profile-avatar";
@@ -16,34 +16,30 @@ import { WeekStrip } from "../../components/tasks/week-strip";
 
 const capitalize = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
-/** A rounded group card of swipeable task rows, with an optional footer (the quick-add row). */
+/** A rounded group card of swipeable task rows. */
 function GroupCard({
   rows,
   overdue,
   onToggle,
   onDelete,
   onOpen,
-  footer,
 }: {
   rows: Task[];
   overdue?: boolean;
   onToggle: (t: Task) => void;
   onDelete: (t: Task) => void;
   onOpen: (t: Task) => void;
-  footer?: ReactNode;
 }) {
   return (
     <View className="border-line bg-surface rounded-card overflow-hidden border">
       {rows.map((t, i) => (
         <View key={t.id}>
-          {i > 0 && <View className="bg-line ml-4 h-px" />}
+          {i > 0 && <View className="bg-line ml-[14px] h-px" />}
           <SwipeableTaskRow onComplete={() => onToggle(t)} onDelete={() => onDelete(t)}>
             <TaskRow task={t} overdue={overdue} onToggle={() => onToggle(t)} onPress={() => onOpen(t)} />
           </SwipeableTaskRow>
         </View>
       ))}
-      {footer && rows.length > 0 && <View className="bg-line ml-4 h-px" />}
-      {footer}
     </View>
   );
 }
@@ -51,7 +47,7 @@ function GroupCard({
 function SectionLabel({ text, count, tone }: { text: string; count?: number; tone?: "overdue" }) {
   return (
     <Text
-      className={`mb-2 mt-6 font-mono text-[10px] font-semibold tracking-[1.4px] ${
+      className={`mb-2 mt-[18px] pl-0.5 font-mono text-[10px] font-semibold tracking-[0.14em] ${
         tone === "overdue" ? "text-high" : "text-ink-3"
       }`}
     >
@@ -141,10 +137,12 @@ export default function TasksScreen() {
         {/* Header */}
         <View className="px-screen flex-row items-start justify-between pt-2">
           <View>
-            <Text className="text-ink-3 font-mono text-[10px] font-semibold tracking-[1.4px]">
+            <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
               {weekdayShort(focus)} · {monthShort(focus)} {dayOfMonth(focus)}
             </Text>
-            <Text className="text-ink mt-1 text-3xl font-bold">{title}</Text>
+            <Text className="text-ink mt-[3px] text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
+              {title}
+            </Text>
           </View>
           <View className="flex-row items-center gap-2">
             <Pressable className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
@@ -155,12 +153,12 @@ export default function TasksScreen() {
         </View>
 
         {/* Week strip */}
-        <View className="px-screen mt-5">
+        <View className="px-screen mt-4">
           <WeekStrip selected={focus} onSelect={setFocus} />
         </View>
 
         {/* Filters */}
-        <View className="px-screen mt-4">
+        <View className="px-screen mt-[14px]">
           <FilterChips filters={filters} onChange={setFilters} />
         </View>
 
@@ -190,35 +188,30 @@ export default function TasksScreen() {
               ) : (
                 <>
                   <SectionLabel text={title.toUpperCase()} count={dayTasks.length} />
-                  <GroupCard
-                    rows={dayTasks}
-                    onToggle={onToggle}
-                    onDelete={onDelete}
-                    onOpen={onOpen}
-                    footer={
-                      <QuickAddRow
-                        active={adding}
-                        value={draft}
-                        onChangeText={setDraft}
-                        onActivate={() => setAdding(true)}
-                        onSubmit={submitAdd}
-                        onCancel={() => {
-                          if (!draft.trim()) setAdding(false);
-                        }}
-                      />
-                    }
+                  {dayTasks.length > 0 && (
+                    <GroupCard rows={dayTasks} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} />
+                  )}
+                  <QuickAddRow
+                    active={adding}
+                    value={draft}
+                    onChangeText={setDraft}
+                    onActivate={() => setAdding(true)}
+                    onSubmit={submitAdd}
+                    onCancel={() => {
+                      if (!draft.trim()) setAdding(false);
+                    }}
                   />
 
                   {upcoming.length > 0 && (
                     <>
                       <Pressable
                         onPress={() => setUpcomingOpen((o) => !o)}
-                        className="border-line bg-surface rounded-card mt-3 flex-row items-center justify-between border px-4 py-3"
+                        className="border-line bg-surface rounded-card mt-2 flex-row items-center justify-between border px-[14px] py-[13px]"
                       >
-                        <Text className="text-ink text-[15px] font-semibold">Upcoming</Text>
+                        <Text className="text-ink-2 text-[14px] font-semibold">Upcoming</Text>
                         <View className="flex-row items-center gap-2">
-                          <View className="bg-chip rounded-pill px-2 py-0.5">
-                            <Text className="text-ink-2 font-mono text-[11px]">{upcoming.length}</Text>
+                          <View className="bg-chip rounded-pill px-[9px] py-[5px]">
+                            <Text className="text-ink-3 font-mono text-[11px] font-semibold">{upcoming.length}</Text>
                           </View>
                           {upcomingOpen ? (
                             <ChevronDown size={18} color={dark.ink3} strokeWidth={1.7} />
@@ -257,7 +250,7 @@ export default function TasksScreen() {
           elevation: 8,
         }}
       >
-        <Text className="text-[26px] leading-[28px] text-white">+</Text>
+        <Plus size={22} color={dark.onAccent} strokeWidth={2.2} />
       </Pressable>
     </SafeAreaView>
   );

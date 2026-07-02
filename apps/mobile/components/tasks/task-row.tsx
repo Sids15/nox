@@ -1,7 +1,7 @@
 import { dark } from "@nox/ui";
 import type { Task } from "@nox/types";
 import { formatTime12, relativeDayLabel } from "@nox/utils";
-import { Check, RotateCcw } from "lucide-react-native";
+import { Bell, Check, RotateCcw } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 
 const PRIORITY_DOT: Record<Task["priority"], string> = {
@@ -30,11 +30,11 @@ export function TaskRow({
   const carried = task.status === "carried_over";
 
   return (
-    <Pressable onPress={onPress} className="bg-surface flex-row items-center px-4 py-3">
+    <Pressable onPress={onPress} className="bg-surface flex-row items-center px-[14px] py-3">
       <Pressable onPress={onToggle} hitSlop={10} accessibilityRole="checkbox" accessibilityState={{ checked: complete }}>
         {complete ? (
           <View className="bg-accent h-[22px] w-[22px] items-center justify-center rounded-full">
-            <Check size={14} color={dark.onAccent} strokeWidth={2.5} />
+            <Check size={11} color={dark.onAccent} strokeWidth={3} />
           </View>
         ) : (
           <View className="border-ink-3 h-[22px] w-[22px] rounded-full border-[1.5px]" />
@@ -44,24 +44,31 @@ export function TaskRow({
       <View className="ml-3 flex-1">
         <Text
           numberOfLines={1}
-          className={complete ? "text-ink-3 text-[15px] line-through" : "text-ink text-[15px]"}
+          className={
+            complete
+              ? "text-ink-3 text-[15px] font-medium tracking-[-0.01em] line-through"
+              : "text-ink text-[15px] font-medium tracking-[-0.01em]"
+          }
         >
           {task.title}
         </Text>
 
-        {(time || reminders > 0 || carried || overdue) && (
-          <View className="mt-1 flex-row items-center">
+        {!complete && (carried || time || reminders > 0 || overdue) && (
+          <View className="mt-[3px] flex-row items-center">
             {carried && (
-              <View className="bg-medium-soft mr-2 flex-row items-center rounded-[6px] px-1.5 py-0.5">
+              <View className="bg-medium/[0.13] mr-2 flex-row items-center rounded-[6px] px-2 py-1">
                 <RotateCcw size={9} color={dark.medium} strokeWidth={2} />
-                <Text className="text-medium ml-1 font-mono text-[9px] font-bold">CARRIED OVER</Text>
+                <Text className="text-medium ml-1 font-mono text-[10px] font-medium">CARRIED OVER</Text>
               </View>
             )}
-            <Text className={`font-mono text-[11px] ${overdue ? "text-high" : "text-ink-3"}`}>
+            <Text className={`font-mono text-[11px] font-medium ${overdue ? "text-high" : "text-ink-2"}`}>
               {overdue ? `${relativeDayLabel(task.due_date ?? "")}${time ? " · " + time : ""}` : time}
             </Text>
             {reminders > 0 && (
-              <Text className="text-ink-3 ml-2 font-mono text-[11px]">×{reminders}</Text>
+              <View className="ml-2 flex-row items-center">
+                <Bell size={11} color={dark.ink3} strokeWidth={2} />
+                <Text className="text-ink-3 ml-1 font-mono text-[11px] font-medium">×{reminders}</Text>
+              </View>
             )}
           </View>
         )}

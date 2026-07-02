@@ -4,7 +4,7 @@ import { dark } from "@nox/ui";
 import { formatTime12, relativeDayLabel, toDateKey } from "@nox/utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Bell, Check, ChevronLeft, Clock, MoreHorizontal, Plus, Repeat, X } from "lucide-react-native";
+import { Bell, Calendar, Check, ChevronLeft, MoreHorizontal, Plus, Repeat, X } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -83,8 +83,8 @@ export default function TaskDetailScreen() {
     return (
       <SafeAreaView className="bg-bg flex-1">
         <View className="px-screen pt-2">
-          <Pressable onPress={goBack} hitSlop={8} className="bg-chip rounded-pill -ml-1 h-9 w-9 items-center justify-center">
-            <ChevronLeft size={22} color={dark.ink} strokeWidth={1.7} />
+          <Pressable onPress={goBack} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
+            <ChevronLeft size={20} color={dark.ink2} strokeWidth={2.2} />
           </Pressable>
           <Text className="text-ink-2 mt-8 text-[15px]">Task not found.</Text>
         </View>
@@ -122,22 +122,22 @@ export default function TaskDetailScreen() {
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         {/* Nav */}
         <View className="px-screen flex-row items-center justify-between pt-2">
-          <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill -ml-1 h-9 w-9 items-center justify-center">
-            <ChevronLeft size={22} color={dark.ink} strokeWidth={1.7} />
+          <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
+            <ChevronLeft size={20} color={dark.ink2} strokeWidth={2.2} />
           </Pressable>
-          <Pressable hitSlop={8} className="bg-chip rounded-pill h-9 w-9 items-center justify-center">
+          <Pressable hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
             <MoreHorizontal size={20} color={dark.ink2} strokeWidth={1.7} />
           </Pressable>
         </View>
 
         {/* Title + checkbox */}
-        <View className="px-screen mt-6 flex-row items-start">
+        <View className="px-screen mt-[22px] flex-row items-start">
           <Pressable
             onPress={() => toggle.mutate({ id: task.id, status: complete ? "pending" : "complete" })}
             hitSlop={8}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: complete }}
-            className="mt-1.5"
+            className="mt-[3px]"
           >
             {complete ? (
               <View className="bg-accent h-[26px] w-[26px] items-center justify-center rounded-full">
@@ -158,42 +158,42 @@ export default function TaskDetailScreen() {
             multiline
             placeholder="Task title"
             placeholderTextColor={dark.ink3}
-            className={`ml-3 flex-1 text-[22px] font-bold ${complete ? "text-ink-3 line-through" : "text-ink"}`}
+            className={`ml-[14px] flex-1 text-[22px] font-bold leading-[27px] tracking-[-0.02em] ${complete ? "text-ink-3 line-through" : "text-ink"}`}
           />
         </View>
 
         {/* Chips */}
-        <View className="px-screen mt-3 flex-row gap-2">
-          <View className={`rounded-pill px-3 py-1.5 ${PRIORITY_SOFT[task.priority]}`}>
-            <Text className="text-[12px] font-semibold" style={{ color: PRIORITY_COLOR[task.priority] }}>
+        <View className="px-screen mt-2.5 flex-row gap-2">
+          <View className={`rounded-[8px] px-2.5 py-[5px] ${PRIORITY_SOFT[task.priority]}`}>
+            <Text className="text-[11.5px] font-semibold" style={{ color: PRIORITY_COLOR[task.priority] }}>
               {cap(task.priority)} priority
             </Text>
           </View>
-          <View className="bg-chip rounded-pill px-3 py-1.5">
-            <Text className="text-ink-2 text-[12px] font-semibold">
+          <View className="bg-chip rounded-[8px] px-2.5 py-[5px]">
+            <Text className="text-ink-2 text-[11.5px] font-semibold">
               {task.due_date ? cap(relativeDayLabel(task.due_date)) : "No date"}
             </Text>
           </View>
         </View>
 
         {/* SCHEDULE */}
-        <Text className="px-screen text-ink-3 mb-2 mt-7 font-mono text-[10px] font-semibold tracking-[1.4px]">SCHEDULE</Text>
+        <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">SCHEDULE</Text>
         <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
           {/* Due */}
-          <View className="flex-row items-center justify-between px-4 py-3">
+          <View className="border-line flex-row items-center justify-between border-b px-[14px] py-[13px]">
             <View className="flex-row items-center">
-              <Clock size={16} color={dark.ink2} strokeWidth={1.7} />
-              <Text className="text-ink ml-3 text-[15px]">Due</Text>
+              <Calendar size={17} color={dark.ink3} strokeWidth={1.7} />
+              <Text className="text-ink-2 ml-3 text-[14.5px]">Due</Text>
             </View>
             <View className="flex-row items-center gap-3">
               <Pressable onPress={() => openPicker({ mode: "date", target: "due" }, task.due_date ? dateFromKey(task.due_date) : new Date())}>
-                <Text className="text-accent text-[14px] font-medium">
+                <Text className="text-accent text-[14.5px] font-semibold">
                   {task.due_date ? cap(relativeDayLabel(task.due_date)) : "Add date"}
                 </Text>
               </Pressable>
               {task.due_date && (
                 <Pressable onPress={() => openPicker({ mode: "time", target: "due" }, new Date())}>
-                  <Text className="text-accent text-[14px] font-medium">{dueTime ?? "Add time"}</Text>
+                  <Text className="text-accent text-[14.5px] font-semibold">{dueTime ?? "Add time"}</Text>
                 </Pressable>
               )}
               {task.due_date && (
@@ -203,44 +203,42 @@ export default function TaskDetailScreen() {
               )}
             </View>
           </View>
-          <View className="bg-line ml-4 h-px" />
 
           {/* Reminders */}
-          <View className="px-4 py-3">
-            <View className="flex-row items-center">
-              <Bell size={16} color={dark.ink2} strokeWidth={1.7} />
-              <Text className="text-ink ml-3 text-[15px]">Reminders</Text>
+          <View className="border-line flex-row items-start justify-between border-b px-[14px] py-[13px]">
+            <View className="flex-row items-center pt-[3px]">
+              <Bell size={17} color={dark.ink3} strokeWidth={1.7} />
+              <Text className="text-ink-2 ml-3 text-[14.5px]">Reminders</Text>
             </View>
-            <View className="ml-7 mt-2 flex-row flex-wrap gap-2">
+            <View className="ml-3 max-w-[190px] flex-row flex-wrap justify-end gap-1.5">
               {task.reminder_times.map((iso) => (
-                <Pressable key={iso} onPress={() => removeReminder(iso)} className="bg-chip rounded-pill flex-row items-center px-2.5 py-1">
-                  <Text className="text-ink-2 font-mono text-[12px]">{formatTime12(timeString(new Date(iso)))}</Text>
-                  <X size={12} color={dark.ink3} strokeWidth={2} style={{ marginLeft: 4 }} />
+                <Pressable key={iso} onPress={() => removeReminder(iso)} className="bg-chip rounded-[8px] flex-row items-center px-2.5 py-[7px]">
+                  <Text className="text-ink font-mono text-[11.5px] font-semibold">{formatTime12(timeString(new Date(iso)))}</Text>
+                  <X size={12} color={dark.ink3} strokeWidth={2} style={{ marginLeft: 5 }} />
                 </Pressable>
               ))}
               <Pressable
                 onPress={() => openPicker({ mode: "time", target: "reminder" }, new Date())}
-                className="border-accent-line rounded-pill flex-row items-center border border-dashed px-2.5 py-1"
+                className="border-accent/[0.5] rounded-[8px] flex-row items-center border border-dashed px-2.5 py-1.5"
               >
                 <Plus size={12} color={dark.accent} strokeWidth={2} />
-                <Text className="text-accent ml-1 text-[12px] font-medium">Add</Text>
+                <Text className="text-accent ml-1 font-mono text-[11.5px] font-semibold">Add</Text>
               </Pressable>
             </View>
           </View>
-          <View className="bg-line ml-4 h-px" />
 
           {/* Repeat */}
-          <Pressable onPress={cycleRepeat} className="flex-row items-center justify-between px-4 py-3">
+          <Pressable onPress={cycleRepeat} className="flex-row items-center justify-between px-[14px] py-[13px]">
             <View className="flex-row items-center">
-              <Repeat size={16} color={dark.ink2} strokeWidth={1.7} />
-              <Text className="text-ink ml-3 text-[15px]">Repeat</Text>
+              <Repeat size={17} color={dark.ink3} strokeWidth={1.7} />
+              <Text className="text-ink-2 ml-3 text-[14.5px]">Repeat</Text>
             </View>
-            <Text className="text-ink-2 text-[14px] font-medium">{REPEAT_LABEL[task.repeat]}</Text>
+            <Text className="text-ink text-[14.5px] font-semibold">{REPEAT_LABEL[task.repeat]}</Text>
           </Pressable>
         </View>
 
         {/* PRIORITY */}
-        <Text className="px-screen text-ink-3 mb-2 mt-7 font-mono text-[10px] font-semibold tracking-[1.4px]">PRIORITY</Text>
+        <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">PRIORITY</Text>
         <View className="px-screen">
           <SegmentedControl
             value={task.priority}
@@ -250,8 +248,8 @@ export default function TaskDetailScreen() {
         </View>
 
         {/* NOTES */}
-        <Text className="px-screen text-ink-3 mb-2 mt-7 font-mono text-[10px] font-semibold tracking-[1.4px]">NOTES</Text>
-        <View className="mx-[20px] border-line bg-surface rounded-card border px-4 py-3">
+        <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">NOTES</Text>
+        <View className="mx-[20px] border-line bg-surface rounded-card border p-[14px]">
           <TextInput
             value={notes}
             onChangeText={setNotes}
@@ -262,26 +260,26 @@ export default function TaskDetailScreen() {
             multiline
             placeholder="Add notes…"
             placeholderTextColor={dark.ink3}
-            className="text-ink-2 min-h-[64px] text-[15px] leading-6"
+            className="text-ink-2 min-h-[60px] text-[14px] leading-[22px]"
             style={{ textAlignVertical: "top" }}
           />
         </View>
 
         {/* Meta */}
-        <Text className="text-ink-3 mt-6 text-center font-mono text-[10.5px]">
+        <Text className="text-ink-3 mt-[18px] text-center font-mono text-[10.5px] leading-[17px]">
           created {shortDate(task.created_at).toLowerCase()} · updated {relativeFromNow(task.updated_at)}
         </Text>
 
         {/* Delete */}
-        <View className="px-screen mt-4">
+        <View className="px-screen mt-[14px]">
           <Pressable
             onPress={() => {
               del.mutate(task.id);
               goBack();
             }}
-            className="bg-high-soft rounded-input items-center py-3"
+            className="bg-high/[0.09] items-center rounded-[14px] py-[13px]"
           >
-            <Text className="text-high font-semibold">Delete task</Text>
+            <Text className="text-high text-[14px] font-semibold">Delete task</Text>
           </Pressable>
         </View>
       </ScrollView>

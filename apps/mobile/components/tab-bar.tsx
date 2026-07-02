@@ -2,10 +2,10 @@ import { dark } from "@nox/ui";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import {
-  Library,
+  Bookmark,
+  FileText,
   Lightbulb,
-  ListTodo,
-  NotebookText,
+  SquareCheckBig,
   type LucideIcon,
 } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
@@ -14,9 +14,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 /** Route name → icon + label. Order here is cosmetic; the actual order comes from Tabs.Screen. */
 const TAB_META: Record<string, { label: string; Icon: LucideIcon }> = {
   index: { label: "Ideas", Icon: Lightbulb },
-  notes: { label: "Notes", Icon: NotebookText },
-  tasks: { label: "Tasks", Icon: ListTodo },
-  resources: { label: "Resources", Icon: Library },
+  notes: { label: "Notes", Icon: FileText },
+  tasks: { label: "Tasks", Icon: SquareCheckBig },
+  resources: { label: "Resources", Icon: Bookmark },
 };
 
 /**
@@ -30,12 +30,22 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <View
       pointerEvents="box-none"
-      style={{ position: "absolute", left: 20, right: 20, bottom: Math.max(insets.bottom, 20) + 12 }}
+      style={{
+        position: "absolute",
+        left: 20,
+        right: 20,
+        bottom: Math.max(insets.bottom, 20) + 12,
+        shadowColor: "rgb(6,6,14)",
+        shadowOpacity: 0.25,
+        shadowRadius: 22,
+        shadowOffset: { width: 0, height: 18 },
+        elevation: 12,
+      }}
     >
-      <BlurView intensity={18} tint="dark" style={{ borderRadius: 30, overflow: "hidden" }}>
+      <BlurView intensity={18} tint="dark" style={{ borderRadius: 31, overflow: "hidden" }}>
         <View
           className="border-line bg-tabbar flex-row border"
-          style={{ height: 62, borderRadius: 30 }}
+          style={{ height: 62, borderRadius: 31 }}
         >
           {state.routes.map((route, index) => {
             const meta = TAB_META[route.name];
@@ -62,7 +72,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                 className="flex-1 items-center justify-center"
               >
                 <meta.Icon size={21} color={color} strokeWidth={1.7} />
-                <Text style={{ color }} className="mt-1 text-[10px] font-semibold">
+                <Text style={{ color }} className="mt-[3px] text-[10px] font-semibold">
                   {meta.label}
                 </Text>
               </Pressable>

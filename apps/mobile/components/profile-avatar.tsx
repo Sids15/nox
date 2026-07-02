@@ -14,7 +14,7 @@ export function ProfileAvatar() {
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel="Open settings"
-      className="border-accent-line bg-accent-soft rounded-pill h-[34px] w-[34px] items-center justify-center border"
+      className="border-accent/[0.35] bg-accent/[0.18] rounded-pill h-[34px] w-[34px] items-center justify-center border"
     >
       <Text className="text-accent text-[12px] font-bold">KG</Text>
     </Pressable>
