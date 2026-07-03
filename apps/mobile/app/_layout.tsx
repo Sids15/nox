@@ -65,6 +65,7 @@ function RootNavigator() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="task/[id]" />
+      <Stack.Screen name="idea/[id]" />
     </Stack>
   );
 }
