@@ -4,10 +4,12 @@
 
 /*
  * Nox theme variables — RGB channel triples consumed by the Tailwind preset as
- * `rgb(var(--x) / <alpha>)`. Dark is the default (:root); the light theme is staged behind
- * prefers-color-scheme and stays dormant while the app forces dark (app.json userInterfaceStyle).
- * Accent + semantic colors are theme-independent. Runtime accent switching (later) overrides
- * --accent on a root wrapper via NativeWind's vars().
+ * `rgb(var(--x) / <alpha>)`. Dark-first: these :root values apply unconditionally so the app is
+ * always dark, regardless of the device's system appearance. (Expo Go ignores app.json's
+ * userInterfaceStyle, so we can't rely on the OS forcing dark — hence no prefers-color-scheme
+ * light block here.) The light theme lands with the Settings slice, driven at RUNTIME via a root
+ * `vars()` override / colorScheme toggle — not the OS media query. Accent switching works the same
+ * way (override --accent on a root wrapper).
  */
 @layer base {
   :root {
@@ -29,19 +31,5 @@
     --medium: 201 138 43; /* #C98A2B — medium / carried-over */
     --success: 47 157 114; /* #2F9D72 — success / synced */
     --info: 76 127 224; /* #4C7FE0 — info / exploring */
-  }
-
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: 244 244 247; /* #F4F4F7 */
-      --surface: 255 255 255;
-      --elev: 255 255 255;
-      --sheet: 255 255 255;
-      --ink: 23 23 31; /* #17171F */
-      --ink-dim: 28 28 42; /* base for light text2/text3 */
-      --line: 22 22 40;
-      --chip: 22 22 40;
-      --tabbar: 255 255 255;
-    }
   }
 }
