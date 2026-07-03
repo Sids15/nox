@@ -12,3 +12,12 @@ export { groupTasks, type GroupedTasks } from "./tasks/group-tasks";
 export { taskKeys } from "./tasks/task-keys";
 export { usePrefs, type NotifKey } from "./prefs/prefs-store";
 export { useThemeColors, useThemeVars } from "./prefs/use-theme-colors";
+export {
+  useIdeas,
+  useCreateIdea,
+  useUpdateIdea,
+  useSetIdeaStatus,
+  useArchiveIdea,
+  useDeleteIdea,
+} from "./ideas/use-ideas";
+export { ideaKeys } from "./ideas/idea-keys";
