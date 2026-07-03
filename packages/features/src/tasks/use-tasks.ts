@@ -1,13 +1,18 @@
 import { TaskRepository, type ToggleableStatus } from "@nox/api";
 import { newId } from "@nox/db";
 import type { Task, TaskInput } from "@nox/types";
+import { todayKey } from "@nox/utils";
 import {
   useMutation,
   useQuery,
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { usePrefs } from "../prefs/prefs-store";
+import { carryoverTaskIds } from "./carryover";
 import { groupTasks, type GroupedTasks } from "./group-tasks";
+import { templatesNeedingOccurrence } from "./recurrence";
 import { taskKeys } from "./task-keys";
 
 /** Read the current tasks cache (defaulting to empty) — shared by the optimistic mutations. */
@@ -142,4 +147,74 @@ export function useDeleteTask() {
     },
     onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
   });
+}
+
+/**
+ * Generate-on-demand recurrence. Returns `ensure(focusDate)` — for each repeating template that
+ * should have an occurrence on that day but doesn't (see `templatesNeedingOccurrence`), it adds the
+ * occurrence to the cache optimistically and materializes it via the repository. Idempotent + quiet.
+ */
+export function useEnsureOccurrences() {
+  const qc = useQueryClient();
+  return useCallback(
+    async (focusDate: string) => {
+      const tasks = qc.getQueryData<Task[]>(taskKeys.all) ?? [];
+      const templates = templatesNeedingOccurrence(tasks, focusDate);
+      if (templates.length === 0) return;
+
+      const now = new Date().toISOString();
+      const created = templates.map((template) => ({ template, id: newId() }));
+      const optimistic: Task[] = created.map(({ template, id }) => ({
+        ...template,
+        id,
+        origin_task_id: template.id,
+        due_date: focusDate,
+        repeat: "none",
+        repeat_config: null,
+        status: "pending",
+        created_at: now,
+        updated_at: now,
+      }));
+      qc.setQueryData<Task[]>(taskKeys.all, [...tasks, ...optimistic]);
+
+      await Promise.all(
+        created.map(({ template, id }) =>
+          TaskRepository.createOccurrence(template, focusDate, id).catch(() => null),
+        ),
+      );
+      qc.invalidateQueries({ queryKey: taskKeys.all });
+    },
+    [qc],
+  );
+}
+
+/**
+ * Daily carryover. Returns `run()` — once per calendar day (gated by `usePrefs.lastCarryoverOn`),
+ * moves overdue standalone tasks to today as `carried_over`. Waits until the tasks query has loaded
+ * so it never marks the day done against an empty cache.
+ */
+export function useRunCarryover() {
+  const qc = useQueryClient();
+  const lastCarryoverOn = usePrefs((s) => s.lastCarryoverOn);
+  const setLastCarryover = usePrefs((s) => s.setLastCarryover);
+  return useCallback(async () => {
+    const today = todayKey();
+    if (lastCarryoverOn === today) return;
+    if (qc.getQueryState(taskKeys.all)?.status !== "success") return; // tasks not loaded yet
+
+    const tasks = qc.getQueryData<Task[]>(taskKeys.all) ?? [];
+    const ids = carryoverTaskIds(tasks, today);
+    setLastCarryover(today);
+    if (ids.length === 0) return;
+
+    const idSet = new Set(ids);
+    qc.setQueryData<Task[]>(
+      taskKeys.all,
+      tasks.map((t) =>
+        idSet.has(t.id) ? { ...t, status: "carried_over", due_date: today } : t,
+      ),
+    );
+    await TaskRepository.carryOver(ids, today).catch(() => {});
+    qc.invalidateQueries({ queryKey: taskKeys.all });
+  }, [qc, lastCarryoverOn, setLastCarryover]);
 }

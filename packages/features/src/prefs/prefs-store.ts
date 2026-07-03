@@ -11,12 +11,15 @@ interface PrefsState {
   morningSummary: boolean;
   endOfDayPrompt: boolean;
   taskReminders: boolean;
+  /** Date key (YYYY-MM-DD) the daily carryover job last ran for — gates it to once per day. */
+  lastCarryoverOn: string | null;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
   toggleTheme: () => void;
   setAccent: (accent: AccentName) => void;
   setNotif: (key: NotifKey, value: boolean) => void;
+  setLastCarryover: (dateKey: string) => void;
   setHydrated: () => void;
 }
 
@@ -33,11 +36,13 @@ export const usePrefs = create<PrefsState>()(
       morningSummary: true,
       endOfDayPrompt: true,
       taskReminders: false,
+      lastCarryoverOn: null,
       hydrated: false,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
       setAccent: (accent) => set({ accent }),
       setNotif: (key, value) => set({ [key]: value } as Pick<PrefsState, NotifKey>),
+      setLastCarryover: (dateKey) => set({ lastCarryoverOn: dateKey }),
       setHydrated: () => set({ hydrated: true }),
     }),
     {
@@ -49,6 +54,7 @@ export const usePrefs = create<PrefsState>()(
         morningSummary: s.morningSummary,
         endOfDayPrompt: s.endOfDayPrompt,
         taskReminders: s.taskReminders,
+        lastCarryoverOn: s.lastCarryoverOn,
       }),
       onRehydrateStorage: () => (state) => state?.setHydrated(),
     },

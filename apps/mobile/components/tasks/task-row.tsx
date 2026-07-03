@@ -1,7 +1,7 @@
 import { useThemeColors } from "@nox/features";
 import type { Task } from "@nox/types";
 import { formatTime12, relativeDayLabel } from "@nox/utils";
-import { Bell, Check, RotateCcw } from "lucide-react-native";
+import { Bell, Check, Repeat, RotateCcw } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 
 const PRIORITY_DOT: Record<Task["priority"], string> = {
@@ -29,6 +29,7 @@ export function TaskRow({
   const time = formatTime12(task.due_time);
   const reminders = task.reminder_times.length;
   const carried = task.status === "carried_over";
+  const recurring = task.repeat !== "none" || task.origin_task_id !== null;
 
   return (
     <Pressable onPress={onPress} className="bg-surface flex-row items-center px-[14px] py-3">
@@ -54,7 +55,7 @@ export function TaskRow({
           {task.title}
         </Text>
 
-        {!complete && (carried || time || reminders > 0 || overdue) && (
+        {!complete && (carried || time || reminders > 0 || overdue || recurring) && (
           <View className="mt-[3px] flex-row items-center">
             {carried && (
               <View className="bg-medium/[0.13] mr-2 flex-row items-center rounded-[6px] px-2 py-1">
@@ -62,6 +63,7 @@ export function TaskRow({
                 <Text className="text-medium ml-1 font-mono text-[10px] font-medium">CARRIED OVER</Text>
               </View>
             )}
+            {recurring && <Repeat size={11} color={c.ink3} strokeWidth={2} style={{ marginRight: 6 }} />}
             <Text className={`font-mono text-[11px] font-medium ${overdue ? "text-high" : "text-ink-2"}`}>
               {overdue ? `${relativeDayLabel(task.due_date ?? "")}${time ? " · " + time : ""}` : time}
             </Text>

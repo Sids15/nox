@@ -1,6 +1,8 @@
 import {
   useCreateTask,
   useDeleteTask,
+  useEnsureOccurrences,
+  useRunCarryover,
   useTasks,
   useThemeColors,
   useToggleTask,
@@ -9,7 +11,7 @@ import type { Task } from "@nox/types";
 import { dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { Bell, ChevronDown, ChevronRight, Plus } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileAvatar } from "../../components/profile-avatar";
@@ -76,6 +78,16 @@ export default function TasksScreen() {
   const createTask = useCreateTask();
   const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
+  const ensureOccurrences = useEnsureOccurrences();
+  const runCarryover = useRunCarryover();
+
+  // Generate recurring occurrences for the focused day, and roll overdue tasks to today once daily.
+  useEffect(() => {
+    ensureOccurrences(focus);
+  }, [focus, tasks.length, ensureOccurrences]);
+  useEffect(() => {
+    if (!isLoading) runCarryover();
+  }, [isLoading, tasks.length, runCarryover]);
 
   // Priority + time filters apply to the whole list before grouping.
   const filtered = useMemo(

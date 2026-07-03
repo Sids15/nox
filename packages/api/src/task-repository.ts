@@ -75,4 +75,52 @@ export const TaskRepository = {
     const { error } = await supabase.from("tasks").update({ deleted: true }).eq("id", id);
     if (error) throw error;
   },
+
+  /**
+   * Materialize a recurring template's occurrence for `dueDate` (generate-on-demand). Copies the
+   * template's editable fields, links back via `origin_task_id`, and is a plain (non-repeating) task.
+   * Returns null on a unique-violation (23505) — the `(origin_task_id, due_date)` index is the race
+   * backstop when two devices generate the same occurrence.
+   */
+  async createOccurrence(template: Task, dueDate: string, id: string): Promise<Task | null> {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        id,
+        user_id: session.user.id,
+        title: template.title,
+        notes: template.notes,
+        due_date: dueDate,
+        due_time: template.due_time,
+        reminder_times: template.reminder_times,
+        priority: template.priority,
+        status: "pending",
+        repeat: "none",
+        repeat_config: null,
+        origin_task_id: template.id,
+        sort_order: template.sort_order,
+      })
+      .select()
+      .single();
+    if (error) {
+      if (error.code === "23505") return null; // occurrence already exists
+      throw error;
+    }
+    return task.parse(data);
+  },
+
+  /** Move overdue standalone tasks to today as carried-over (one bulk update). */
+  async carryOver(ids: string[], today: string): Promise<void> {
+    if (ids.length === 0) return;
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status: "carried_over", due_date: today })
+      .in("id", ids);
+    if (error) throw error;
+  },
 };
