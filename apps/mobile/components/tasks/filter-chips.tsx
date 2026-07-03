@@ -1,3 +1,5 @@
+import { useThemeVars } from "@nox/features";
+import { vars } from "nativewind";
 import { useRef, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 
@@ -45,6 +47,7 @@ function Chip<T extends string>({
   onSelect: (value: T) => void;
 }) {
   const active = value !== "all";
+  const themeVars = useThemeVars();
   const ref = useRef<View>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -73,17 +76,20 @@ function Chip<T extends string>({
       <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable className="flex-1" onPress={() => setOpen(false)}>
           <View
-            style={{
-              position: "absolute",
-              left: pos.x,
-              top: pos.y,
-              minWidth: 150,
-              shadowColor: "#000",
-              shadowOpacity: 0.4,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 12 },
-              elevation: 12,
-            }}
+            style={[
+              {
+                position: "absolute",
+                left: pos.x,
+                top: pos.y,
+                minWidth: 150,
+                shadowColor: "#000",
+                shadowOpacity: 0.4,
+                shadowRadius: 20,
+                shadowOffset: { width: 0, height: 12 },
+                elevation: 12,
+              },
+              vars(themeVars),
+            ]}
             className="border-line bg-elev rounded-input overflow-hidden border py-1"
           >
             {options.map((o) => (

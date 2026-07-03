@@ -1,13 +1,14 @@
 /**
- * Nox design tokens — runtime source of truth for JS/native consumers (nav theme, StatusBar,
- * gesture-panel fills) that can't read Tailwind classes. Values mirror the hi-fi handoff
- * (design/README.md) and the CSS variables in apps/mobile/global.css / tailwind-preset.js.
- *
- * Dark-first: only the dark theme is resolved here today. The light theme + runtime accent
- * switching land with the Settings slice; when they do, these become theme-aware lookups.
+ * Nox design tokens. The app themes at runtime via NativeWind `vars()` (see the mobile root
+ * layout): `themeVars()` feeds the CSS variables that class-based colors resolve against, and
+ * `resolveColors()` returns the same theme as concrete JS values for APIs that can't read classes
+ * (Lucide icon `color=`, DateTimePicker, gesture panels, StatusBar). Keep both in sync with
+ * `tailwind-preset.js` (variable names) and `apps/mobile/global.css` (the :root fallback).
  */
 
-/** User-selectable accents (default = violet). Tints are derived at 12–18% (bg) / 35–45% (border). */
+export type ThemeName = "dark" | "light";
+
+/** User-selectable accents (default = violet). Accent + semantic colors are theme-independent. */
 export const accents = {
   violet: "#7C6FF2",
   green: "#2F9D72",
@@ -16,45 +17,136 @@ export const accents = {
 } as const;
 export type AccentName = keyof typeof accents;
 
-/** Resolved dark-theme values. */
-export const dark = {
-  bg: "#0C0C13",
-  surface: "#14141D",
-  elev: "#1B1B26",
-  sheet: "#181822",
-  ink: "#F1F1F7",
-  ink2: "rgba(228,228,245,0.62)",
-  ink3: "rgba(228,228,245,0.34)",
-  line: "rgba(255,255,255,0.075)",
-  chip: "rgba(255,255,255,0.06)",
-  tabbar: "rgba(23,23,33,0.86)",
-  accent: accents.violet,
-  onAccent: "#FFFFFF",
-  // semantic (priority / status / state)
+/** Semantic colors (same across themes). */
+const SEMANTIC = {
   critical: "#D64545",
   high: "#D2604A", // also destructive / overdue
   medium: "#C98A2B", // also carried-over
   success: "#2F9D72", // also synced
-  info: "#4C7FE0",
+  info: "#4C7FE0", // also exploring
 } as const;
-export type ThemeColors = typeof dark;
 
-/** Structural shape matching @react-navigation/native's Theme (typed inline to avoid a hard
- *  dependency in the tokens package). System font per the handoff — no bundled typeface. */
-export const navTheme = {
-  dark: true,
-  colors: {
-    primary: dark.accent,
-    background: dark.bg,
-    card: dark.surface,
-    text: dark.ink,
-    border: dark.line,
-    notification: dark.accent,
+/** RGB channel triples per theme (consumed as `rgb(var(--x) / <alpha>)`). */
+const PALETTE: Record<ThemeName, Record<string, string>> = {
+  dark: {
+    bg: "12 12 19",
+    surface: "20 20 29",
+    elev: "27 27 38",
+    sheet: "24 24 34",
+    ink: "241 241 247",
+    inkDim: "228 228 245", // base for text2 (.62) / text3 (.34)
+    line: "255 255 255",
+    chip: "255 255 255",
+    tabbar: "23 23 33",
   },
-  fonts: {
-    regular: { fontFamily: "System", fontWeight: "400" },
-    medium: { fontFamily: "System", fontWeight: "500" },
-    bold: { fontFamily: "System", fontWeight: "700" },
-    heavy: { fontFamily: "System", fontWeight: "800" },
+  light: {
+    bg: "244 244 247",
+    surface: "255 255 255",
+    elev: "255 255 255",
+    sheet: "255 255 255",
+    ink: "23 23 31",
+    inkDim: "28 28 42",
+    line: "22 22 40",
+    chip: "22 22 40",
+    tabbar: "255 255 255",
   },
-} as const;
+};
+
+/** Semantic hex → "r g b" channel triple. */
+function toTriple(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
+}
+const rgba = (triple: string, alpha: number) => `rgba(${triple.split(" ").join(", ")}, ${alpha})`;
+
+/**
+ * CSS-variable map for NativeWind `vars()`. Applied on a root wrapper so every class-based color
+ * (`bg-bg`, `text-ink`, `bg-accent`, `bg-high/[0.09]`…) re-resolves when theme or accent changes.
+ */
+export function themeVars(theme: ThemeName, accentHex: string): Record<string, string> {
+  const p = PALETTE[theme];
+  return {
+    "--bg": p.bg!,
+    "--surface": p.surface!,
+    "--elev": p.elev!,
+    "--sheet": p.sheet!,
+    "--ink": p.ink!,
+    "--ink-dim": p.inkDim!,
+    "--line": p.line!,
+    "--chip": p.chip!,
+    "--tabbar": p.tabbar!,
+    "--accent": toTriple(accentHex),
+    "--on-accent": "255 255 255",
+    "--critical": toTriple(SEMANTIC.critical),
+    "--high": toTriple(SEMANTIC.high),
+    "--medium": toTriple(SEMANTIC.medium),
+    "--success": toTriple(SEMANTIC.success),
+    "--info": toTriple(SEMANTIC.info),
+  };
+}
+
+export interface ThemeColors {
+  bg: string;
+  surface: string;
+  elev: string;
+  sheet: string;
+  ink: string;
+  ink2: string;
+  ink3: string;
+  line: string;
+  chip: string;
+  tabbar: string;
+  accent: string;
+  onAccent: string;
+  critical: string;
+  high: string;
+  medium: string;
+  success: string;
+  info: string;
+}
+
+/** Concrete colors for the active theme+accent, for JS consumers (icons, pickers, native chrome). */
+export function resolveColors(theme: ThemeName, accentHex: string): ThemeColors {
+  const p = PALETTE[theme];
+  const rgb = (triple: string) => `rgb(${triple.split(" ").join(", ")})`;
+  return {
+    bg: rgb(p.bg!),
+    surface: rgb(p.surface!),
+    elev: rgb(p.elev!),
+    sheet: rgb(p.sheet!),
+    ink: rgb(p.ink!),
+    ink2: rgba(p.inkDim!, 0.62),
+    ink3: rgba(p.inkDim!, 0.34),
+    line: rgba(p.line!, 0.075),
+    chip: rgba(p.chip!, 0.06),
+    tabbar: rgba(p.tabbar!, 0.86),
+    accent: accentHex,
+    onAccent: "#FFFFFF",
+    ...SEMANTIC,
+  };
+}
+
+/** @react-navigation/native Theme (typed inline to avoid a hard dep). System font per the handoff. */
+export function navThemeFor(theme: ThemeName, accentHex: string) {
+  const c = resolveColors(theme, accentHex);
+  return {
+    dark: theme === "dark",
+    colors: {
+      primary: c.accent,
+      background: c.bg,
+      card: c.surface,
+      text: c.ink,
+      border: c.line,
+      notification: c.accent,
+    },
+    fonts: {
+      regular: { fontFamily: "System", fontWeight: "400" },
+      medium: { fontFamily: "System", fontWeight: "500" },
+      bold: { fontFamily: "System", fontWeight: "700" },
+      heavy: { fontFamily: "System", fontWeight: "800" },
+    },
+  } as const;
+}
+
+/** Dark + violet resolved colors — a static fallback for any non-hook context. */
+export const dark: ThemeColors = resolveColors("dark", accents.violet);

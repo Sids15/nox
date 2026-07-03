@@ -1,4 +1,4 @@
-import { dark } from "@nox/ui";
+import { useThemeColors } from "@nox/features";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import {
@@ -26,6 +26,7 @@ const TAB_META: Record<string, { label: string; Icon: LucideIcon }> = {
  */
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const c = useThemeColors();
 
   return (
     <View
@@ -51,7 +52,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
             const meta = TAB_META[route.name];
             if (!meta) return null;
             const focused = state.index === index;
-            const color = focused ? dark.accent : dark.ink3;
+            const color = focused ? c.accent : c.ink3;
 
             const onPress = () => {
               const event = navigation.emit({

@@ -1,4 +1,4 @@
-import { dark } from "@nox/ui";
+import { useThemeColors } from "@nox/features";
 import { Pressable, Text, View } from "react-native";
 
 /** Segmented control (handoff): chip track, 4px padding, active segment raised on `elev` with a
@@ -12,6 +12,7 @@ export function SegmentedControl<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  const c = useThemeColors();
   return (
     <View className="bg-chip rounded-input flex-row p-1">
       {options.map((o) => {
@@ -37,7 +38,7 @@ export function SegmentedControl<T extends string>({
           >
             <Text
               className={`text-[13px] ${active ? "font-bold" : "font-semibold"}`}
-              style={{ color: active ? (o.color ?? dark.ink) : dark.ink3 }}
+              style={{ color: active ? (o.color ?? c.ink) : c.ink3 }}
             >
               {o.label}
             </Text>

@@ -91,6 +91,7 @@
         "@nox/api": "workspace:*",
         "@nox/db": "workspace:*",
         "@nox/types": "workspace:*",
+        "@nox/ui": "workspace:*",
         "@nox/utils": "workspace:*",
         "zustand": "^5.0.0",
       },
@@ -98,6 +99,7 @@
         "@types/react": "~19.1.0",
       },
       "peerDependencies": {
+        "@react-native-async-storage/async-storage": "*",
         "@supabase/supabase-js": "^2",
         "@tanstack/react-query": "^5",
         "react": "*",

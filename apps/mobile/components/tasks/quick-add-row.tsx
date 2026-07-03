@@ -1,4 +1,4 @@
-import { dark } from "@nox/ui";
+import { useThemeColors } from "@nox/features";
 import { Plus } from "lucide-react-native";
 import { Pressable, Text, TextInput, View } from "react-native";
 
@@ -22,10 +22,11 @@ export function QuickAddRow({
   onSubmit: () => void;
   onCancel: () => void;
 }) {
+  const c = useThemeColors();
   if (!active) {
     return (
       <Pressable onPress={onActivate} className="flex-row items-center gap-[10px] px-4 py-[10px]">
-        <Plus size={14} color={dark.ink3} strokeWidth={2} />
+        <Plus size={14} color={c.ink3} strokeWidth={2} />
         <Text className="text-ink-3 text-[14px] font-medium">Add task</Text>
       </Pressable>
     );
@@ -42,7 +43,7 @@ export function QuickAddRow({
         onBlur={onCancel}
         submitBehavior="submit"
         placeholder="Task title"
-        placeholderTextColor={dark.ink3}
+        placeholderTextColor={c.ink3}
         returnKeyType="done"
         className="text-ink ml-3 flex-1 text-[15px]"
       />

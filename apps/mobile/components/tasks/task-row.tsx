@@ -1,4 +1,4 @@
-import { dark } from "@nox/ui";
+import { useThemeColors } from "@nox/features";
 import type { Task } from "@nox/types";
 import { formatTime12, relativeDayLabel } from "@nox/utils";
 import { Bell, Check, RotateCcw } from "lucide-react-native";
@@ -24,6 +24,7 @@ export function TaskRow({
   /** Overdue rows show the relative due day + time in the coral overdue color. */
   overdue?: boolean;
 }) {
+  const c = useThemeColors();
   const complete = task.status === "complete";
   const time = formatTime12(task.due_time);
   const reminders = task.reminder_times.length;
@@ -34,7 +35,7 @@ export function TaskRow({
       <Pressable onPress={onToggle} hitSlop={10} accessibilityRole="checkbox" accessibilityState={{ checked: complete }}>
         {complete ? (
           <View className="bg-accent h-[22px] w-[22px] items-center justify-center rounded-full">
-            <Check size={11} color={dark.onAccent} strokeWidth={3} />
+            <Check size={11} color={c.onAccent} strokeWidth={3} />
           </View>
         ) : (
           <View className="border-ink-3 h-[22px] w-[22px] rounded-full border-[1.5px]" />
@@ -57,7 +58,7 @@ export function TaskRow({
           <View className="mt-[3px] flex-row items-center">
             {carried && (
               <View className="bg-medium/[0.13] mr-2 flex-row items-center rounded-[6px] px-2 py-1">
-                <RotateCcw size={9} color={dark.medium} strokeWidth={2} />
+                <RotateCcw size={9} color={c.medium} strokeWidth={2} />
                 <Text className="text-medium ml-1 font-mono text-[10px] font-medium">CARRIED OVER</Text>
               </View>
             )}
@@ -66,7 +67,7 @@ export function TaskRow({
             </Text>
             {reminders > 0 && (
               <View className="ml-2 flex-row items-center">
-                <Bell size={11} color={dark.ink3} strokeWidth={2} />
+                <Bell size={11} color={c.ink3} strokeWidth={2} />
                 <Text className="text-ink-3 ml-1 font-mono text-[11px] font-medium">×{reminders}</Text>
               </View>
             )}

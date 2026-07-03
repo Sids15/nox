@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@nox/features";
+import { useAuth, useThemeColors } from "@nox/features";
 import { credentials, type Credentials } from "@nox/types";
-import { dark } from "@nox/ui";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, Text, TextInput, View } from "react-native";
@@ -9,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const { signInWithPassword, signUp } = useAuth();
+  const c = useThemeColors();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     control,
@@ -41,7 +41,7 @@ export default function LoginScreen() {
             <TextInput
               className="bg-surface text-ink rounded-input mb-1 px-4 py-3"
               placeholder="Email"
-              placeholderTextColor={dark.ink3}
+              placeholderTextColor={c.ink3}
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
@@ -62,7 +62,7 @@ export default function LoginScreen() {
             <TextInput
               className="bg-surface text-ink rounded-input mb-1 mt-3 px-4 py-3"
               placeholder="Password"
-              placeholderTextColor={dark.ink3}
+              placeholderTextColor={c.ink3}
               secureTextEntry
               value={value}
               onBlur={onBlur}

@@ -1,6 +1,11 @@
-import { useCreateTask, useDeleteTask, useTasks, useToggleTask } from "@nox/features";
+import {
+  useCreateTask,
+  useDeleteTask,
+  useTasks,
+  useThemeColors,
+  useToggleTask,
+} from "@nox/features";
 import type { Task } from "@nox/types";
-import { dark } from "@nox/ui";
 import { dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { Bell, ChevronDown, ChevronRight, Plus } from "lucide-react-native";
@@ -59,6 +64,7 @@ function SectionLabel({ text, count, tone }: { text: string; count?: number; ton
 
 export default function TasksScreen() {
   const router = useRouter();
+  const c = useThemeColors();
   const today = todayKey();
   const [focus, setFocus] = useState(today);
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
@@ -146,7 +152,7 @@ export default function TasksScreen() {
           </View>
           <View className="flex-row items-center gap-2">
             <Pressable className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-              <Bell size={17} color={dark.ink2} strokeWidth={1.7} />
+              <Bell size={17} color={c.ink2} strokeWidth={1.7} />
             </Pressable>
             <ProfileAvatar />
           </View>
@@ -165,7 +171,7 @@ export default function TasksScreen() {
         <View className="px-screen">
           {isLoading && tasks.length === 0 ? (
             <View className="mt-16 items-center">
-              <ActivityIndicator color={dark.accent} />
+              <ActivityIndicator color={c.accent} />
             </View>
           ) : (
             <>
@@ -214,9 +220,9 @@ export default function TasksScreen() {
                             <Text className="text-ink-3 font-mono text-[11px] font-semibold">{upcoming.length}</Text>
                           </View>
                           {upcomingOpen ? (
-                            <ChevronDown size={18} color={dark.ink3} strokeWidth={1.7} />
+                            <ChevronDown size={18} color={c.ink3} strokeWidth={1.7} />
                           ) : (
-                            <ChevronRight size={18} color={dark.ink3} strokeWidth={1.7} />
+                            <ChevronRight size={18} color={c.ink3} strokeWidth={1.7} />
                           )}
                         </View>
                       </Pressable>
@@ -243,14 +249,14 @@ export default function TasksScreen() {
         style={{
           right: 20,
           bottom: 112,
-          shadowColor: dark.accent,
+          shadowColor: c.accent,
           shadowOpacity: 0.4,
           shadowRadius: 13,
           shadowOffset: { width: 0, height: 10 },
           elevation: 8,
         }}
       >
-        <Plus size={22} color={dark.onAccent} strokeWidth={2.2} />
+        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
       </Pressable>
     </SafeAreaView>
   );

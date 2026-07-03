@@ -10,3 +10,5 @@ export {
 } from "./tasks/use-tasks";
 export { groupTasks, type GroupedTasks } from "./tasks/group-tasks";
 export { taskKeys } from "./tasks/task-keys";
+export { usePrefs, type NotifKey } from "./prefs/prefs-store";
+export { useThemeColors, useThemeVars } from "./prefs/use-theme-colors";

@@ -1,4 +1,3 @@
-import { dark } from "@nox/ui";
 import { Check, Trash2 } from "lucide-react-native";
 import { useRef, type ReactNode } from "react";
 import { Text, View } from "react-native";
@@ -9,7 +8,7 @@ import ReanimatedSwipeable, {
 function CompleteAction() {
   return (
     <View className="bg-success w-[76px] flex-col items-center justify-center gap-1">
-      <Check size={17} color={dark.onAccent} strokeWidth={2.2} />
+      <Check size={17} color="#FFFFFF" strokeWidth={2.2} />
       <Text className="text-[10px] font-bold text-white">Done</Text>
     </View>
   );
@@ -18,7 +17,7 @@ function CompleteAction() {
 function DeleteAction() {
   return (
     <View className="bg-high w-[76px] flex-col items-center justify-center gap-1">
-      <Trash2 size={17} color={dark.onAccent} strokeWidth={1.8} />
+      <Trash2 size={17} color="#FFFFFF" strokeWidth={1.8} />
       <Text className="text-[10px] font-bold text-white">Delete</Text>
     </View>
   );
