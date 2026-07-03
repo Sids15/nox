@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "mobile": "bun run --cwd apps/mobile start",
+    "test": "bun test",
     "typecheck": "bun run --filter '*' typecheck",
     "secret-scan": "bash scripts/secret-scan",
     "audit": "bun run secret-scan"

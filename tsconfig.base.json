@@ -22,5 +22,6 @@
       "@nox/api": ["packages/api/src"],
       "@nox/features": ["packages/features/src"]
     }
-  }
+  },
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
 }

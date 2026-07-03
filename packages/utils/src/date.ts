@@ -52,6 +52,12 @@ export function weekdayShort(dateKey: string): string {
   return WEEKDAYS[new Date(y, m - 1, d).getDay()]!;
 }
 
+/** Numeric day of week, 0 = Sunday … 6 = Saturday (device-local). */
+export function dayOfWeek(dateKey: string): number {
+  const [y, m, d] = parts(dateKey);
+  return new Date(y, m - 1, d).getDay();
+}
+
 /** Uppercase month abbreviation, e.g. "JUL". */
 export function monthShort(dateKey: string): string {
   return MONTHS[parts(dateKey)[1] - 1]!;
