@@ -15,16 +15,19 @@ export function DropdownChip<T extends string>({
   options,
   onSelect,
   showChevron = false,
+  active,
 }: {
   label: string;
   value: T;
   options: { value: T; label: string }[];
   onSelect: (value: T) => void;
   showChevron?: boolean;
+  /** Accent-tint override; defaults to "a non-'all' value is selected". */
+  active?: boolean;
 }) {
   const c = useThemeColors();
   const themeVars = useThemeVars();
-  const active = value !== "all";
+  const isActive = active ?? value !== "all";
   const ref = useRef<View>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -42,13 +45,13 @@ export function DropdownChip<T extends string>({
         ref={ref}
         onPress={openMenu}
         className={`rounded-pill flex-row items-center gap-1 border px-4 py-2 ${
-          active ? "border-accent/[0.45] bg-accent/[0.14]" : "border-line bg-chip"
+          isActive ? "border-accent/[0.45] bg-accent/[0.14]" : "border-line bg-chip"
         }`}
       >
-        <Text className={`text-[12.5px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>
+        <Text className={`text-[12.5px] font-semibold ${isActive ? "text-accent" : "text-ink-2"}`}>
           {label}
         </Text>
-        {showChevron && <ChevronDown size={12} color={active ? c.accent : c.ink3} strokeWidth={2} />}
+        {showChevron && <ChevronDown size={12} color={isActive ? c.accent : c.ink3} strokeWidth={2} />}
       </Pressable>
 
       <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>

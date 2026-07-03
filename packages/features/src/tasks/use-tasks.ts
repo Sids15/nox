@@ -81,6 +81,13 @@ export function useCreateTask() {
     ...mutation,
     mutate: (input: TaskInput) => mutation.mutate({ input, id: newId() }),
     mutateAsync: (input: TaskInput) => mutation.mutateAsync({ input, id: newId() }),
+    /** Fire an optimistic create and return the new id immediately (so the caller can open the
+     *  detail editor — the optimistic row is already in the cache). */
+    create: (input: TaskInput): string => {
+      const id = newId();
+      mutation.mutate({ input, id });
+      return id;
+    },
   };
 }
 
@@ -162,27 +169,20 @@ export function useEnsureOccurrences() {
       const templates = templatesNeedingOccurrence(tasks, focusDate);
       if (templates.length === 0) return;
 
-      const now = new Date().toISOString();
-      const created = templates.map((template) => ({ template, id: newId() }));
-      const optimistic: Task[] = created.map(({ template, id }) => ({
-        ...template,
-        id,
-        origin_task_id: template.id,
-        due_date: focusDate,
-        repeat: "none",
-        repeat_config: null,
-        status: "pending",
-        created_at: now,
-        updated_at: now,
-      }));
-      qc.setQueryData<Task[]>(taskKeys.all, [...tasks, ...optimistic]);
-
+      // Materialize on the server first (no optimistic add): a deleted occurrence leaves a soft-
+      // delete tombstone that keeps its (origin, due_date) slot, so createOccurrence returns null
+      // and the refetch won't resurrect it. Then invalidate to pull in the new occurrences.
+      let anyCreated = false;
       await Promise.all(
-        created.map(({ template, id }) =>
-          TaskRepository.createOccurrence(template, focusDate, id).catch(() => null),
+        templates.map((template) =>
+          TaskRepository.createOccurrence(template, focusDate, newId())
+            .then((row) => {
+              if (row) anyCreated = true;
+            })
+            .catch(() => null),
         ),
       );
-      qc.invalidateQueries({ queryKey: taskKeys.all });
+      if (anyCreated) qc.invalidateQueries({ queryKey: taskKeys.all });
     },
     [qc],
   );

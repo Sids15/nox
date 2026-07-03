@@ -14,6 +14,7 @@ import { Bell, Calendar, Check, ChevronLeft, MoreHorizontal, Plus, Repeat, X } f
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DropdownChip } from "../../components/dropdown-chip";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
@@ -30,6 +31,8 @@ const REPEAT_LABEL: Record<Task["repeat"], string> = {
   weekdays: "Weekdays",
   custom: "Custom",
 };
+const REPEAT_OPTS = repeatKinds.map((r) => ({ value: r, label: REPEAT_LABEL[r] }));
+const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"]; // dow 0–6
 
 function dateFromKey(key: string): Date {
   const [y, m, d] = key.split("-").map(Number) as [number, number, number];
@@ -105,9 +108,16 @@ export default function TaskDetailScreen() {
   };
   const removeReminder = (iso: string) =>
     patch({ reminder_times: task.reminder_times.filter((r) => r !== iso) });
-  const cycleRepeat = () => {
-    const i = repeatKinds.indexOf(task.repeat);
-    patch({ repeat: repeatKinds[(i + 1) % repeatKinds.length]! });
+  const setRepeat = (repeat: Task["repeat"]) => {
+    if (repeat === "custom") patch({ repeat, repeat_config: task.repeat_config ?? { weekdays: [] } });
+    else patch({ repeat, repeat_config: null });
+  };
+  const toggleWeekday = (dow: number) => {
+    const current = task.repeat_config?.weekdays ?? [];
+    const next = current.includes(dow)
+      ? current.filter((d) => d !== dow)
+      : [...current, dow].sort((a, b) => a - b);
+    patch({ repeat_config: { ...(task.repeat_config ?? {}), weekdays: next } });
   };
 
   const dueTime = formatTime12(task.due_time);
@@ -223,13 +233,46 @@ export default function TaskDetailScreen() {
           </View>
 
           {/* Repeat */}
-          <Pressable onPress={cycleRepeat} className="flex-row items-center justify-between px-[14px] py-[13px]">
+          <View
+            className={`flex-row items-center justify-between px-[14px] py-[13px] ${
+              task.repeat === "custom" ? "border-line border-b" : ""
+            }`}
+          >
             <View className="flex-row items-center">
               <Repeat size={17} color={c.ink3} strokeWidth={1.7} />
               <Text className="text-ink-2 ml-3 text-[14.5px]">Repeat</Text>
             </View>
-            <Text className="text-ink text-[14.5px] font-semibold">{REPEAT_LABEL[task.repeat]}</Text>
-          </Pressable>
+            <DropdownChip
+              label={REPEAT_LABEL[task.repeat]}
+              value={task.repeat}
+              options={REPEAT_OPTS}
+              onSelect={setRepeat}
+              active={task.repeat !== "none"}
+              showChevron
+            />
+          </View>
+
+          {/* Custom weekday picker */}
+          {task.repeat === "custom" && (
+            <View className="flex-row justify-between px-[14px] py-3">
+              {WEEKDAY_LETTERS.map((letter, dow) => {
+                const on = (task.repeat_config?.weekdays ?? []).includes(dow);
+                return (
+                  <Pressable
+                    key={dow}
+                    onPress={() => toggleWeekday(dow)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    className={`h-9 w-9 items-center justify-center rounded-full ${on ? "bg-accent" : "bg-chip"}`}
+                  >
+                    <Text className={`text-[13px] font-semibold ${on ? "text-on-accent" : "text-ink-2"}`}>
+                      {letter}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* PRIORITY */}

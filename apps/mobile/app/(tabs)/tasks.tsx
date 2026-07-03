@@ -16,7 +16,6 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
-import { QuickAddRow } from "../../components/tasks/quick-add-row";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
 import { TaskRow } from "../../components/tasks/task-row";
 import { WeekStrip } from "../../components/tasks/week-strip";
@@ -71,8 +70,6 @@ export default function TasksScreen() {
   const [focus, setFocus] = useState(today);
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState("");
 
   const { data: tasks = [], isLoading } = useTasks();
   const createTask = useCreateTask();
@@ -123,14 +120,10 @@ export default function TasksScreen() {
   const onDelete = (t: Task) => deleteTask.mutate(t.id);
   const onOpen = (t: Task) => router.push(`/task/${t.id}`);
 
-  const submitAdd = () => {
-    const title = draft.trim();
-    if (!title) {
-      setAdding(false);
-      return;
-    }
-    createTask.mutate({
-      title,
+  // Create a draft task on the focused day and open its editor to configure it.
+  const createAndOpen = () => {
+    const id = createTask.create({
+      title: "New task",
       notes: null,
       due_date: focus,
       due_time: null,
@@ -139,7 +132,7 @@ export default function TasksScreen() {
       repeat: "none",
       repeat_config: null,
     });
-    setDraft("");
+    router.push(`/task/${id}`);
   };
 
   const title = focus === today ? "Today" : capitalize(relativeDayLabel(focus, today));
@@ -209,16 +202,13 @@ export default function TasksScreen() {
                   {dayTasks.length > 0 && (
                     <GroupCard rows={dayTasks} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} />
                   )}
-                  <QuickAddRow
-                    active={adding}
-                    value={draft}
-                    onChangeText={setDraft}
-                    onActivate={() => setAdding(true)}
-                    onSubmit={submitAdd}
-                    onCancel={() => {
-                      if (!draft.trim()) setAdding(false);
-                    }}
-                  />
+                  <Pressable
+                    onPress={createAndOpen}
+                    className="flex-row items-center gap-[10px] px-4 py-[10px]"
+                  >
+                    <Plus size={14} color={c.ink3} strokeWidth={2} />
+                    <Text className="text-ink-3 text-[14px] font-medium">Add task</Text>
+                  </Pressable>
 
                   {upcoming.length > 0 && (
                     <>
@@ -254,7 +244,7 @@ export default function TasksScreen() {
 
       {/* FAB — activates quick-add */}
       <Pressable
-        onPress={() => setAdding(true)}
+        onPress={createAndOpen}
         accessibilityRole="button"
         accessibilityLabel="Add task"
         className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
