@@ -89,3 +89,38 @@ export function relativeDayLabel(dateKey: string, ref: string = todayKey()): str
   if (Math.abs(dayDiff(dateKey, ref)) <= 6) return titleCase(weekdayShort(dateKey));
   return `${titleCase(monthShort(dateKey))} ${dayOfMonth(dateKey)}`;
 }
+
+/* ── ISO-timestamp helpers (for created_at / updated_at) ─────────────────────── */
+
+function minutesSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+}
+
+/** "just now" / "5m ago" / "3h ago" / "2d ago" — used in detail meta lines. */
+export function relativeFromNow(iso: string): string {
+  const mins = minutesSince(iso);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+/** Compact age badge: "4h" / "2d" / "1w" / "3mo" / "1y" — used on list cards. */
+export function relativeAge(iso: string): string {
+  const mins = minutesSince(iso);
+  if (mins < 60) return `${Math.max(mins, 1)}m`;
+  const h = Math.floor(mins / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  if (d < 30) return `${Math.floor(d / 7)}w`;
+  if (d < 365) return `${Math.floor(d / 30)}mo`;
+  return `${Math.floor(d / 365)}y`;
+}
+
+/** "Jun 12" from an ISO timestamp (device-local). */
+export function shortDate(iso: string): string {
+  const d = new Date(iso);
+  return `${titleCase(monthShort(toDateKey(d)))} ${d.getDate()}`;
+}

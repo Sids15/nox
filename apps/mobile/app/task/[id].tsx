@@ -7,7 +7,7 @@ import {
   useUpdateTask,
 } from "@nox/features";
 import { taskPriorityLevels, repeatKinds, type Task, type TaskInput } from "@nox/types";
-import { formatTime12, relativeDayLabel, toDateKey } from "@nox/utils";
+import { formatTime12, relativeDayLabel, relativeFromNow, shortDate, toDateKey } from "@nox/utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Bell, Calendar, Check, ChevronLeft, MoreHorizontal, Plus, Repeat, X } from "lucide-react-native";
@@ -16,7 +16,6 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
 const PRIORITY_SOFT: Record<Task["priority"], string> = {
@@ -38,18 +37,6 @@ function dateFromKey(key: string): Date {
 }
 function timeString(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-function shortDate(iso: string): string {
-  const d = new Date(iso);
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
-}
-function relativeFromNow(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
 }
 
 type PickerState = { mode: "date" | "time"; target: "due" | "reminder" };
