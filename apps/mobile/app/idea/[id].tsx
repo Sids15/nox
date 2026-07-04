@@ -215,6 +215,7 @@ export default function IdeaDetailScreen() {
         onAddParagraph={editor.addParagraph}
         onAddLink={editor.addLink}
         onAddImage={media.addImage}
+        onRecordComplete={media.addAudio}
       />
     </SafeAreaView>
   );

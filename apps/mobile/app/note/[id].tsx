@@ -127,6 +127,7 @@ export default function NoteEditorScreen() {
         onAddParagraph={editor.addParagraph}
         onAddLink={editor.addLink}
         onAddImage={media.addImage}
+        onRecordComplete={media.addAudio}
       />
 
       {/* Overflow menu */}

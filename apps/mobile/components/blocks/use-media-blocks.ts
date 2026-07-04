@@ -32,5 +32,12 @@ export function useMediaBlocks(parentId: string, editor: EditorMediaApi) {
     if (path) editor.patchMedia((b) => b.type === "image" && b.localUri === localUri, { storagePath: path });
   };
 
-  return { addImage };
+  const addAudio = async (localUri: string, durationMs: number) => {
+    if (!userId) return;
+    editor.insertMedia({ type: "audio", localUri, storagePath: null, durationMs });
+    const path = await uploadToBucket("audio", `${userId}/${parentId}/${newId()}.m4a`, localUri, "audio/m4a");
+    if (path) editor.patchMedia((b) => b.type === "audio" && b.localUri === localUri, { storagePath: path });
+  };
+
+  return { addImage, addAudio };
 }
