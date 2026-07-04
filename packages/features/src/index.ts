@@ -40,3 +40,12 @@ export {
   useDeleteFolder,
 } from "./notes/use-folders";
 export { noteKeys, folderKeys } from "./notes/note-keys";
+export {
+  useResources,
+  useCreateResource,
+  useUpdateResource,
+  useArchiveResource,
+  useDeleteResource,
+} from "./resources/use-resources";
+export { useTags, useCreateTag, useDeleteTag } from "./resources/use-tags";
+export { resourceKeys, tagKeys } from "./resources/resource-keys";
