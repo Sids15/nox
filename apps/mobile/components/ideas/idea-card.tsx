@@ -42,7 +42,7 @@ export function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void })
       </Text>
 
       {(() => {
-        const para = idea.content.find((b) => b.type === "paragraph" && b.text.trim() !== "");
+        const para = (idea.content ?? []).find((b) => b.type === "paragraph" && b.text.trim() !== "");
         const preview = (para && "text" in para ? para.text : null) ?? idea.description;
         return preview ? (
           <Text numberOfLines={2} className="text-ink-2 text-[13px]" style={{ lineHeight: 19 }}>
