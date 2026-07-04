@@ -1,15 +1,19 @@
-import { Check, Trash2 } from "lucide-react-native";
+import { Check, RotateCcw, Trash2 } from "lucide-react-native";
 import { useRef, type ReactNode } from "react";
 import { Text, View } from "react-native";
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
 
-function CompleteAction() {
+function CompleteAction({ completed }: { completed: boolean }) {
   return (
     <View className="bg-success w-[76px] flex-col items-center justify-center gap-1">
-      <Check size={17} color="#FFFFFF" strokeWidth={2.2} />
-      <Text className="text-[10px] font-bold text-white">Done</Text>
+      {completed ? (
+        <RotateCcw size={17} color="#FFFFFF" strokeWidth={2.2} />
+      ) : (
+        <Check size={17} color="#FFFFFF" strokeWidth={2.2} />
+      )}
+      <Text className="text-[10px] font-bold text-white">{completed ? "Undo" : "Done"}</Text>
     </View>
   );
 }
@@ -31,10 +35,13 @@ function DeleteAction() {
 export function SwipeableTaskRow({
   onComplete,
   onDelete,
+  completed,
   children,
 }: {
   onComplete: () => void;
   onDelete: () => void;
+  /** When already complete, the green action reads "Undo" and un-completes the task. */
+  completed: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<SwipeableMethods>(null);
@@ -47,7 +54,7 @@ export function SwipeableTaskRow({
       rightThreshold={56}
       overshootLeft={false}
       overshootRight={false}
-      renderLeftActions={() => <CompleteAction />}
+      renderLeftActions={() => <CompleteAction completed={completed} />}
       renderRightActions={() => <DeleteAction />}
       onSwipeableOpen={(direction) => {
         // Swipe toward the coral panel deletes (removes the task); swipe toward the green panel

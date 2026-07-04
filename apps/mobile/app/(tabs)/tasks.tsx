@@ -41,7 +41,11 @@ function GroupCard({
       {rows.map((t, i) => (
         <View key={t.id}>
           {i > 0 && <View className="bg-line ml-[14px] h-px" />}
-          <SwipeableTaskRow onComplete={() => onToggle(t)} onDelete={() => onDelete(t)}>
+          <SwipeableTaskRow
+            completed={t.status === "complete"}
+            onComplete={() => onToggle(t)}
+            onDelete={() => onDelete(t)}
+          >
             <TaskRow task={t} overdue={overdue} onToggle={() => onToggle(t)} onPress={() => onOpen(t)} />
           </SwipeableTaskRow>
         </View>

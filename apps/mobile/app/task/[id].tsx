@@ -305,7 +305,7 @@ export default function TaskDetailScreen() {
 
         {/* NOTES */}
         <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">NOTES</Text>
-        <View className="mx-[20px] border-line bg-surface rounded-card border p-[14px]">
+        <View className="mx-[20px] border-line bg-surface rounded-card min-h-[92px] border p-[14px]">
           <TextInput
             value={notes}
             onChangeText={setNotes}
@@ -316,8 +316,8 @@ export default function TaskDetailScreen() {
             multiline
             placeholder="Add notes…"
             placeholderTextColor={c.ink3}
-            className="text-ink-2 min-h-[60px] text-[14px] leading-[22px]"
-            style={{ textAlignVertical: "top" }}
+            className="text-ink-2 text-[14px] leading-[22px]"
+            style={{ textAlignVertical: "top", paddingTop: 0, marginTop: -2 }}
           />
         </View>
 

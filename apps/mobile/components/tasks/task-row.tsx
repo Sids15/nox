@@ -32,7 +32,7 @@ export function TaskRow({
   const recurring = task.repeat !== "none" || task.origin_task_id !== null;
 
   return (
-    <Pressable onPress={onPress} className="bg-surface flex-row items-center px-[14px] py-3">
+    <Pressable onPress={onPress} className="bg-surface min-h-[58px] flex-row items-center px-[14px]">
       <Pressable onPress={onToggle} hitSlop={10} accessibilityRole="checkbox" accessibilityState={{ checked: complete }}>
         {complete ? (
           <View className="bg-accent h-[22px] w-[22px] items-center justify-center rounded-full">
