@@ -7,6 +7,15 @@ export interface UrlMeta {
   favicon: string;
 }
 
+/** A deterministic thumbnail for known video hosts (YouTube), used when og:image can't be fetched. */
+export function videoThumbnail(url: string): string | undefined {
+  const yt = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/,
+  );
+  if (yt) return `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`;
+  return undefined;
+}
+
 function decode(s?: string): string | undefined {
   if (!s) return undefined;
   return s

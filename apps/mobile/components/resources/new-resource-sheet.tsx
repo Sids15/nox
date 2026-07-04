@@ -1,13 +1,29 @@
-import { useCreateResource, useCreateTag, useThemeColors, useThemeVars, useUpdateResource } from "@nox/features";
+import { newId } from "@nox/db";
+import { useCreateResource, useCreateTag, useSessionStore, useThemeColors, useThemeVars, useUpdateResource } from "@nox/features";
 import { resourceTypes, type Resource, type ResourceInput, type Tag } from "@nox/types";
 import { domainFrom } from "@nox/utils";
-import { Link2, Plus, X } from "lucide-react-native";
+import { ImagePlus, Link2, Plus, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { SegmentedControl } from "../tasks/segmented-control";
-import { fetchUrlMeta } from "../../lib/url-meta";
+import { pickImage } from "../../lib/media";
+import { uploadToBucket, useSignedUrl } from "../../lib/storage";
+import { fetchUrlMeta, videoThumbnail } from "../../lib/url-meta";
 import { nextTagColor, TAG_PALETTE } from "../../lib/tag-palette";
+
+// Keep in sync with the `images` bucket policy (migration 0006).
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const IMAGE_MIME_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+/** Preview inside the sheet: shows the just-picked local file, or signs a stored Storage path. */
+function ImagePreview({ localUri, path }: { localUri: string | null; path: string | null }) {
+  const isRemote = path ? /^(https?:|data:)/.test(path) : false;
+  const { data: signed } = useSignedUrl("images", localUri || isRemote ? null : path);
+  const uri = localUri ?? (isRemote ? path : signed ?? null);
+  if (!uri) return <View className="bg-chip h-[150px]" />;
+  return <Image source={{ uri }} style={{ width: "100%", height: 150 }} resizeMode="cover" />;
+}
 
 const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 const TYPE_OPTS = resourceTypes.map((t) => ({ value: t, label: cap(t) }));
@@ -31,6 +47,7 @@ export function NewResourceSheet({
 }) {
   const c = useThemeColors();
   const themeVars = useThemeVars();
+  const userId = useSessionStore((s) => s.session?.user.id ?? null);
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
   const createTag = useCreateTag();
@@ -40,6 +57,8 @@ export function NewResourceSheet({
   const [body, setBody] = useState("");
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [localImage, setLocalImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [tagQuery, setTagQuery] = useState("");
   const [fetched, setFetched] = useState(false);
@@ -69,6 +88,8 @@ export function NewResourceSheet({
       setTagIds([]);
       setFetched(false);
     }
+    setLocalImage(null);
+    setUploading(false);
     setTagQuery("");
     titleTouched.current = false;
   }, [visible, resource?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -82,13 +103,40 @@ export function NewResourceSheet({
     if (fetchTimer.current) clearTimeout(fetchTimer.current);
     if (!u.trim()) return;
     const gen = ++fetchGen.current;
+    // A YouTube link resolves a reliable thumbnail immediately (og:image fetch is best-effort and
+    // often blocked for video hosts).
+    const vt = videoThumbnail(u);
+    if (vt) setThumbnail(vt);
     fetchTimer.current = setTimeout(async () => {
       const meta = await fetchUrlMeta(u);
       if (gen !== fetchGen.current || !meta) return; // superseded (url changed / resource switched)
       if (meta.title && !titleTouched.current) setTitle(meta.title);
       if (meta.image) setThumbnail(meta.image);
+      else if (vt) setThumbnail(vt);
       setFetched(true);
     }, 700);
+  };
+
+  // Pick a photo from the library and upload it to the private images bucket; the stored path is
+  // signed on read by the resource card.
+  const pickAndUpload = async () => {
+    const picked = await pickImage();
+    if (!picked || !userId) return;
+    const ext = IMAGE_MIME_EXT[picked.mimeType];
+    if (!ext) {
+      Alert.alert("Unsupported image", "Please choose a JPEG, PNG, or WebP image.");
+      return;
+    }
+    if (picked.fileSize && picked.fileSize > IMAGE_MAX_BYTES) {
+      Alert.alert("Image too large", "Please choose an image under 10 MB.");
+      return;
+    }
+    setLocalImage(picked.uri);
+    setUploading(true);
+    const path = await uploadToBucket("images", `${userId}/resources/${newId()}.${ext}`, picked.uri, picked.mimeType);
+    setUploading(false);
+    if (path) setThumbnail(path);
+    else Alert.alert("Upload failed", "Could not upload the image. Please try again.");
   };
 
   const addTag = (id: string) => {
@@ -111,11 +159,12 @@ export function NewResourceSheet({
   const suggestions = q ? tags.filter((t) => t.name.toLowerCase().includes(q) && !tagIds.includes(t.id)) : [];
 
   const save = () => {
+    const isMedia = type === "text" || type === "image";
     const input: ResourceInput = {
       type,
-      url: type === "text" ? null : url.trim() || null,
+      url: isMedia ? null : url.trim() || null,
       title: title.trim() || null,
-      domain: type === "text" ? null : domain || null,
+      domain: isMedia ? null : domain || null,
       thumbnail_url: thumbnail,
       duration: resource?.duration ?? null,
       body: type === "text" ? body.trim() || null : null,
@@ -147,7 +196,7 @@ export function NewResourceSheet({
           {/* Type */}
           <SegmentedControl value={type} onChange={setType} options={TYPE_OPTS} />
 
-          {/* URL or body */}
+          {/* URL / snippet body / image picker */}
           {type === "text" ? (
             <TextInput
               value={body}
@@ -158,6 +207,40 @@ export function NewResourceSheet({
               className="bg-chip rounded-input text-ink min-h-[80px] px-3 py-3 text-[14px] leading-[21px]"
               style={{ textAlignVertical: "top" }}
             />
+          ) : type === "image" ? (
+            <View className="gap-3">
+              <Pressable onPress={pickAndUpload} className="bg-chip rounded-input overflow-hidden">
+                {localImage || thumbnail ? (
+                  <View>
+                    <ImagePreview localUri={localImage} path={thumbnail} />
+                    {uploading && (
+                      <View className="absolute inset-0 items-center justify-center bg-black/40">
+                        <ActivityIndicator color="#fff" />
+                      </View>
+                    )}
+                    <View className="absolute bottom-2 right-2 rounded-pill bg-black/60 px-3 py-1.5">
+                      <Text className="text-[12px] font-semibold text-white">Change</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View className="h-[150px] items-center justify-center gap-2">
+                    <ImagePlus size={22} color={c.ink3} strokeWidth={1.8} />
+                    <Text className="text-ink-3 text-[13px] font-medium">Add a picture</Text>
+                  </View>
+                )}
+              </Pressable>
+              <TextInput
+                value={title}
+                onChangeText={(t) => {
+                  titleTouched.current = true;
+                  setTitle(t);
+                }}
+                placeholder="Caption (optional)"
+                placeholderTextColor={c.ink3}
+                className="bg-chip rounded-input text-ink h-11 px-3 text-[14px]"
+                style={{ paddingVertical: 0 }}
+              />
+            </View>
           ) : (
             <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
               <Link2 size={15} color={c.ink3} strokeWidth={1.8} />
@@ -175,8 +258,8 @@ export function NewResourceSheet({
             </View>
           )}
 
-          {/* Fetched preview */}
-          {type !== "text" && !!domain && (
+          {/* Fetched preview (link / video) */}
+          {type !== "text" && type !== "image" && !!domain && (
             <View className="border-line flex-row items-center gap-[11px] rounded-[14px] border px-3 py-[11px]">
               <View className="h-9 w-9 items-center justify-center rounded-[9px]" style={{ backgroundColor: `${letterColor(domain)}29` }}>
                 <Text style={{ color: letterColor(domain) }} className="text-[13px] font-bold">{domain.charAt(0).toUpperCase()}</Text>
@@ -250,10 +333,11 @@ export function NewResourceSheet({
           {/* Save */}
           <Pressable
             onPress={save}
-            className="bg-accent items-center rounded-[14px] py-[15px]"
+            disabled={uploading}
+            className={`bg-accent items-center rounded-[14px] py-[15px] ${uploading ? "opacity-50" : ""}`}
             style={{ shadowColor: c.accent, shadowOpacity: 0.35, shadowRadius: 26, shadowOffset: { width: 0, height: 10 }, elevation: 6 }}
           >
-            <Text className="text-on-accent text-[15px] font-bold">Save resource</Text>
+            <Text className="text-on-accent text-[15px] font-bold">{uploading ? "Uploading…" : "Save resource"}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

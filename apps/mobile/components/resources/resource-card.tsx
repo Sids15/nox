@@ -1,12 +1,23 @@
 import type { Resource, Tag } from "@nox/types";
 import { Play } from "lucide-react-native";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, type ImageStyle, Pressable, type StyleProp, Text, View } from "react-native";
+import { useSignedUrl } from "../../lib/storage";
 import { TAG_PALETTE } from "../../lib/tag-palette";
 
 function hashColor(seed: string): string {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return TAG_PALETTE[h % TAG_PALETTE.length]!;
+}
+
+/** Renders a thumbnail from either a remote URL (og:image) or a private Storage path (a picked
+ *  image), signing the latter on demand. Returns null while a signed URL is still resolving. */
+function Thumb({ value, style }: { value: string; style: StyleProp<ImageStyle> }) {
+  const isRemote = /^(https?:|file:|data:)/.test(value);
+  const { data: signed } = useSignedUrl("images", isRemote ? null : value);
+  const uri = isRemote ? value : signed ?? null;
+  if (!uri) return null;
+  return <Image source={{ uri }} style={style} resizeMode="cover" />;
 }
 
 function TagsRow({ tags }: { tags: Tag[] }) {
@@ -44,7 +55,7 @@ export function ResourceCard({
       <Pressable onPress={onPress} onLongPress={onLongPress} className={shell}>
         <View className="bg-chip relative h-[88px] items-center justify-center">
           {resource.thumbnail_url ? (
-            <Image source={{ uri: resource.thumbnail_url }} style={{ position: "absolute", inset: 0 }} resizeMode="cover" />
+            <Thumb value={resource.thumbnail_url} style={{ position: "absolute", inset: 0 }} />
           ) : null}
           <View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: "rgba(10,10,16,0.72)" }}>
             <Play size={11} color="#fff" fill="#fff" />
@@ -69,7 +80,7 @@ export function ResourceCard({
       <Pressable onPress={onPress} onLongPress={onLongPress} className={shell}>
         <View className="bg-chip h-[124px] items-center justify-center">
           {resource.thumbnail_url ? (
-            <Image source={{ uri: resource.thumbnail_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+            <Thumb value={resource.thumbnail_url} style={{ width: "100%", height: "100%" }} />
           ) : (
             <Text className="text-ink-3 font-mono text-[9.5px]">image</Text>
           )}

@@ -46,18 +46,21 @@ export function FilterChips({
         value={filters.status}
         options={STATUS_OPTS}
         onSelect={(status) => onChange({ ...filters, status })}
+        showChevron
       />
       <DropdownChip
         label="Priority"
         value={filters.priority}
         options={PRIORITY_OPTS}
         onSelect={(priority) => onChange({ ...filters, priority })}
+        showChevron
       />
       <DropdownChip
         label="Time"
         value={filters.time}
         options={TIME_OPTS}
         onSelect={(time) => onChange({ ...filters, time })}
+        showChevron
       />
     </View>
   );
