@@ -45,8 +45,12 @@ export function NewResourceSheet({
   const [fetched, setFetched] = useState(false);
   const titleTouched = useRef(false);
   const fetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchGen = useRef(0); // bumped to invalidate any in-flight URL fetch
 
   useEffect(() => {
+    // Invalidate/cancel any pending or in-flight fetch from a previously-open resource.
+    fetchGen.current++;
+    if (fetchTimer.current) clearTimeout(fetchTimer.current);
     if (!visible) return;
     if (resource) {
       setType(resource.type);
@@ -77,9 +81,10 @@ export function NewResourceSheet({
     setFetched(false);
     if (fetchTimer.current) clearTimeout(fetchTimer.current);
     if (!u.trim()) return;
+    const gen = ++fetchGen.current;
     fetchTimer.current = setTimeout(async () => {
       const meta = await fetchUrlMeta(u);
-      if (!meta) return;
+      if (gen !== fetchGen.current || !meta) return; // superseded (url changed / resource switched)
       if (meta.title && !titleTouched.current) setTitle(meta.title);
       if (meta.image) setThumbnail(meta.image);
       setFetched(true);
@@ -93,8 +98,10 @@ export function NewResourceSheet({
   const createAndAdd = () => {
     const name = tagQuery.trim();
     if (!name) return;
-    const t = createTag.create({ name, color: nextTagColor(tags.length) });
-    addTag(t.id);
+    // Reuse an existing tag if the name already matches (avoids duplicates on keyboard-submit).
+    const existing = tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+    const id = existing ? existing.id : createTag.create({ name, color: nextTagColor(tags.length) }).id;
+    addTag(id);
   };
   const removeTag = (id: string) => setTagIds((s) => s.filter((x) => x !== id));
 

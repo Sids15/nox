@@ -23,6 +23,25 @@ function matches(r: Resource, q: string): boolean {
   return [r.title, r.url, r.body, r.domain].some((v) => v?.toLowerCase().includes(n));
 }
 
+/** Rough rendered height of a card (incl. gap), used only to balance the two masonry columns. */
+function estimateCardHeight(r: Resource): number {
+  const tagsH = r.tag_ids.length > 0 ? 26 : 0;
+  switch (r.type) {
+    case "image":
+      return 210 + tagsH;
+    case "video":
+      return 180 + tagsH;
+    case "text": {
+      const lines = Math.min(6, Math.ceil(((r.body ?? r.title ?? "").length || 20) / 26));
+      return 52 + lines * 20 + tagsH;
+    }
+    default: {
+      const lines = Math.min(3, Math.ceil(((r.title ?? r.url ?? "").length || 10) / 24));
+      return 64 + lines * 18 + tagsH;
+    }
+  }
+}
+
 export default function ResourcesScreen() {
   const c = useThemeColors();
   const themeVars = useThemeVars();
@@ -52,11 +71,19 @@ export default function ResourcesScreen() {
       ),
     [resources, search, selected],
   );
+  // Height-balanced masonry: place each card into whichever column is currently shorter (estimated),
+  // instead of a strict left/right alternation that leaves one column with a long trailing gap.
   const [colA, colB] = useMemo(() => {
-    const a: Resource[] = [];
-    const b: Resource[] = [];
-    filtered.forEach((r, i) => (i % 2 === 0 ? a : b).push(r));
-    return [a, b];
+    const cols = [
+      { items: [] as Resource[], h: 0 },
+      { items: [] as Resource[], h: 0 },
+    ];
+    for (const r of filtered) {
+      const target = cols[0]!.h <= cols[1]!.h ? cols[0]! : cols[1]!;
+      target.items.push(r);
+      target.h += estimateCardHeight(r);
+    }
+    return [cols[0]!.items, cols[1]!.items];
   }, [filtered]);
 
   const openResource = (r: Resource) => {
