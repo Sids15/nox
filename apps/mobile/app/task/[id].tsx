@@ -6,7 +6,7 @@ import {
   useToggleTask,
   useUpdateTask,
 } from "@nox/features";
-import { taskPriorityLevels, repeatKinds, type Task, type TaskInput } from "@nox/types";
+import { taskPriorityLevels, type Task, type TaskInput } from "@nox/types";
 import { formatTime12, relativeDayLabel, relativeFromNow, shortDate, toDateKey } from "@nox/utils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -31,7 +31,13 @@ const REPEAT_LABEL: Record<Task["repeat"], string> = {
   weekdays: "Weekdays",
   custom: "Custom",
 };
-const REPEAT_OPTS = repeatKinds.map((r) => ({ value: r, label: REPEAT_LABEL[r] }));
+// Daily/Weekly are just Custom presets (all days / one day), so the menu offers Never (off),
+// Weekdays (Mon–Fri), and Custom (pick days). Existing daily/weekly tasks still display + run.
+const REPEAT_OPTS: { value: Task["repeat"]; label: string }[] = [
+  { value: "none", label: "Never" },
+  { value: "weekdays", label: "Weekdays" },
+  { value: "custom", label: "Custom" },
+];
 const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"]; // dow 0–6
 
 function dateFromKey(key: string): Date {
