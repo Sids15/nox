@@ -7,7 +7,7 @@ import {
   useThemeVars,
 } from "@nox/features";
 import type { Resource, Tag } from "@nox/types";
-import { Plus, Search, Tags } from "lucide-react-native";
+import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -52,6 +52,8 @@ export default function ResourcesScreen() {
   const [menuFor, setMenuFor] = useState<Resource | null>(null);
   const [newTagOpen, setNewTagOpen] = useState(false);
   const [tagName, setTagName] = useState("");
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const tagsActive = selected.length > 0;
 
   const { data: resources = [], isLoading } = useResources();
   const { data: tags = [] } = useTags();
@@ -114,16 +116,20 @@ export default function ResourcesScreen() {
             <Text className="text-ink mt-[3px] text-[30px] font-bold leading-[33px] tracking-[-0.02em]">Resources</Text>
           </View>
           <View className="flex-row items-center gap-2">
-            <Pressable className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-              <Tags size={16} color={c.ink2} strokeWidth={1.8} />
+            <Pressable
+              onPress={() => setTagsOpen((v) => !v)}
+              accessibilityLabel="Toggle tag filters"
+              className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${tagsOpen || tagsActive ? "bg-accent-soft" : "bg-chip"}`}
+            >
+              <SlidersHorizontal size={16} color={tagsOpen || tagsActive ? c.accent : c.ink2} strokeWidth={1.8} />
             </Pressable>
             <ProfileAvatar />
           </View>
         </View>
 
         {/* Search */}
-        <View className="px-screen mt-[14px]">
-          <View className="bg-chip rounded-input h-10 flex-row items-center gap-[10px] px-[13px]">
+        <View className="px-screen mt-5">
+          <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
             <Search size={15} color={c.ink3} strokeWidth={1.8} />
             <TextInput
               value={search}
@@ -131,30 +137,33 @@ export default function ResourcesScreen() {
               placeholder="Search links, media, snippets…"
               placeholderTextColor={c.ink3}
               className="text-ink flex-1 text-[14.5px]"
+              style={{ paddingVertical: 0 }}
             />
           </View>
         </View>
 
-        {/* Tag filter */}
-        <View className="px-screen mt-3 flex-row flex-wrap gap-1.5">
-          <Pressable
-            onPress={() => setSelected([])}
-            className={`rounded-pill px-3 py-[7px] ${selected.length === 0 ? "bg-accent" : "bg-chip border-line border"}`}
-          >
-            <Text className={`text-[12px] font-semibold ${selected.length === 0 ? "text-on-accent" : "text-ink-2"}`}>All</Text>
-          </Pressable>
-          {tags.map((t) => {
-            const on = selected.includes(t.id);
-            return (
-              <Pressable key={t.id} onPress={() => toggleTag(t.id)} style={{ backgroundColor: on ? t.color : `${t.color}1f` }} className="rounded-pill px-3 py-[7px]">
-                <Text style={{ color: on ? "#fff" : t.color }} className="text-[12px] font-semibold">{t.name}</Text>
-              </Pressable>
-            );
-          })}
-          <Pressable onPress={() => setNewTagOpen(true)} className="border-line rounded-pill border border-dashed px-3 py-[6px]">
-            <Text className="text-ink-3 text-[12px] font-semibold">+ new tag</Text>
-          </Pressable>
-        </View>
+        {/* Tag filter (collapsed behind the header toggle) */}
+        {tagsOpen && (
+          <View className="px-screen mt-3.5 flex-row flex-wrap gap-1.5">
+            <Pressable
+              onPress={() => setSelected([])}
+              className={`rounded-pill px-3 py-[7px] ${selected.length === 0 ? "bg-accent" : "bg-chip border-line border"}`}
+            >
+              <Text className={`text-[12px] font-semibold ${selected.length === 0 ? "text-on-accent" : "text-ink-2"}`}>All</Text>
+            </Pressable>
+            {tags.map((t) => {
+              const on = selected.includes(t.id);
+              return (
+                <Pressable key={t.id} onPress={() => toggleTag(t.id)} style={{ backgroundColor: on ? t.color : `${t.color}1f` }} className="rounded-pill px-3 py-[7px]">
+                  <Text style={{ color: on ? "#fff" : t.color }} className="text-[12px] font-semibold">{t.name}</Text>
+                </Pressable>
+              );
+            })}
+            <Pressable onPress={() => setNewTagOpen(true)} className="border-line rounded-pill border border-dashed px-3 py-[6px]">
+              <Text className="text-ink-3 text-[12px] font-semibold">+ new tag</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Masonry */}
         <View className="px-screen mt-4">

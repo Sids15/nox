@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DropdownChip } from "../../components/dropdown-chip";
+import { OverflowMenu } from "../../components/overflow-menu";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
@@ -73,6 +74,7 @@ export default function TaskDetailScreen() {
   const [notes, setNotes] = useState("");
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [temp, setTemp] = useState(new Date());
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Seed the editable fields when the task first resolves (keyed on id so edits aren't clobbered).
   useEffect(() => {
@@ -137,7 +139,7 @@ export default function TaskDetailScreen() {
           <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
             <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
           </Pressable>
-          <Pressable hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} accessibilityLabel="More options" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
             <MoreHorizontal size={20} color={c.ink2} strokeWidth={1.7} />
           </Pressable>
         </View>
@@ -325,9 +327,9 @@ export default function TaskDetailScreen() {
           created {shortDate(task.created_at).toLowerCase()} · updated {relativeFromNow(task.updated_at)}
         </Text>
 
-        {/* Add task (create mode) / Delete task (edit mode) */}
-        <View className="px-screen mt-[14px]">
-          {isNew ? (
+        {/* Add task (create mode); edit-mode delete lives in the … overflow menu */}
+        {isNew && (
+          <View className="px-screen mt-[14px]">
             <Pressable
               onPress={goBack}
               className="bg-accent items-center rounded-[14px] py-[13px]"
@@ -341,19 +343,24 @@ export default function TaskDetailScreen() {
             >
               <Text className="text-on-accent text-[14px] font-bold">Add task</Text>
             </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => {
-                del.mutate(task.id);
-                goBack();
-              }}
-              className="bg-high/[0.09] items-center rounded-[14px] py-[13px]"
-            >
-              <Text className="text-high text-[14px] font-semibold">Delete task</Text>
-            </Pressable>
-          )}
-        </View>
+          </View>
+        )}
       </ScrollView>
+
+      <OverflowMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={[
+          {
+            label: "Delete task",
+            destructive: true,
+            onPress: () => {
+              del.mutate(task.id);
+              goBack();
+            },
+          },
+        ]}
+      />
 
       {/* Date/time picker sheet */}
       {picker && (

@@ -1,5 +1,6 @@
 import {
   useArchiveIdea,
+  useDeleteIdea,
   useIdeas,
   useSetIdeaStatus,
   useThemeColors,
@@ -16,6 +17,7 @@ import { BlockList } from "../../components/blocks/block-list";
 import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
 import { useMediaBlocks } from "../../components/blocks/use-media-blocks";
+import { OverflowMenu } from "../../components/overflow-menu";
 import { StatusStepper } from "../../components/ideas/status-stepper";
 import { TagChip } from "../../components/tag-chip";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
@@ -47,11 +49,13 @@ export default function IdeaDetailScreen() {
   const updateIdea = useUpdateIdea();
   const setStatus = useSetIdeaStatus();
   const archive = useArchiveIdea();
+  const del = useDeleteIdea();
   const patch = (p: Partial<IdeaInput>) => idea && updateIdea.mutate({ id: idea.id, patch: p });
 
   const [title, setTitle] = useState("");
   const [tagDraft, setTagDraft] = useState("");
   const [addingTag, setAddingTag] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (idea) setTitle(idea.title);
@@ -98,7 +102,7 @@ export default function IdeaDetailScreen() {
           <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
             <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
           </Pressable>
-          <Pressable hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} accessibilityLabel="More options" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
             <MoreHorizontal size={20} color={c.ink2} strokeWidth={1.7} />
           </Pressable>
         </View>
@@ -186,28 +190,6 @@ export default function IdeaDetailScreen() {
         <Text className="text-ink-3 mt-[18px] text-center font-mono text-[10.5px] leading-[17px]">
           created {shortDate(idea.created_at).toLowerCase()} · updated {relativeFromNow(idea.updated_at)}
         </Text>
-
-        {/* Archive / Drop */}
-        <View className="px-screen mt-[14px] flex-row gap-[10px]">
-          <Pressable
-            onPress={() => {
-              archive.mutate({ id: idea.id, isArchived: true });
-              goBack();
-            }}
-            className="bg-chip flex-1 items-center rounded-[14px] py-[13px]"
-          >
-            <Text className="text-ink-2 text-[14px] font-semibold">Archive</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              setStatus.mutate({ id: idea.id, status: "dropped" });
-              goBack();
-            }}
-            className="bg-high/[0.09] flex-1 items-center rounded-[14px] py-[13px]"
-          >
-            <Text className="text-high text-[14px] font-semibold">Drop idea</Text>
-          </Pressable>
-        </View>
       </ScrollView>
 
       <BlockToolbar
@@ -216,6 +198,35 @@ export default function IdeaDetailScreen() {
         onAddLink={editor.addLink}
         onAddImage={media.addImage}
         onRecordComplete={media.addAudio}
+      />
+
+      <OverflowMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={[
+          {
+            label: "Archive",
+            onPress: () => {
+              archive.mutate({ id: idea.id, isArchived: true });
+              goBack();
+            },
+          },
+          {
+            label: "Drop idea",
+            onPress: () => {
+              setStatus.mutate({ id: idea.id, status: "dropped" });
+              goBack();
+            },
+          },
+          {
+            label: "Delete",
+            destructive: true,
+            onPress: () => {
+              del.mutate(idea.id);
+              goBack();
+            },
+          },
+        ]}
       />
     </SafeAreaView>
   );

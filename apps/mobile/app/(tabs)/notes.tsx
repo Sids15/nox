@@ -98,8 +98,8 @@ export default function NotesScreen() {
         </View>
 
         {/* Search */}
-        <View className="px-screen mt-[14px]">
-          <View className="bg-chip rounded-input h-10 flex-row items-center gap-[10px] px-[13px]">
+        <View className="px-screen mt-5">
+          <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
             <Search size={15} color={c.ink3} strokeWidth={1.8} />
             <TextInput
               value={search}
@@ -107,6 +107,7 @@ export default function NotesScreen() {
               placeholder="Search notes…"
               placeholderTextColor={c.ink3}
               className="text-ink flex-1 text-[14.5px]"
+              style={{ paddingVertical: 0 }}
             />
           </View>
         </View>

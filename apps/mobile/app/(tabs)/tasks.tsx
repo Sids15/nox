@@ -10,7 +10,7 @@ import {
 import type { Task } from "@nox/types";
 import { dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { Bell, ChevronDown, ChevronRight, Plus } from "lucide-react-native";
+import { ChevronDown, ChevronRight, Plus, SlidersHorizontal } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -73,7 +73,9 @@ export default function TasksScreen() {
   const today = todayKey();
   const [focus, setFocus] = useState(today);
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
+  const filtersActive = filters.status !== "all" || filters.priority !== "all" || filters.time !== "all";
 
   const { data: tasks = [], isLoading } = useTasks();
   const createTask = useCreateTask();
@@ -165,22 +167,28 @@ export default function TasksScreen() {
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
-            <Pressable className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-              <Bell size={17} color={c.ink2} strokeWidth={1.7} />
+            <Pressable
+              onPress={() => setFiltersOpen((v) => !v)}
+              accessibilityLabel="Toggle filters"
+              className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${filtersOpen || filtersActive ? "bg-accent-soft" : "bg-chip"}`}
+            >
+              <SlidersHorizontal size={16} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={1.8} />
             </Pressable>
             <ProfileAvatar />
           </View>
         </View>
 
         {/* Week strip */}
-        <View className="px-screen mt-4">
+        <View className="px-screen mt-5">
           <WeekStrip selected={focus} onSelect={setFocus} />
         </View>
 
-        {/* Filters */}
-        <View className="px-screen mt-[14px]">
-          <FilterChips filters={filters} onChange={setFilters} />
-        </View>
+        {/* Filters (collapsed behind the header toggle) */}
+        {filtersOpen && (
+          <View className="px-screen mt-3.5">
+            <FilterChips filters={filters} onChange={setFilters} />
+          </View>
+        )}
 
         <View className="px-screen">
           {isLoading && tasks.length === 0 ? (

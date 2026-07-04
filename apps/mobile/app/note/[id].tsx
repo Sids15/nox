@@ -19,6 +19,7 @@ import { BlockList } from "../../components/blocks/block-list";
 import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
 import { useMediaBlocks } from "../../components/blocks/use-media-blocks";
+import { OverflowMenu } from "../../components/overflow-menu";
 
 export default function NoteEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -131,43 +132,25 @@ export default function NoteEditorScreen() {
       />
 
       {/* Overflow menu */}
-      <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable onPress={() => setMenuOpen(false)} style={vars(themeVars)} className="flex-1">
-          <View
-            className="border-line bg-elev rounded-input absolute right-5 top-16 overflow-hidden border py-1"
-            style={{ minWidth: 180, shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 }}
-          >
-            <Pressable
-              onPress={() => {
-                setMenuOpen(false);
-                setPinned.mutate({ id: note.id, isPinned: !note.is_pinned });
-              }}
-              className="px-4 py-2.5"
-            >
-              <Text className="text-ink text-[14px]">{note.is_pinned ? "Unpin" : "Pin"}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setMenuOpen(false);
-                setMoveOpen(true);
-              }}
-              className="px-4 py-2.5"
-            >
-              <Text className="text-ink text-[14px]">Move to folder</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setMenuOpen(false);
-                del.mutate(note.id);
-                goBack();
-              }}
-              className="px-4 py-2.5"
-            >
-              <Text className="text-high text-[14px]">Delete note</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
+      <OverflowMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={[
+          {
+            label: note.is_pinned ? "Unpin" : "Pin",
+            onPress: () => setPinned.mutate({ id: note.id, isPinned: !note.is_pinned }),
+          },
+          { label: "Move to folder", onPress: () => setMoveOpen(true) },
+          {
+            label: "Delete note",
+            destructive: true,
+            onPress: () => {
+              del.mutate(note.id);
+              goBack();
+            },
+          },
+        ]}
+      />
 
       {/* Move-to-folder */}
       <Modal transparent visible={moveOpen} animationType="fade" onRequestClose={() => setMoveOpen(false)}>

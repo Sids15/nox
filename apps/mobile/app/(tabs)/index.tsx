@@ -28,6 +28,8 @@ export default function IdeasScreen() {
   const c = useThemeColors();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<IdeaFiltersState>(DEFAULT_IDEA_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersActive = filters.status !== "all" || filters.priority !== "all";
 
   const { data: ideas = [], isLoading } = useIdeas();
   const createIdea = useCreateIdea();
@@ -77,16 +79,20 @@ export default function IdeasScreen() {
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
-            <Pressable className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-              <SlidersHorizontal size={16} color={c.ink2} strokeWidth={1.8} />
+            <Pressable
+              onPress={() => setFiltersOpen((v) => !v)}
+              accessibilityLabel="Toggle filters"
+              className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${filtersOpen || filtersActive ? "bg-accent-soft" : "bg-chip"}`}
+            >
+              <SlidersHorizontal size={16} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={1.8} />
             </Pressable>
             <ProfileAvatar />
           </View>
         </View>
 
         {/* Search */}
-        <View className="px-screen mt-[14px]">
-          <View className="bg-chip rounded-input h-10 flex-row items-center gap-[10px] px-[13px]">
+        <View className="px-screen mt-5">
+          <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
             <Search size={15} color={c.ink3} strokeWidth={1.8} />
             <TextInput
               value={search}
@@ -94,20 +100,23 @@ export default function IdeasScreen() {
               placeholder="Search ideas…"
               placeholderTextColor={c.ink3}
               className="text-ink flex-1 text-[14.5px]"
+              style={{ paddingVertical: 0 }}
             />
           </View>
         </View>
 
-        {/* Filters */}
-        <View className="mt-3">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20 }}
-          >
-            <IdeaFilters filters={filters} onChange={setFilters} />
-          </ScrollView>
-        </View>
+        {/* Filters (collapsed behind the header toggle) */}
+        {filtersOpen && (
+          <View className="mt-3.5">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20 }}
+            >
+              <IdeaFilters filters={filters} onChange={setFilters} />
+            </ScrollView>
+          </View>
+        )}
 
         {/* List */}
         <View className="px-screen mt-4 gap-[10px]">
