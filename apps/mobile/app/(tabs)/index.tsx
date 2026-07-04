@@ -28,7 +28,7 @@ export default function IdeasScreen() {
   const c = useThemeColors();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<IdeaFiltersState>(DEFAULT_IDEA_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const filtersActive = filters.status !== "all" || filters.priority !== "all";
 
   const { data: ideas = [], isLoading } = useIdeas();

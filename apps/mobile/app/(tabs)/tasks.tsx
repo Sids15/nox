@@ -73,7 +73,7 @@ export default function TasksScreen() {
   const today = todayKey();
   const [focus, setFocus] = useState(today);
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   const filtersActive = filters.status !== "all" || filters.priority !== "all" || filters.time !== "all";
 
