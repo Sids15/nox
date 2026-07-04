@@ -2,8 +2,8 @@ import { useThemeColors } from "@nox/features";
 import type { Idea } from "@nox/types";
 import { relativeAge } from "@nox/utils";
 import { Pressable, Text, View } from "react-native";
+import { TagChip } from "../tag-chip";
 import { StatusPill } from "./status-pill";
-import { TagChip } from "./tag-chip";
 
 const PRIORITY_LABEL: Record<Idea["priority"], string> = {
   low: "LOW",

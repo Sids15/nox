@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusStepper } from "../../components/ideas/status-stepper";
-import { TagChip } from "../../components/ideas/tag-chip";
+import { TagChip } from "../../components/tag-chip";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
