@@ -1,8 +1,17 @@
 import { newId } from "@nox/db";
 import { useSessionStore } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
+import { Alert } from "react-native";
 import { pickImage } from "../../lib/media";
 import { uploadToBucket } from "../../lib/storage";
+
+// Keep in sync with the `images` bucket policy (migration 0006).
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const IMAGE_MIME_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 type EditorMediaApi = {
   insertMedia: (b: ContentBlock) => void;
@@ -20,6 +29,18 @@ export function useMediaBlocks(parentId: string, editor: EditorMediaApi) {
   const addImage = async () => {
     const picked = await pickImage();
     if (!picked || !userId) return;
+
+    // Validate at the client boundary (rules.md): supported type + within the bucket size limit.
+    const ext = IMAGE_MIME_EXT[picked.mimeType];
+    if (!ext) {
+      Alert.alert("Unsupported image", "Please choose a JPEG, PNG, or WebP image.");
+      return;
+    }
+    if (picked.fileSize && picked.fileSize > IMAGE_MAX_BYTES) {
+      Alert.alert("Image too large", "Please choose an image under 10 MB.");
+      return;
+    }
+
     const localUri = picked.uri;
     editor.insertMedia({
       type: "image",
@@ -28,7 +49,7 @@ export function useMediaBlocks(parentId: string, editor: EditorMediaApi) {
       width: picked.width,
       height: picked.height,
     });
-    const path = await uploadToBucket("images", `${userId}/${parentId}/${newId()}.jpg`, localUri, "image/jpeg");
+    const path = await uploadToBucket("images", `${userId}/${parentId}/${newId()}.${ext}`, localUri, picked.mimeType);
     if (path) editor.patchMedia((b) => b.type === "image" && b.localUri === localUri, { storagePath: path });
   };
 

@@ -7,6 +7,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
+import { useEffect } from "react";
 
 export interface Recording {
   uri: string;
@@ -18,6 +19,14 @@ export interface Recording {
 export function useVoiceRecorder() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const state = useAudioRecorderState(recorder);
+
+  // If the editor unmounts mid-recording (e.g. navigating back without pressing Stop), stop and
+  // release the recorder so the mic session doesn't linger.
+  useEffect(() => {
+    return () => {
+      if (recorder.isRecording) recorder.stop().catch(() => {});
+    };
+  }, [recorder]);
 
   const start = async (): Promise<boolean> => {
     const perm = await AudioModule.requestRecordingPermissionsAsync();

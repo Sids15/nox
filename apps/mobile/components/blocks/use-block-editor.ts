@@ -6,11 +6,15 @@ import { fetchUrlMeta } from "../../lib/url-meta";
 const emptyDoc = (): ContentBlock[] => [{ type: "paragraph", text: "" }];
 const seed = (blocks: ContentBlock[]): ContentBlock[] => (blocks.length ? blocks : emptyDoc());
 
-/** Trim empty text blocks for persistence; keep all media/link blocks and ≥1 block. */
+/**
+ * The persisted form of a block document: trim empty text blocks, and drop device-local `localUri`
+ * from any media that has finished uploading — a `file://` path is meaningless on other devices, and
+ * persisting it would shadow the signed URL and render broken. Always keeps ≥1 block.
+ */
 export function cleanBlocks(blocks: ContentBlock[]): ContentBlock[] {
-  const kept = blocks.filter(
-    (b) => (b.type !== "paragraph" && b.type !== "heading") || b.text.trim() !== "",
-  );
+  const kept = blocks
+    .filter((b) => (b.type !== "paragraph" && b.type !== "heading") || b.text.trim() !== "")
+    .map((b) => ("storagePath" in b && b.storagePath ? { ...b, localUri: null } : b));
   return kept.length ? kept : emptyDoc();
 }
 
@@ -73,6 +77,9 @@ export function useBlockEditor(
         onChange(cleanBlocks(next));
         return next;
       }),
-    removeBlock: (i: number) => commit(blocks.filter((_, j) => j !== i)),
+    removeBlock: (i: number) => {
+      const next = blocks.filter((_, j) => j !== i);
+      commit(next.length ? next : emptyDoc());
+    },
   };
 }

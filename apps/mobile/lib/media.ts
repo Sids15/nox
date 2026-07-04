@@ -4,6 +4,8 @@ export interface PickedImage {
   uri: string;
   width: number;
   height: number;
+  mimeType: string;
+  fileSize: number | null;
 }
 
 /** Prompt for library permission and pick a single photo. Returns null if denied/cancelled. */
@@ -18,5 +20,11 @@ export async function pickImage(): Promise<PickedImage | null> {
   });
   const asset = res.canceled ? null : res.assets[0];
   if (!asset) return null;
-  return { uri: asset.uri, width: asset.width ?? 1, height: asset.height ?? 1 };
+  return {
+    uri: asset.uri,
+    width: asset.width ?? 1,
+    height: asset.height ?? 1,
+    mimeType: asset.mimeType ?? "image/jpeg",
+    fileSize: asset.fileSize ?? null,
+  };
 }
