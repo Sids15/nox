@@ -50,9 +50,12 @@ function RootNavigator() {
   useAuthBootstrap();
   useRealtimeSync();
   const status = useSessionStore((s) => s.status);
+  const prefsHydrated = usePrefs((s) => s.hydrated);
   const c = useThemeColors();
 
-  if (status === "loading") {
+  // Wait for persisted prefs before painting content, so the app never flashes the default
+  // dark/violet theme before the user's saved theme/accent load.
+  if (status === "loading" || !prefsHydrated) {
     return (
       <View className="bg-bg flex-1 items-center justify-center">
         <ActivityIndicator color={c.accent} />
