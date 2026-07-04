@@ -1,7 +1,9 @@
 /**
  * Nox backend smoke test (dev tool). Verifies the Supabase wiring the app depends on:
- * auth sign-up + session, the handle_new_user trigger, owner RLS on inserts/reads, and
- * cross-user RLS isolation. Uses the SAME URL + anon key as the app (apps/mobile/.env).
+ * auth sign-up + session, the handle_new_user trigger, owner RLS on inserts/reads,
+ * cross-user RLS isolation (tasks, resources/tags — 0005), idea.content round-trip (0006),
+ * and Storage scoping (owner upload + signed URL, cross-user denial). Uses the SAME URL +
+ * anon key as the app (apps/mobile/.env).
  *
  * Run:  bun run scripts/smoke-test.ts
  * Note: creates two throwaway auth users (email confirm must be OFF); the anon key can't
@@ -92,6 +94,67 @@ if (task?.id) {
   const { error: delErr } = await a.from("tasks").delete().eq("id", task.id);
   check("db: owner can delete own task", !delErr, delErr?.message ?? "");
 }
+
+// 6. Resources module (0005): owner insert/read + cross-user isolation + soft-delete.
+const { data: tagRow, error: tagErr } = await a
+  .from("tags")
+  .insert({ user_id: aId, name: "smoke", color: "#4C7FE0" })
+  .select()
+  .single();
+check("db: insert + read own tag (0005 RLS)", !tagErr && !!tagRow?.id, tagErr?.message ?? "");
+
+const { data: resRow, error: resErr } = await a
+  .from("resources")
+  .insert({ user_id: aId, type: "link", url: "https://example.com", title: "smoke", domain: "example.com", tag_ids: tagRow?.id ? [tagRow.id] : [] })
+  .select()
+  .single();
+check("db: insert + read own resource (0005 RLS)", !resErr && !!resRow?.id, resErr?.message ?? "");
+
+if (resRow?.id && bUp?.session) {
+  const { data: leakR } = await b.from("resources").select("id").eq("id", resRow.id);
+  check("rls: user B cannot read user A's resource", (leakR?.length ?? 0) === 0, `saw ${leakR?.length ?? 0} row(s)`);
+}
+if (tagRow?.id && bUp?.session) {
+  const { data: leakT } = await b.from("tags").select("id").eq("id", tagRow.id);
+  check("rls: user B cannot read user A's tag", (leakT?.length ?? 0) === 0, `saw ${leakT?.length ?? 0} row(s)`);
+}
+if (resRow?.id) {
+  const { error: rDelErr } = await a.from("resources").update({ deleted: true }).eq("id", resRow.id);
+  check("db: owner can soft-delete resource", !rDelErr, rDelErr?.message ?? "");
+}
+if (tagRow?.id) await a.from("tags").update({ deleted: true }).eq("id", tagRow.id);
+
+// 7. Ideas free-flow content (0006): the content jsonb column accepts and returns block JSON.
+const { data: ideaRow, error: ideaErr } = await a
+  .from("ideas")
+  .insert({ user_id: aId, title: "smoke idea", content: [{ type: "paragraph", text: "smoke content" }] })
+  .select("id,content")
+  .single();
+const contentOk =
+  !ideaErr && Array.isArray(ideaRow?.content) && ideaRow.content[0]?.text === "smoke content";
+check("db: idea.content jsonb round-trips (0006)", contentOk, ideaErr?.message ?? "content did not round-trip");
+if (ideaRow?.id) await a.from("ideas").update({ deleted: true }).eq("id", ideaRow.id);
+
+// 8. Storage scoping (images bucket, 0006): owner upload + signed URL; cross-user denial.
+const pngBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]); // PNG magic header
+const aObjPath = `${aId}/${crypto.randomUUID()}/${crypto.randomUUID()}.png`;
+const pngBlob = () => new Blob([pngBytes], { type: "image/png" });
+
+const { error: upErr } = await a.storage.from("images").upload(aObjPath, pngBlob(), { contentType: "image/png", upsert: true });
+check("storage: owner can upload to images/{uid}/… (0006 policy)", !upErr, upErr?.message ?? "");
+
+const { data: signed, error: signErr } = await a.storage.from("images").createSignedUrl(aObjPath, 60);
+check("storage: owner can sign own object", !signErr && !!signed?.signedUrl, signErr?.message ?? "no signed url");
+
+if (bUp?.session) {
+  const bIntoAPath = `${aId}/${crypto.randomUUID()}/evil.png`; // into user A's folder
+  const { error: bUpErr } = await b.storage.from("images").upload(bIntoAPath, pngBlob(), { contentType: "image/png" });
+  check("storage: user B CANNOT upload into user A's folder", !!bUpErr, bUpErr ? "" : "upload unexpectedly succeeded");
+
+  const { data: bSigned, error: bSignErr } = await b.storage.from("images").createSignedUrl(aObjPath, 60);
+  check("storage: user B CANNOT sign user A's object", !!bSignErr || !bSigned?.signedUrl, "B signed A's object");
+}
+await a.storage.from("images").remove([aObjPath]); // cleanup
 
 await a.auth.signOut();
 await b.auth.signOut();
