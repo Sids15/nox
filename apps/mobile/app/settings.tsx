@@ -3,8 +3,9 @@ import { accents, type AccentName } from "@nox/ui";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ensurePermission } from "../lib/notifications";
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 const ACCENT_ORDER: AccentName[] = ["violet", "green", "coral", "blue"];
@@ -74,7 +75,22 @@ export default function SettingsScreen() {
     }
   };
 
-  const notif = (key: NotifKey, value: boolean) => setNotif(key, value);
+  // Turning a notification on requires permission; if it's denied, keep the toggle off and point the
+  // user to system settings. Turning off is always allowed.
+  const notif = async (key: NotifKey, value: boolean) => {
+    if (value && !(await ensurePermission())) {
+      Alert.alert(
+        "Notifications are off",
+        "Enable notifications for Nox in your system settings to use reminders.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "Open settings", onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+    setNotif(key, value);
+  };
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>

@@ -21,6 +21,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { initSentry } from "../lib/sentry";
+import { useNotifications } from "../lib/use-notifications";
 
 initSentry();
 
@@ -46,6 +47,12 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Mounts the notification scheduler only while authed (it reads the tasks query). Renders nothing. */
+function NotificationsBridge() {
+  useNotifications();
+  return null;
+}
+
 function RootNavigator() {
   useAuthBootstrap();
   useRealtimeSync();
@@ -64,16 +71,19 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="settings" />
-      <Stack.Screen name="task/[id]" />
-      <Stack.Screen name="idea/[id]" />
-      <Stack.Screen name="note/[id]" />
-      <Stack.Screen name="folder/[id]" />
-    </Stack>
+    <>
+      {status === "authenticated" && <NotificationsBridge />}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="task/[id]" />
+        <Stack.Screen name="idea/[id]" />
+        <Stack.Screen name="note/[id]" />
+        <Stack.Screen name="folder/[id]" />
+      </Stack>
+    </>
   );
 }
 
