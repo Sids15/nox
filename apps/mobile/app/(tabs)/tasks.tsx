@@ -82,10 +82,11 @@ export default function TasksScreen() {
   const ensureOccurrences = useEnsureOccurrences();
   const runCarryover = useRunCarryover();
 
-  // Generate recurring occurrences for the focused day, and roll overdue tasks to today once daily.
+  // Generate recurring occurrences for the focused day (today or later only — never backfill past
+  // days, which would create permanently-overdue phantom rows), and roll overdue tasks to today.
   useEffect(() => {
-    ensureOccurrences(focus);
-  }, [focus, tasks.length, ensureOccurrences]);
+    if (focus >= today) ensureOccurrences(focus);
+  }, [focus, today, tasks.length, ensureOccurrences]);
   useEffect(() => {
     if (!isLoading) runCarryover();
   }, [isLoading, tasks.length, runCarryover]);
@@ -106,13 +107,16 @@ export default function TasksScreen() {
   const { overdue, dayTasks, upcoming, completedOnly } = useMemo(() => {
     const done = (t: Task) => t.status === "complete";
     const onDay = (t: Task) => t.due_date === focus || (t.due_date === null && focus === today);
+    // A recurring template (repeat set, not itself an occurrence) shows only on its anchor day and
+    // repeats fresh as occurrences — it must never pile up as overdue.
+    const isTemplate = (t: Task) => t.repeat !== "none" && t.origin_task_id === null;
 
     if (filters.status === "completed") {
       return { overdue: [], dayTasks: [], upcoming: [], completedOnly: filtered.filter(done) };
     }
     const activeOnly = filters.status === "active";
     return {
-      overdue: filtered.filter((t) => !done(t) && t.due_date !== null && t.due_date < focus),
+      overdue: filtered.filter((t) => !done(t) && !isTemplate(t) && t.due_date !== null && t.due_date < focus),
       dayTasks: filtered.filter((t) => onDay(t) && (activeOnly ? !done(t) : true)),
       upcoming: filtered.filter((t) => !done(t) && t.due_date !== null && t.due_date > focus),
       completedOnly: [] as Task[],
