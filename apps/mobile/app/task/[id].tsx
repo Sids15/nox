@@ -45,7 +45,8 @@ function timeString(d: Date): string {
 type PickerState = { mode: "date" | "time"; target: "due" | "reminder" };
 
 export default function TaskDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, new: newParam } = useLocalSearchParams<{ id: string; new?: string }>();
+  const isNew = newParam === "1";
   const router = useRouter();
   const c = useThemeColors();
   const theme = usePrefs((s) => s.theme);
@@ -185,20 +186,31 @@ export default function TaskDetailScreen() {
         <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">SCHEDULE</Text>
         <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
           {/* Due */}
-          <View className="border-line flex-row items-center justify-between border-b px-[14px] py-[13px]">
+          <View className="border-line min-h-[54px] flex-row items-center justify-between border-b px-[14px]">
             <View className="flex-row items-center">
               <Calendar size={17} color={c.ink3} strokeWidth={1.7} />
               <Text className="text-ink-2 ml-3 text-[14.5px]">Due</Text>
             </View>
-            <View className="flex-row items-center gap-3">
-              <Pressable onPress={() => openPicker({ mode: "date", target: "due" }, task.due_date ? dateFromKey(task.due_date) : new Date())}>
-                <Text className="text-accent text-[14.5px] font-semibold">
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={() =>
+                  openPicker(
+                    { mode: "date", target: "due" },
+                    task.due_date ? dateFromKey(task.due_date) : new Date(),
+                  )
+                }
+                className="bg-accent/[0.14] rounded-[8px] px-2.5 py-1.5"
+              >
+                <Text className="text-accent text-[13px] font-semibold">
                   {task.due_date ? cap(relativeDayLabel(task.due_date)) : "Add date"}
                 </Text>
               </Pressable>
               {task.due_date && (
-                <Pressable onPress={() => openPicker({ mode: "time", target: "due" }, new Date())}>
-                  <Text className="text-accent text-[14.5px] font-semibold">{dueTime ?? "Add time"}</Text>
+                <Pressable
+                  onPress={() => openPicker({ mode: "time", target: "due" }, new Date())}
+                  className="bg-accent/[0.14] rounded-[8px] px-2.5 py-1.5"
+                >
+                  <Text className="text-accent text-[13px] font-semibold">{dueTime ?? "Add time"}</Text>
                 </Pressable>
               )}
               {task.due_date && (
@@ -210,8 +222,8 @@ export default function TaskDetailScreen() {
           </View>
 
           {/* Reminders */}
-          <View className="border-line flex-row items-start justify-between border-b px-[14px] py-[13px]">
-            <View className="flex-row items-center pt-[3px]">
+          <View className="border-line min-h-[54px] flex-row items-center justify-between border-b px-[14px] py-2">
+            <View className="flex-row items-center">
               <Bell size={17} color={c.ink3} strokeWidth={1.7} />
               <Text className="text-ink-2 ml-3 text-[14.5px]">Reminders</Text>
             </View>
@@ -234,7 +246,7 @@ export default function TaskDetailScreen() {
 
           {/* Repeat */}
           <View
-            className={`flex-row items-center justify-between px-[14px] py-[13px] ${
+            className={`min-h-[54px] flex-row items-center justify-between px-[14px] ${
               task.repeat === "custom" ? "border-line border-b" : ""
             }`}
           >
@@ -308,17 +320,33 @@ export default function TaskDetailScreen() {
           created {shortDate(task.created_at).toLowerCase()} · updated {relativeFromNow(task.updated_at)}
         </Text>
 
-        {/* Delete */}
+        {/* Add task (create mode) / Delete task (edit mode) */}
         <View className="px-screen mt-[14px]">
-          <Pressable
-            onPress={() => {
-              del.mutate(task.id);
-              goBack();
-            }}
-            className="bg-high/[0.09] items-center rounded-[14px] py-[13px]"
-          >
-            <Text className="text-high text-[14px] font-semibold">Delete task</Text>
-          </Pressable>
+          {isNew ? (
+            <Pressable
+              onPress={goBack}
+              className="bg-accent items-center rounded-[14px] py-[13px]"
+              style={{
+                shadowColor: c.accent,
+                shadowOpacity: 0.4,
+                shadowRadius: 13,
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 6,
+              }}
+            >
+              <Text className="text-on-accent text-[14px] font-bold">Add task</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => {
+                del.mutate(task.id);
+                goBack();
+              }}
+              className="bg-high/[0.09] items-center rounded-[14px] py-[13px]"
+            >
+              <Text className="text-high text-[14px] font-semibold">Delete task</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
 

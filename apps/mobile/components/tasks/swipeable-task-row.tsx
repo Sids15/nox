@@ -50,11 +50,13 @@ export function SwipeableTaskRow({
       renderLeftActions={() => <CompleteAction />}
       renderRightActions={() => <DeleteAction />}
       onSwipeableOpen={(direction) => {
+        // Swipe toward the coral panel deletes (removes the task); swipe toward the green panel
+        // completes (strikes it through and springs back).
         if (direction === "left") {
+          onDelete();
+        } else {
           onComplete();
           ref.current?.close();
-        } else {
-          onDelete();
         }
       }}
     >

@@ -132,7 +132,7 @@ export default function TasksScreen() {
       repeat: "none",
       repeat_config: null,
     });
-    router.push(`/task/${id}`);
+    router.push(`/task/${id}?new=1`);
   };
 
   const title = focus === today ? "Today" : capitalize(relativeDayLabel(focus, today));
