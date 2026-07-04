@@ -49,6 +49,7 @@ export default function IdeasScreen() {
     const id = createIdea.create({
       title: "Untitled idea",
       description: null,
+      content: [],
       priority: "medium",
       status: "raw",
       tags: [],

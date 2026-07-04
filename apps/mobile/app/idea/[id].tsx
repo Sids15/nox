@@ -5,13 +5,16 @@ import {
   useThemeColors,
   useUpdateIdea,
 } from "@nox/features";
-import { priorityLevels, type Idea, type IdeaInput } from "@nox/types";
+import { priorityLevels, type ContentBlock, type Idea, type IdeaInput } from "@nox/types";
 import { relativeFromNow, shortDate } from "@nox/utils";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, MoreHorizontal, Plus, X } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, MoreHorizontal, Plus } from "lucide-react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BlockList } from "../../components/blocks/block-list";
+import { BlockToolbar } from "../../components/blocks/block-toolbar";
+import { useBlockEditor } from "../../components/blocks/use-block-editor";
 import { StatusStepper } from "../../components/ideas/status-stepper";
 import { TagChip } from "../../components/tag-chip";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
@@ -46,16 +49,22 @@ export default function IdeaDetailScreen() {
   const patch = (p: Partial<IdeaInput>) => idea && updateIdea.mutate({ id: idea.id, patch: p });
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [tagDraft, setTagDraft] = useState("");
   const [addingTag, setAddingTag] = useState(false);
 
   useEffect(() => {
-    if (idea) {
-      setTitle(idea.title);
-      setDescription(idea.description ?? "");
-    }
+    if (idea) setTitle(idea.title);
   }, [idea?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Free-flow block content with debounced auto-save.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveContent = (content: ContentBlock[]) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      if (id) updateIdea.mutate({ id, patch: { content } });
+    }, 600);
+  };
+  const editor = useBlockEditor(idea?.id ?? "", idea?.content ?? [], saveContent);
 
   const goBack = () => router.back();
 
@@ -81,7 +90,7 @@ export default function IdeaDetailScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 110 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {/* Nav */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
@@ -160,21 +169,14 @@ export default function IdeaDetailScreen() {
           />
         </View>
 
-        {/* Description */}
-        <SectionLabel>DESCRIPTION</SectionLabel>
-        <View className="mx-[20px] border-line bg-surface rounded-card border p-4">
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            onBlur={() => {
-              const next = description.trim() ? description : null;
-              if (next !== (idea.description ?? null)) patch({ description: next });
-            }}
-            multiline
-            placeholder="What's the idea?"
-            placeholderTextColor={c.ink3}
-            className="text-ink-2 min-h-[80px] text-[14.5px] leading-[23px]"
-            style={{ textAlignVertical: "top" }}
+        {/* Free-flow details */}
+        <SectionLabel>DETAILS</SectionLabel>
+        <View className="px-screen mt-1">
+          <BlockList
+            blocks={editor.blocks}
+            setText={editor.setText}
+            removeBlock={editor.removeBlock}
+            firstPlaceholder="Add details, links, media…"
           />
         </View>
 
@@ -205,6 +207,12 @@ export default function IdeaDetailScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <BlockToolbar
+        onAddHeading={editor.addHeading}
+        onAddParagraph={editor.addParagraph}
+        onAddLink={editor.addLink}
+      />
     </SafeAreaView>
   );
 }

@@ -1,37 +1,17 @@
 import { z } from "zod";
+import { contentBlock } from "./block";
 import { syncedRow } from "./common";
 
 export const noteTypes = ["text", "voice", "sketch", "mixed"] as const;
 
-/** Block-JSON note content. Media blocks reference a Storage object path (once
- *  uploaded) and/or a local file URI (offline capture); never a public URL. */
-export const noteBlock = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("paragraph"), text: z.string().default("") }),
-  z.object({
-    type: z.literal("heading"),
-    level: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(2),
-    text: z.string().default(""),
-  }),
-  z.object({
-    type: z.literal("audio"),
-    storagePath: z.string().nullable().default(null),
-    localUri: z.string().nullable().default(null),
-    durationMs: z.number().int().nonnegative().default(0),
-  }),
-  z.object({
-    type: z.literal("sketch"),
-    storagePath: z.string().nullable().default(null),
-    localUri: z.string().nullable().default(null),
-    width: z.number().int().positive().default(1),
-    height: z.number().int().positive().default(1),
-  }),
-]);
+/** Notes share the block-JSON content model in `block.ts`. */
+export const noteBlock = contentBlock;
 export type NoteBlock = z.infer<typeof noteBlock>;
 
 export const note = syncedRow.extend({
   title: z.string().max(200).nullable().default(null),
   type: z.enum(noteTypes).default("text"),
-  content: z.array(noteBlock).default([]),
+  content: z.array(contentBlock).default([]),
   folder_id: z.string().uuid().nullable().default(null),
   tags: z.array(z.string().min(1).max(40)).default([]),
   is_pinned: z.boolean().default(false),

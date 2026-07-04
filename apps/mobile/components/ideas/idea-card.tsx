@@ -41,11 +41,15 @@ export function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void })
         {idea.title}
       </Text>
 
-      {idea.description ? (
-        <Text numberOfLines={2} className="text-ink-2 text-[13px]" style={{ lineHeight: 19 }}>
-          {idea.description}
-        </Text>
-      ) : null}
+      {(() => {
+        const para = idea.content.find((b) => b.type === "paragraph" && b.text.trim() !== "");
+        const preview = (para && "text" in para ? para.text : null) ?? idea.description;
+        return preview ? (
+          <Text numberOfLines={2} className="text-ink-2 text-[13px]" style={{ lineHeight: 19 }}>
+            {preview}
+          </Text>
+        ) : null;
+      })()}
 
       <View className="flex-row items-center gap-1.5">
         {idea.tags.slice(0, 3).map((t) => (

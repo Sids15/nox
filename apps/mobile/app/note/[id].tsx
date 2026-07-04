@@ -7,37 +7,17 @@ import {
   useThemeVars,
   useUpdateNote,
 } from "@nox/features";
-import type { NoteBlock } from "@nox/types";
+import type { ContentBlock } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {
-  Check,
-  ChevronLeft,
-  Folder,
-  Heading,
-  Image as ImageIcon,
-  Inbox,
-  Mic,
-  MoreHorizontal,
-  PenTool,
-  Pilcrow,
-  Play,
-} from "lucide-react-native";
+import { Check, ChevronLeft, Folder, Inbox, MoreHorizontal } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const fmtDur = (ms: number) => {
-  const s = Math.round(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-};
-
-/** Trim empty text blocks for persistence; always keep at least one paragraph. */
-function cleanBlocks(blocks: NoteBlock[]): NoteBlock[] {
-  const kept = blocks.filter((b) => !("text" in b) || b.text.trim() !== "");
-  return kept.length ? kept : [{ type: "paragraph", text: "" }];
-}
+import { BlockList } from "../../components/blocks/block-list";
+import { BlockToolbar } from "../../components/blocks/block-toolbar";
+import { useBlockEditor } from "../../components/blocks/use-block-editor";
 
 export default function NoteEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -54,47 +34,29 @@ export default function NoteEditorScreen() {
   const del = useDeleteNote();
 
   const [title, setTitle] = useState("");
-  const [blocks, setBlocks] = useState<NoteBlock[]>([{ type: "paragraph", text: "" }]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Seed once per note.
   useEffect(() => {
-    if (note) {
-      setTitle(note.title ?? "");
-      setBlocks(note.content.length ? note.content : [{ type: "paragraph", text: "" }]);
-    }
+    if (note) setTitle(note.title ?? "");
   }, [note?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const scheduleSave = (nextTitle: string, nextBlocks: NoteBlock[]) => {
-    if (!id) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      updateNote.mutate({
-        id,
-        patch: { title: nextTitle.trim() || null, content: cleanBlocks(nextBlocks) },
-      });
-    }, 600);
-  };
 
   const onTitle = (t: string) => {
     setTitle(t);
-    scheduleSave(t, blocks);
+    if (titleTimer.current) clearTimeout(titleTimer.current);
+    titleTimer.current = setTimeout(() => {
+      if (id) updateNote.mutate({ id, patch: { title: t.trim() || null } });
+    }, 600);
   };
-  const onBlock = (i: number, text: string) => {
-    const next = blocks.map((b, j) => (j === i && "text" in b ? { ...b, text } : b));
-    setBlocks(next);
-    scheduleSave(title, next);
+  const saveContent = (content: ContentBlock[]) => {
+    if (contentTimer.current) clearTimeout(contentTimer.current);
+    contentTimer.current = setTimeout(() => {
+      if (id) updateNote.mutate({ id, patch: { content } });
+    }, 600);
   };
-  const addBlock = (type: "paragraph" | "heading") => {
-    const next: NoteBlock[] =
-      type === "heading"
-        ? [...blocks, { type: "heading", level: 2, text: "" }]
-        : [...blocks, { type: "paragraph", text: "" }];
-    setBlocks(next);
-    scheduleSave(title, next);
-  };
+  const editor = useBlockEditor(note?.id ?? "", note?.content ?? [], saveContent);
 
   const goBack = () => router.back();
 
@@ -153,81 +115,16 @@ export default function NoteEditorScreen() {
         </View>
 
         {/* Blocks */}
-        <View className="gap-3 px-[22px] pt-4">
-          {blocks.map((block, i) => {
-            if (block.type === "heading") {
-              return (
-                <TextInput
-                  key={i}
-                  value={block.text}
-                  onChangeText={(t) => onBlock(i, t)}
-                  multiline
-                  placeholder="Heading"
-                  placeholderTextColor={c.ink3}
-                  className="text-ink text-[17px] font-bold tracking-[-0.01em]"
-                />
-              );
-            }
-            if (block.type === "paragraph") {
-              return (
-                <TextInput
-                  key={i}
-                  value={block.text}
-                  onChangeText={(t) => onBlock(i, t)}
-                  multiline
-                  placeholder={i === 0 ? "Start writing…" : ""}
-                  placeholderTextColor={c.ink3}
-                  className="text-ink text-[15px] leading-[25px]"
-                  style={{ textAlignVertical: "top" }}
-                />
-              );
-            }
-            if (block.type === "audio") {
-              return (
-                <View key={i} className="border-line bg-surface rounded-card flex-row items-center gap-3 border p-[13px]">
-                  <View className="bg-accent h-[38px] w-[38px] items-center justify-center rounded-full">
-                    <Play size={13} color={c.onAccent} fill={c.onAccent} />
-                  </View>
-                  <View className="flex-1 flex-row items-end gap-[3px]" style={{ height: 20 }}>
-                    {[8, 14, 19, 11, 16, 9, 13].map((h, k) => (
-                      <View key={k} style={{ width: 3, height: h, borderRadius: 2, backgroundColor: c.ink3 }} />
-                    ))}
-                  </View>
-                  <Text className="text-ink-2 font-mono text-[11px]">{fmtDur(block.durationMs)}</Text>
-                </View>
-              );
-            }
-            // sketch
-            return (
-              <View key={i} className="border-line h-[132px] items-center justify-center rounded-card border border-dashed">
-                <Text className="text-ink-3 font-mono text-[10.5px]">sketch · png</Text>
-              </View>
-            );
-          })}
+        <View className="px-[22px] pt-4">
+          <BlockList blocks={editor.blocks} setText={editor.setText} removeBlock={editor.removeBlock} />
         </View>
       </ScrollView>
 
-      {/* Formatting toolbar */}
-      <View
-        className="border-line bg-tabbar absolute h-[56px] flex-row items-center justify-around rounded-[28px] border px-2"
-        style={{ left: 20, right: 20, bottom: 24, shadowColor: "rgb(6,6,14)", shadowOpacity: 0.25, shadowRadius: 22, shadowOffset: { width: 0, height: 18 }, elevation: 12 }}
-      >
-        <Pressable onPress={() => addBlock("heading")} hitSlop={6} className="px-2">
-          <Heading size={19} color={c.ink2} strokeWidth={1.9} />
-        </Pressable>
-        <Pressable onPress={() => addBlock("paragraph")} hitSlop={6} className="px-2">
-          <Pilcrow size={19} color={c.ink2} strokeWidth={1.9} />
-        </Pressable>
-        <View className="px-2">
-          <Mic size={19} color={c.ink3} strokeWidth={1.7} />
-        </View>
-        <View className="px-2">
-          <PenTool size={19} color={c.ink3} strokeWidth={1.7} />
-        </View>
-        <View className="px-2">
-          <ImageIcon size={19} color={c.ink3} strokeWidth={1.7} />
-        </View>
-      </View>
+      <BlockToolbar
+        onAddHeading={editor.addHeading}
+        onAddParagraph={editor.addParagraph}
+        onAddLink={editor.addLink}
+      />
 
       {/* Overflow menu */}
       <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>

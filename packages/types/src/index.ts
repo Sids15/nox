@@ -1,4 +1,5 @@
 export * from "./common";
+export * from "./block";
 export * from "./idea";
 export * from "./note";
 export * from "./task";
