@@ -32,7 +32,7 @@ export function BlockList({
                 multiline
                 placeholder="Heading"
                 placeholderTextColor={c.ink3}
-                className="text-ink text-[17px] font-bold tracking-[-0.01em]"
+                className="text-ink text-[18px] font-bold leading-[24px] tracking-[-0.01em]"
               />
             );
           case "paragraph":
@@ -44,7 +44,7 @@ export function BlockList({
                 multiline
                 placeholder={i === 0 ? firstPlaceholder : ""}
                 placeholderTextColor={c.ink3}
-                className="text-ink text-[15px] leading-[25px]"
+                className="text-ink text-[16px] leading-[26px]"
                 style={{ textAlignVertical: "top" }}
               />
             );

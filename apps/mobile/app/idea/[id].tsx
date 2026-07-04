@@ -171,14 +171,14 @@ export default function IdeaDetailScreen() {
           />
         </View>
 
-        {/* Free-flow details */}
-        <SectionLabel>DETAILS</SectionLabel>
-        <View className="px-screen mt-1">
+        {/* Writing canvas — the idea's free-flow body (controls above, document below) */}
+        <View className="mx-screen border-line mt-7 border-t" />
+        <View className="px-screen mt-5" style={{ minHeight: 240 }}>
           <BlockList
             blocks={editor.blocks}
             setText={editor.setText}
             removeBlock={editor.removeBlock}
-            firstPlaceholder="Add details, links, media…"
+            firstPlaceholder="Write freely — add headings, links, photos, or a voice note from the bar below."
           />
         </View>
 
