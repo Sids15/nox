@@ -148,9 +148,11 @@ export default function FolderScreen() {
               value={name}
               onChangeText={setName}
               onSubmitEditing={submitRename}
+              returnKeyType="done"
               placeholder="Folder name"
               placeholderTextColor={c.ink3}
-              className="bg-chip rounded-input text-ink mb-3 px-3 py-2.5 text-[14px]"
+              className="bg-chip rounded-input text-ink mb-3 h-11 px-3 text-[14px]"
+              style={{ paddingVertical: 0 }}
             />
             <View className="flex-row justify-end gap-2">
               <Pressable onPress={() => setRenameOpen(false)} className="px-4 py-2">

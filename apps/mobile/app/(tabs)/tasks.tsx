@@ -147,6 +147,7 @@ export default function TasksScreen() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 150 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}

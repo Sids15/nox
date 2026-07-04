@@ -131,7 +131,7 @@ export default function TaskDetailScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {/* Nav */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
@@ -265,8 +265,7 @@ export default function TaskDetailScreen() {
               value={task.repeat}
               options={REPEAT_OPTS}
               onSelect={setRepeat}
-              active={task.repeat !== "none"}
-              showChevron
+              minimal
             />
           </View>
 

@@ -10,7 +10,19 @@ import {
 import type { NoteBlock } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Heading, Image as ImageIcon, Mic, MoreHorizontal, PenTool, Pilcrow, Play } from "lucide-react-native";
+import {
+  Check,
+  ChevronLeft,
+  Folder,
+  Heading,
+  Image as ImageIcon,
+  Inbox,
+  Mic,
+  MoreHorizontal,
+  PenTool,
+  Pilcrow,
+  Play,
+} from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -119,6 +131,7 @@ export default function NoteEditorScreen() {
       <ScrollView
         contentContainerStyle={{ paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
       >
         {/* Title + save state */}
@@ -257,31 +270,44 @@ export default function NoteEditorScreen() {
 
       {/* Move-to-folder */}
       <Modal transparent visible={moveOpen} animationType="fade" onRequestClose={() => setMoveOpen(false)}>
-        <Pressable onPress={() => setMoveOpen(false)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-8">
-          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card max-h-[60%] w-full overflow-hidden border">
-            <Text className="text-ink-3 px-4 pb-1 pt-3 font-mono text-[10px] font-semibold tracking-[0.14em]">MOVE TO</Text>
+        <Pressable onPress={() => setMoveOpen(false)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-6">
+          <Pressable
+            onPress={() => {}}
+            className="border-line bg-elev rounded-card max-h-[70%] w-full overflow-hidden border"
+            style={{ shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 24, shadowOffset: { width: 0, height: 14 }, elevation: 14 }}
+          >
+            <Text className="text-ink border-line border-b px-[18px] py-[14px] text-[15px] font-semibold">
+              Move to folder
+            </Text>
             <ScrollView>
-              <Pressable
-                onPress={() => {
-                  updateNote.mutate({ id: note.id, patch: { folder_id: null } });
-                  setMoveOpen(false);
-                }}
-                className="px-4 py-2.5"
-              >
-                <Text className={`text-[14px] ${note.folder_id === null ? "text-accent font-semibold" : "text-ink"}`}>No folder</Text>
-              </Pressable>
-              {folders.map((f) => (
-                <Pressable
-                  key={f.id}
-                  onPress={() => {
-                    updateNote.mutate({ id: note.id, patch: { folder_id: f.id } });
-                    setMoveOpen(false);
-                  }}
-                  className="px-4 py-2.5"
-                >
-                  <Text className={`text-[14px] ${note.folder_id === f.id ? "text-accent font-semibold" : "text-ink"}`}>{f.name}</Text>
-                </Pressable>
-              ))}
+              {(() => {
+                const rows = [{ id: null as string | null, name: "No folder" }, ...folders];
+                return rows.map((row, i) => {
+                  const selected = note.folder_id === row.id;
+                  return (
+                    <View key={row.id ?? "none"}>
+                      {i > 0 && <View className="bg-line ml-[52px] h-px" />}
+                      <Pressable
+                        onPress={() => {
+                          updateNote.mutate({ id: note.id, patch: { folder_id: row.id } });
+                          setMoveOpen(false);
+                        }}
+                        className="flex-row items-center gap-3 px-[18px] py-[13px]"
+                      >
+                        {row.id === null ? (
+                          <Inbox size={18} color={selected ? c.accent : c.ink2} strokeWidth={1.8} />
+                        ) : (
+                          <Folder size={18} color={selected ? c.accent : c.ink2} strokeWidth={1.8} />
+                        )}
+                        <Text className={`flex-1 text-[14.5px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>
+                          {row.name}
+                        </Text>
+                        {selected && <Check size={16} color={c.accent} strokeWidth={2.5} />}
+                      </Pressable>
+                    </View>
+                  );
+                });
+              })()}
             </ScrollView>
           </Pressable>
         </Pressable>
