@@ -6,6 +6,7 @@ import { queryClient, queryPersister } from "@nox/db";
 import {
   useAuthBootstrap,
   usePrefs,
+  useRealtimeSync,
   useSessionStore,
   useThemeColors,
   useThemeVars,
@@ -47,6 +48,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
 
 function RootNavigator() {
   useAuthBootstrap();
+  useRealtimeSync();
   const status = useSessionStore((s) => s.status);
   const c = useThemeColors();
 

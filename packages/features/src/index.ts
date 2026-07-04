@@ -49,3 +49,4 @@ export {
 } from "./resources/use-resources";
 export { useTags, useCreateTag, useDeleteTag } from "./resources/use-tags";
 export { resourceKeys, tagKeys } from "./resources/resource-keys";
+export { useRealtimeSync } from "./sync/use-realtime-sync";
