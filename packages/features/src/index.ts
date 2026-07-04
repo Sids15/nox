@@ -25,3 +25,18 @@ export {
   useDeleteIdea,
 } from "./ideas/use-ideas";
 export { ideaKeys } from "./ideas/idea-keys";
+export {
+  useNotes,
+  useCreateNote,
+  useUpdateNote,
+  useSetNotePinned,
+  useArchiveNote,
+  useDeleteNote,
+} from "./notes/use-notes";
+export {
+  useFolders,
+  useCreateFolder,
+  useRenameFolder,
+  useDeleteFolder,
+} from "./notes/use-folders";
+export { noteKeys, folderKeys } from "./notes/note-keys";
