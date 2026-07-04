@@ -74,7 +74,7 @@ export default function IdeasScreen() {
             <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
               {ideas.filter((i) => !i.is_archived && i.status !== "dropped").length} IDEAS
             </Text>
-            <Text className="text-ink mt-[3px] text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
+            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
               Ideas
             </Text>
           </View>

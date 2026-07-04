@@ -7,7 +7,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export interface Recording {
   uri: string;
@@ -20,13 +20,25 @@ export function useVoiceRecorder() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const state = useAudioRecorderState(recorder);
 
-  // If the editor unmounts mid-recording (e.g. navigating back without pressing Stop), stop and
-  // release the recorder so the mic session doesn't linger.
+  // If the editor unmounts mid-recording (e.g. navigating back without pressing Stop), stop the
+  // recorder so the mic session doesn't linger. Track state/recorder via refs and read the
+  // JS-tracked `state.isRecording` (never the native `recorder.isRecording` getter) — by the time
+  // this cleanup runs on unmount, expo-audio may already have released the native shared object,
+  // and touching it throws NativeSharedObjectNotFoundException.
+  const recorderRef = useRef(recorder);
+  recorderRef.current = recorder;
+  const isRecordingRef = useRef(false);
+  isRecordingRef.current = state.isRecording;
   useEffect(() => {
     return () => {
-      if (recorder.isRecording) recorder.stop().catch(() => {});
+      if (!isRecordingRef.current) return;
+      try {
+        recorderRef.current.stop().catch(() => {});
+      } catch {
+        // native recorder already released during unmount — nothing to stop
+      }
     };
-  }, [recorder]);
+  }, []);
 
   const start = async (): Promise<boolean> => {
     const perm = await AudioModule.requestRecordingPermissionsAsync();

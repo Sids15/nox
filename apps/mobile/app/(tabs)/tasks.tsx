@@ -162,7 +162,7 @@ export default function TasksScreen() {
             <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
               {weekdayShort(focus)} · {monthShort(focus)} {dayOfMonth(focus)}
             </Text>
-            <Text className="text-ink mt-[3px] text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
+            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
               {title}
             </Text>
           </View>

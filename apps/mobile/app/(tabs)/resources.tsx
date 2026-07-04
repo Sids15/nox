@@ -52,7 +52,7 @@ export default function ResourcesScreen() {
   const [menuFor, setMenuFor] = useState<Resource | null>(null);
   const [newTagOpen, setNewTagOpen] = useState(false);
   const [tagName, setTagName] = useState("");
-  const [tagsOpen, setTagsOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(true);
   const tagsActive = selected.length > 0;
 
   const { data: resources = [], isLoading } = useResources();
@@ -113,7 +113,7 @@ export default function ResourcesScreen() {
             <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
               {resources.filter((r) => !r.is_archived).length} SAVED · {tags.length} TAGS
             </Text>
-            <Text className="text-ink mt-[3px] text-[30px] font-bold leading-[33px] tracking-[-0.02em]">Resources</Text>
+            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">Resources</Text>
           </View>
           <View className="flex-row items-center gap-2">
             <Pressable
