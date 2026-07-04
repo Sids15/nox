@@ -1,16 +1,17 @@
-import { useThemeColors } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { Image, Pressable, Text, View } from "react-native";
+import { useSignedUrl } from "../../lib/storage";
 
 type ImgBlock = Extract<ContentBlock, { type: "image" }>;
 
 /**
- * An image block. Stage A shows the local file (if any) or a placeholder; Stage B fills in the
- * signed URL from `storagePath` for images synced from another device. Long-press removes.
+ * An image block. Shows the local file immediately after capture, then (for images synced from
+ * another device, or after the local file is gone) a signed URL from `storagePath`. Long-press
+ * removes.
  */
 export function ImageBlock({ block, onRemove }: { block: ImgBlock; onRemove: () => void }) {
-  const c = useThemeColors();
-  const uri = block.localUri ?? undefined;
+  const { data: signed } = useSignedUrl("images", block.localUri ? null : block.storagePath);
+  const uri = block.localUri ?? signed ?? undefined;
   const ratio = block.width && block.height ? block.width / block.height : 1.6;
 
   return (

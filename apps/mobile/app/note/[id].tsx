@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BlockList } from "../../components/blocks/block-list";
 import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
+import { useMediaBlocks } from "../../components/blocks/use-media-blocks";
 
 export default function NoteEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,6 +58,7 @@ export default function NoteEditorScreen() {
     }, 600);
   };
   const editor = useBlockEditor(note?.id ?? "", note?.content ?? [], saveContent);
+  const media = useMediaBlocks(note?.id ?? "", editor);
 
   const goBack = () => router.back();
 
@@ -124,6 +126,7 @@ export default function NoteEditorScreen() {
         onAddHeading={editor.addHeading}
         onAddParagraph={editor.addParagraph}
         onAddLink={editor.addLink}
+        onAddImage={media.addImage}
       />
 
       {/* Overflow menu */}

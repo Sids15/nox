@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BlockList } from "../../components/blocks/block-list";
 import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
+import { useMediaBlocks } from "../../components/blocks/use-media-blocks";
 import { StatusStepper } from "../../components/ideas/status-stepper";
 import { TagChip } from "../../components/tag-chip";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
@@ -65,6 +66,7 @@ export default function IdeaDetailScreen() {
     }, 600);
   };
   const editor = useBlockEditor(idea?.id ?? "", idea?.content ?? [], saveContent);
+  const media = useMediaBlocks(idea?.id ?? "", editor);
 
   const goBack = () => router.back();
 
@@ -212,6 +214,7 @@ export default function IdeaDetailScreen() {
         onAddHeading={editor.addHeading}
         onAddParagraph={editor.addParagraph}
         onAddLink={editor.addLink}
+        onAddImage={media.addImage}
       />
     </SafeAreaView>
   );
