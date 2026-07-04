@@ -56,7 +56,7 @@ export function ResourceCard({
           ) : null}
         </View>
         <View className="gap-[7px] p-3">
-          <Text className="text-ink text-[13.5px] font-semibold" style={{ lineHeight: 18 }}>{title}</Text>
+          <Text numberOfLines={3} className="text-ink text-[13.5px] font-semibold" style={{ lineHeight: 18 }}>{title}</Text>
           {resource.domain ? <Text className="text-ink-3 font-mono text-[10px]">{resource.domain}</Text> : null}
           <TagsRow tags={tags} />
         </View>
@@ -75,7 +75,7 @@ export function ResourceCard({
           )}
         </View>
         <View className="gap-[7px] p-3">
-          <Text className="text-ink text-[13.5px] font-semibold" style={{ lineHeight: 18 }}>{title}</Text>
+          <Text numberOfLines={3} className="text-ink text-[13.5px] font-semibold" style={{ lineHeight: 18 }}>{title}</Text>
           <TagsRow tags={tags} />
         </View>
       </Pressable>
@@ -86,7 +86,7 @@ export function ResourceCard({
     return (
       <Pressable onPress={onPress} onLongPress={onLongPress} className={`${shell} p-3`}>
         <View className="gap-2">
-          <Text className="text-ink-2 text-[13px]" style={{ fontFamily: "Georgia", lineHeight: 20 }}>
+          <Text numberOfLines={6} className="text-ink-2 text-[13px]" style={{ fontFamily: "Georgia", lineHeight: 20 }}>
             {resource.body ? `“${resource.body}”` : title}
           </Text>
           {resource.title ? <Text className="text-ink-3 font-mono text-[10px]">— {resource.title}</Text> : null}
