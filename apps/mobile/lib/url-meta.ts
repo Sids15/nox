@@ -44,9 +44,12 @@ export async function fetchUrlMeta(url: string): Promise<UrlMeta | null> {
     });
     clearTimeout(timer);
     const html = (await res.text()).slice(0, 60_000);
-    meta.title =
-      ogContent(html, "og:title") ?? decode(html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]);
-    meta.image = ogContent(html, "og:image");
+    meta.title = (
+      ogContent(html, "og:title") ?? decode(html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1])
+    )?.slice(0, 500);
+    // Keep normal thumbnail URLs; drop absurd ones (e.g. inline data URIs) so a save can't be rejected.
+    const image = ogContent(html, "og:image");
+    meta.image = image && image.length <= 3000 ? image : undefined;
   } catch {
     // best-effort — keep the derived domain/favicon
   }

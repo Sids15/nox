@@ -3,14 +3,16 @@ import { syncedRow } from "./common";
 
 export const resourceTypes = ["link", "image", "video", "text"] as const;
 
+// Caps are generous (columns are unlimited `text`) — fetched og-titles/image URLs can be long, and
+// rejecting them here is what silently rolled back saves. Values are also truncated on fetch.
 export const resource = syncedRow.extend({
   type: z.enum(resourceTypes).default("link"),
-  url: z.string().max(2000).nullable().default(null),
-  title: z.string().max(300).nullable().default(null),
-  domain: z.string().max(200).nullable().default(null),
-  thumbnail_url: z.string().max(2000).nullable().default(null),
-  duration: z.string().max(20).nullable().default(null),
-  body: z.string().max(10_000).nullable().default(null),
+  url: z.string().max(4000).nullable().default(null),
+  title: z.string().max(1000).nullable().default(null),
+  domain: z.string().max(300).nullable().default(null),
+  thumbnail_url: z.string().max(4000).nullable().default(null),
+  duration: z.string().max(40).nullable().default(null),
+  body: z.string().max(20_000).nullable().default(null),
   tag_ids: z.array(z.string().uuid()).default([]),
   is_archived: z.boolean().default(false),
 });
