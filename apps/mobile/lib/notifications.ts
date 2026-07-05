@@ -2,6 +2,7 @@ import type { Task } from "@nox/types";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { diffTaskReminders, planTaskReminders } from "./notification-plan";
 
 /**
  * Local notifications for Nox. Everything here is scheduled on-device from local data and never
@@ -13,12 +14,8 @@ import { Platform } from "react-native";
  * calls no-op gracefully there and are meant to be verified in a development build.
  */
 
-const TASK_PREFIX = "task:";
 const DAILY_ID = { morning: "daily:morning", endOfDay: "daily:endOfDay" } as const;
 export type DailyKind = keyof typeof DAILY_ID;
-
-// iOS keeps at most 64 pending notifications; stay well under so daily nudges + headroom survive.
-const MAX_TASK_REMINDERS = 50;
 
 const DAILY_COPY: Record<DailyKind, { hour: number; minute: number; title: string; body: string }> = {
   morning: { hour: 8, minute: 0, title: "Good morning", body: "Plan your day in Nox." },
@@ -61,48 +58,26 @@ export async function ensurePermission(): Promise<boolean> {
   }
 }
 
-const taskReminderId = (taskId: string, iso: string) => `${TASK_PREFIX}${taskId}:${iso}`;
-
 /**
- * Make the scheduled task reminders match the current tasks: a schedule per future `reminder_times`
- * entry on each non-complete task. Idempotent (deterministic identifiers) — safe to run on every
- * task change. Pass an empty list to clear them all (e.g. the toggle is off).
+ * Make the scheduled task reminders match the current tasks (planning + diff in `notification-plan`).
+ * Idempotent (deterministic identifiers) — safe to run on every task change. Pass an empty list to
+ * clear them all (e.g. the toggle is off).
  */
 export async function reconcileTaskReminders(tasks: Task[]): Promise<void> {
   try {
-    const now = Date.now();
-    // Desired schedules, soonest first, capped to the platform limit.
-    const desired = tasks
-      .filter((t) => t.status !== "complete")
-      .flatMap((t) =>
-        t.reminder_times
-          .filter((iso) => new Date(iso).getTime() > now)
-          .map((iso) => ({ id: taskReminderId(t.id, iso), date: new Date(iso), title: t.title, taskId: t.id })),
-      )
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, MAX_TASK_REMINDERS);
-    const desiredById = new Map(desired.map((d) => [d.id, d]));
-
+    const desired = planTaskReminders(tasks, Date.now());
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const existing = new Set(
-      scheduled.map((n) => n.identifier).filter((id) => id.startsWith(TASK_PREFIX)),
-    );
+    const { toCancel, toSchedule } = diffTaskReminders(desired, scheduled.map((n) => n.identifier));
 
-    // Cancel schedules no longer wanted.
+    await Promise.all(toCancel.map((id) => Notifications.cancelScheduledNotificationAsync(id)));
     await Promise.all(
-      [...existing].filter((id) => !desiredById.has(id)).map((id) => Notifications.cancelScheduledNotificationAsync(id)),
-    );
-    // Schedule the ones that are missing.
-    await Promise.all(
-      desired
-        .filter((d) => !existing.has(d.id))
-        .map((d) =>
-          Notifications.scheduleNotificationAsync({
-            identifier: d.id,
-            content: { title: d.title, body: "Reminder", data: { taskId: d.taskId } },
-            trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: d.date },
-          }),
-        ),
+      toSchedule.map((d) =>
+        Notifications.scheduleNotificationAsync({
+          identifier: d.id,
+          content: { title: d.title, body: "Reminder", data: { taskId: d.taskId } },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: d.date },
+        }),
+      ),
     );
   } catch {
     /* best-effort — notifications unsupported on this runtime */
