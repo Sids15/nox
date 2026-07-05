@@ -7,7 +7,7 @@ import { Apple, ArrowLeft, Check, ChevronLeft, Eye, EyeOff, Lock, Mail, MailChec
 import { useState, type ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
 import { useForm } from "react-hook-form";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { authErrorMessage } from "../../lib/auth-errors";
 import { CORAL, CORAL_GRADIENT } from "../../lib/auth-theme";
@@ -186,9 +186,14 @@ export default function LoginScreen() {
           {/* Heading */}
           {mode === "signin" ? (
             <>
-              <View className="flex-row items-end">
-                <Text className="text-ink text-[38px] font-bold lowercase tracking-[-0.03em]">nox</Text>
-                <Text style={{ color: CORAL }} className="text-[38px] font-bold">.</Text>
+              <View className="flex-row items-end gap-2">
+                <Image
+                  source={require("../../assets/nox-logo.png")}
+                  style={{ width: 96, height: 56 }}
+                  resizeMode="contain"
+                  accessibilityLabel="Nox"
+                />
+                <Text style={{ color: CORAL, marginBottom: 6 }} className="text-[30px] font-bold">.</Text>
               </View>
               <Text className="text-ink-2 mt-3 text-[15px] leading-[22px]">
                 Ideas, notes, tasks and resources —{"\n"}one quiet place, on every device.

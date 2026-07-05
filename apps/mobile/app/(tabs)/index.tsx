@@ -160,10 +160,11 @@ export default function IdeasScreen() {
               />
             )
           ) : isDesktop ? (
+            // 3 columns at the 1020 canvas ≈ the handoff's ~330px card width — cards read full, not barren.
             <View className="flex-row gap-3">
-              {[visible.filter((_, i) => i % 2 === 0), visible.filter((_, i) => i % 2 === 1)].map((col, ci) => (
+              {[0, 1, 2].map((ci) => (
                 <View key={ci} className="flex-1 gap-3">
-                  {col.map((idea) => (
+                  {visible.filter((_, i) => i % 3 === ci).map((idea) => (
                     <IdeaCard key={idea.id} idea={idea} onPress={() => router.push(`/idea/${idea.id}`)} />
                   ))}
                 </View>

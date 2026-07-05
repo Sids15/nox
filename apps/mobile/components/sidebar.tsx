@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
 import { Bookmark, FileText, Lightbulb, Search, SlidersHorizontal, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Platform, Pressable, Text, View } from "react-native";
+import { Animated, Image, Platform, Pressable, Text, View } from "react-native";
 import { clockLabel, greeting, skyColor, useClock } from "../lib/use-clock";
 import { CommandPalette } from "./command-palette";
 
@@ -93,10 +93,15 @@ export function Sidebar() {
         style={{ position: "absolute", top: 0, left: 0, right: 0, height: 130, pointerEvents: "none" }}
       />
 
-      {/* Wordmark + live clock */}
+      {/* Logomark + sky dot + live clock */}
       <View className="flex-row items-center justify-between px-2 pb-1">
-        <View className="flex-row items-baseline gap-[3px]">
-          <Text className="text-ink text-[20px] font-extrabold tracking-[-0.04em]">nox</Text>
+        <View className="flex-row items-center gap-2">
+          <Image
+            source={require("../assets/nox-logo.png")}
+            style={{ width: 48, height: 28 }}
+            resizeMode="contain"
+            accessibilityLabel="Nox"
+          />
           <View
             style={{
               width: 7,
