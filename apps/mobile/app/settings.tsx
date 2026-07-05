@@ -1,5 +1,6 @@
 import { useAuth, usePrefs, useThemeColors, type NotifKey } from "@nox/features";
 import { accents, type AccentName } from "@nox/ui";
+import { displayNameFrom, initialsFrom } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
@@ -61,7 +62,7 @@ export default function SettingsScreen() {
   const [signingOut, setSigningOut] = useState(false);
 
   const email = session?.user?.email ?? "";
-  const name = email ? cap(email.split("@")[0] ?? "") : "You";
+  const name = displayNameFrom(email);
 
   const handleSignOut = async () => {
     setError(null);
@@ -111,7 +112,7 @@ export default function SettingsScreen() {
         {/* Profile card */}
         <View className="mx-[20px] border-line bg-surface rounded-card mt-4 flex-row items-center gap-[13px] border p-[14px]">
           <View className="bg-accent/[0.18] h-11 w-11 items-center justify-center rounded-full">
-            <Text className="text-accent text-[15px] font-bold">KG</Text>
+            <Text className="text-accent text-[15px] font-bold">{initialsFrom(email)}</Text>
           </View>
           <View className="flex-1">
             <Text className="text-ink text-[15.5px] font-semibold">{name}</Text>
