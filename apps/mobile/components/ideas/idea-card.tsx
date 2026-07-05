@@ -20,7 +20,7 @@ export function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void })
   ];
 
   return (
-    <Pressable onPress={onPress} className="border-line bg-surface rounded-card gap-2 border p-[14px]">
+    <Pressable onPress={onPress} className="border-line bg-surface rounded-card hover:border-accent/[0.4] gap-2 border p-[14px]">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-1.5">
           <View style={{ width: 6, height: 6, borderRadius: 99, backgroundColor: priorityColor }} />

@@ -47,7 +47,7 @@ export function ResourceCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const shell = "border-line bg-surface rounded-card mb-[11px] overflow-hidden border";
+  const shell = "border-line bg-surface rounded-card hover:border-accent/[0.4] mb-[11px] overflow-hidden border";
   const title = resource.title ?? resource.url ?? "Untitled";
 
   if (resource.type === "video") {

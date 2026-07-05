@@ -2,6 +2,7 @@ import { useAuth } from "@nox/features";
 import { Redirect, Tabs } from "expo-router";
 import { View } from "react-native";
 import { Sidebar } from "../../components/sidebar";
+import { StatusBar } from "../../components/status-bar";
 import { TabBar } from "../../components/tab-bar";
 import { useIsDesktop } from "../../lib/use-responsive";
 
@@ -31,7 +32,10 @@ export default function TabsLayout() {
   return (
     <View className="bg-bg flex-1 flex-row">
       <Sidebar />
-      <View className="flex-1">{tabs}</View>
+      <View className="flex-1">
+        <View className="flex-1">{tabs}</View>
+        <StatusBar />
+      </View>
     </View>
   );
 }

@@ -35,7 +35,7 @@ export function DesktopHeader({
           onPress={onAction}
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
-          className="bg-accent flex-row items-center gap-2 rounded-[10px] px-4 py-[9px]"
+          className="bg-accent hover:opacity-90 flex-row items-center gap-2 rounded-[10px] px-4 py-[9px]"
           style={{ shadowColor: c.accent, shadowOpacity: 0.32, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 6 }}
         >
           <Plus size={13} color={c.onAccent} strokeWidth={2.2} />

@@ -94,7 +94,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
               <Text className="text-ink-3 px-4 py-6 text-center text-[13px]">No matches.</Text>
             ) : (
               hits.map((h) => (
-                <Pressable key={h.key} onPress={() => open(h.route)} className="flex-row items-center gap-3 px-4 py-2.5">
+                <Pressable key={h.key} onPress={() => open(h.route)} className="hover:bg-chip flex-row items-center gap-3 px-4 py-2.5">
                   <h.icon size={16} color={c.ink3} strokeWidth={1.7} />
                   <Text numberOfLines={1} className="text-ink flex-1 text-[14px]">{h.title}</Text>
                   <Text className="text-ink-3 font-mono text-[10px] uppercase tracking-[0.1em]">{h.type}</Text>
