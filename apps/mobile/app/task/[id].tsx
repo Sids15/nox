@@ -17,6 +17,8 @@ import { AutoGrowInput } from "../../components/blocks/auto-grow-input";
 import { NoxDateTimePicker } from "../../components/date-time-picker";
 import { DropdownChip } from "../../components/dropdown-chip";
 import { OverflowMenu } from "../../components/overflow-menu";
+import { Sidebar } from "../../components/sidebar";
+import { useIsDesktop } from "../../lib/use-responsive";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
@@ -57,6 +59,7 @@ export default function TaskDetailScreen() {
   const isNew = newParam === "1";
   const router = useRouter();
   const c = useThemeColors();
+  const isDesktop = useIsDesktop();
   const theme = usePrefs((s) => s.theme);
   const PRIORITY_COLOR: Record<Task["priority"], string> = {
     low: c.ink3,
@@ -134,8 +137,11 @@ export default function TaskDetailScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1">
+    <View className="flex-1 flex-row">
+    {isDesktop && <Sidebar />}
+    <View className="flex-1">
       {/* maxWidth is a no-op on phones (< 680pt) and keeps the editor a readable column on desktop */}
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40, maxWidth: 680, width: "100%", alignSelf: "center" }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40, maxWidth: 680, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {/* Nav */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
@@ -378,6 +384,8 @@ export default function TaskDetailScreen() {
           <NoxDateTimePicker value={temp} mode={picker.mode} theme={theme} textColor={c.ink} onChange={setTemp} />
         </View>
       )}
+    </View>
+    </View>
     </SafeAreaView>
   );
 }

@@ -19,7 +19,9 @@ import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
 import { useMediaBlocks } from "../../components/blocks/use-media-blocks";
 import { OverflowMenu } from "../../components/overflow-menu";
+import { Sidebar } from "../../components/sidebar";
 import { StatusStepper } from "../../components/ideas/status-stepper";
+import { useIsDesktop } from "../../lib/use-responsive";
 import { TagChip } from "../../components/tag-chip";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
 
@@ -37,6 +39,7 @@ export default function IdeaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const c = useThemeColors();
+  const isDesktop = useIsDesktop();
   const priorityColor: Record<Idea["priority"], string> = {
     low: c.ink3,
     medium: c.medium,
@@ -97,8 +100,11 @@ export default function IdeaDetailScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1">
+    <View className="flex-1 flex-row">
+    {isDesktop && <Sidebar />}
+    <View className="flex-1">
       {/* maxWidth is a no-op on phones (< 680pt) and keeps the editor a readable column on desktop */}
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 110, maxWidth: 680, width: "100%", alignSelf: "center" }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 110, maxWidth: 680, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {/* Nav */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
@@ -230,6 +236,8 @@ export default function IdeaDetailScreen() {
           },
         ]}
       />
+    </View>
+    </View>
     </SafeAreaView>
   );
 }

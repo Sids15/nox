@@ -21,12 +21,15 @@ import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
 import { useMediaBlocks } from "../../components/blocks/use-media-blocks";
 import { OverflowMenu } from "../../components/overflow-menu";
+import { Sidebar } from "../../components/sidebar";
+import { useIsDesktop } from "../../lib/use-responsive";
 
 export default function NoteEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const c = useThemeColors();
   const themeVars = useThemeVars();
+  const isDesktop = useIsDesktop();
 
   const { data: notes = [] } = useNotes();
   const { data: folders = [] } = useFolders();
@@ -81,8 +84,11 @@ export default function NoteEditorScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+    <View className="flex-1 flex-row">
+    {isDesktop && <Sidebar />}
+    <View className="flex-1">
       {/* Nav */}
-      <View className="px-screen flex-row items-center justify-between pt-2">
+      <View className="px-screen flex-row items-center justify-between pt-2" style={isDesktop ? { maxWidth: 680, width: "100%", alignSelf: "center", paddingTop: 20 } : undefined}>
         <View className="flex-row items-center gap-2.5">
           <Pressable onPress={goBack} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
             <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
@@ -197,6 +203,8 @@ export default function NoteEditorScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+    </View>
+    </View>
     </SafeAreaView>
   );
 }
