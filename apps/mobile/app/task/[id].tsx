@@ -8,12 +8,12 @@ import {
 } from "@nox/features";
 import { taskPriorityLevels, type Task, type TaskInput } from "@nox/types";
 import { formatTime12, relativeDayLabel, relativeFromNow, shortDate, toDateKey } from "@nox/utils";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Bell, Calendar, Check, ChevronLeft, MoreHorizontal, Plus, Repeat, X } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { NoxDateTimePicker } from "../../components/date-time-picker";
 import { DropdownChip } from "../../components/dropdown-chip";
 import { OverflowMenu } from "../../components/overflow-menu";
 import { SegmentedControl } from "../../components/tasks/segmented-control";
@@ -373,16 +373,7 @@ export default function TaskDetailScreen() {
               <Text className="text-accent text-[15px] font-semibold">Done</Text>
             </Pressable>
           </View>
-          <DateTimePicker
-            value={temp}
-            mode={picker.mode}
-            display="spinner"
-            themeVariant={theme}
-            textColor={c.ink}
-            onChange={(_event, selected) => {
-              if (selected) setTemp(selected);
-            }}
-          />
+          <NoxDateTimePicker value={temp} mode={picker.mode} theme={theme} textColor={c.ink} onChange={setTemp} />
         </View>
       )}
     </SafeAreaView>

@@ -1,7 +1,8 @@
 import { supabase } from "@nox/db";
-import { useQuery } from "@tanstack/react-query";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system/legacy";
+
+export { useSignedUrl } from "./signed-url";
 
 /**
  * Upload a local file to a private bucket. Reads the file as base64 (RN has no File/Blob for
@@ -28,18 +29,4 @@ export async function uploadToBucket(
     console.warn("[storage] upload error:", e);
     return null;
   }
-}
-
-/** Cached signed URL for reading a private object (e.g. an image synced from another device). */
-export function useSignedUrl(bucket: string, path: string | null) {
-  return useQuery({
-    queryKey: ["signed-url", bucket, path],
-    enabled: !!path,
-    staleTime: 55 * 60 * 1000,
-    queryFn: async () => {
-      if (!path) return null;
-      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
-      return error ? null : data.signedUrl;
-    },
-  });
 }
