@@ -45,6 +45,20 @@ export const AuthRepository = {
     if (error) throw error;
   },
 
+  /** Update the signed-in user's password (validated min length before the call). */
+  async updatePassword(newPassword: string): Promise<void> {
+    const password = credentials.shape.password.parse(newPassword);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  },
+
+  /** Change the signed-in user's email — Supabase sends a confirmation link to the new address. */
+  async updateEmail(newEmail: string): Promise<void> {
+    const email = credentials.shape.email.parse(newEmail);
+    const { error } = await supabase.auth.updateUser({ email });
+    if (error) throw error;
+  },
+
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;

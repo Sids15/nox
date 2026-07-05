@@ -110,7 +110,11 @@ export default function SettingsScreen() {
         </View>
 
         {/* Profile card */}
-        <View className="mx-[20px] border-line bg-surface rounded-card mt-4 flex-row items-center gap-[13px] border p-[14px]">
+        <Pressable
+          onPress={() => router.push("/account")}
+          accessibilityLabel="Account"
+          className="mx-[20px] border-line bg-surface rounded-card mt-4 flex-row items-center gap-[13px] border p-[14px]"
+        >
           <View className="bg-accent/[0.18] h-11 w-11 items-center justify-center rounded-full">
             <Text className="text-accent text-[15px] font-bold">{initialsFrom(email)}</Text>
           </View>
@@ -119,7 +123,7 @@ export default function SettingsScreen() {
             <Text className="text-ink-3 mt-0.5 text-[12px]">{email || "not signed in"}</Text>
           </View>
           <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
-        </View>
+        </Pressable>
 
         {/* Appearance */}
         <View className="px-screen">

@@ -29,6 +29,8 @@ export function useAuth() {
     signUp: AuthRepository.signUp,
     sendMagicLink: AuthRepository.sendMagicLink,
     sendPasswordReset: AuthRepository.sendPasswordReset,
+    updatePassword: AuthRepository.updatePassword,
+    updateEmail: AuthRepository.updateEmail,
     signOut: AuthRepository.signOut,
   };
 }
