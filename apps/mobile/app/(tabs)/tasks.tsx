@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
+import { useIsDesktop } from "../../lib/use-responsive";
 import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
 import { TaskRow } from "../../components/tasks/task-row";
@@ -72,6 +73,7 @@ function SectionLabel({ text, count, tone }: { text: string; count?: number; ton
 export default function TasksScreen() {
   const router = useRouter();
   const c = useThemeColors();
+  const isDesktop = useIsDesktop();
   const today = todayKey();
   const [focus, setFocus] = useState(today);
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
@@ -153,7 +155,7 @@ export default function TasksScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150 }}
+        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 760, width: "100%", alignSelf: "center" } : null) }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
@@ -176,7 +178,13 @@ export default function TasksScreen() {
             >
               <SlidersHorizontal size={16} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={1.8} />
             </Pressable>
-            <ProfileAvatar />
+            {isDesktop ? (
+              <Pressable onPress={createAndOpen} accessibilityLabel="Add task" className="bg-accent rounded-pill h-[34px] w-[34px] items-center justify-center">
+                <Plus size={18} color={c.onAccent} strokeWidth={2.2} />
+              </Pressable>
+            ) : (
+              <ProfileAvatar />
+            )}
           </View>
         </View>
 
@@ -277,24 +285,26 @@ export default function TasksScreen() {
         </View>
       </ScrollView>
 
-      {/* FAB — activates quick-add */}
-      <Pressable
-        onPress={createAndOpen}
-        accessibilityRole="button"
-        accessibilityLabel="Add task"
-        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-        style={{
-          right: 20,
-          bottom: 112,
-          shadowColor: c.accent,
-          shadowOpacity: 0.4,
-          shadowRadius: 13,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        }}
-      >
-        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-      </Pressable>
+      {/* FAB (mobile; desktop creates from the header +) */}
+      {!isDesktop && (
+        <Pressable
+          onPress={createAndOpen}
+          accessibilityRole="button"
+          accessibilityLabel="Add task"
+          className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
+          style={{
+            right: 20,
+            bottom: 112,
+            shadowColor: c.accent,
+            shadowOpacity: 0.4,
+            shadowRadius: 13,
+            shadowOffset: { width: 0, height: 10 },
+            elevation: 8,
+          }}
+        >
+          <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }

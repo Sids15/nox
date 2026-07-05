@@ -9,6 +9,7 @@ import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { IdeaCard } from "../../components/ideas/idea-card";
+import { useIsDesktop } from "../../lib/use-responsive";
 import {
   DEFAULT_IDEA_FILTERS,
   IdeaFilters,
@@ -28,6 +29,7 @@ function matchesSearch(idea: Idea, q: string): boolean {
 export default function IdeasScreen() {
   const router = useRouter();
   const c = useThemeColors();
+  const isDesktop = useIsDesktop();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<IdeaFiltersState>(DEFAULT_IDEA_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(true);
@@ -89,7 +91,13 @@ export default function IdeasScreen() {
             >
               <SlidersHorizontal size={16} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={1.8} />
             </Pressable>
-            <ProfileAvatar />
+            {isDesktop ? (
+              <Pressable onPress={onCreate} accessibilityLabel="New idea" className="bg-accent rounded-pill h-[34px] w-[34px] items-center justify-center">
+                <Plus size={18} color={c.onAccent} strokeWidth={2.2} />
+              </Pressable>
+            ) : (
+              <ProfileAvatar />
+            )}
           </View>
         </View>
 
@@ -145,6 +153,16 @@ export default function IdeasScreen() {
                 onAction={onCreate}
               />
             )
+          ) : isDesktop ? (
+            <View className="flex-row gap-3">
+              {[visible.filter((_, i) => i % 2 === 0), visible.filter((_, i) => i % 2 === 1)].map((col, ci) => (
+                <View key={ci} className="flex-1 gap-[10px]">
+                  {col.map((idea) => (
+                    <IdeaCard key={idea.id} idea={idea} onPress={() => router.push(`/idea/${idea.id}`)} />
+                  ))}
+                </View>
+              ))}
+            </View>
           ) : (
             visible.map((idea) => (
               <IdeaCard key={idea.id} idea={idea} onPress={() => router.push(`/idea/${idea.id}`)} />
@@ -153,24 +171,26 @@ export default function IdeasScreen() {
         </View>
       </ScrollView>
 
-      {/* FAB */}
-      <Pressable
-        onPress={onCreate}
-        accessibilityRole="button"
-        accessibilityLabel="New idea"
-        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-        style={{
-          right: 20,
-          bottom: 112,
-          shadowColor: c.accent,
-          shadowOpacity: 0.4,
-          shadowRadius: 13,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        }}
-      >
-        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-      </Pressable>
+      {/* FAB (mobile; desktop creates from the header +) */}
+      {!isDesktop && (
+        <Pressable
+          onPress={onCreate}
+          accessibilityRole="button"
+          accessibilityLabel="New idea"
+          className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
+          style={{
+            right: 20,
+            bottom: 112,
+            shadowColor: c.accent,
+            shadowOpacity: 0.4,
+            shadowRadius: 13,
+            shadowOffset: { width: 0, height: 10 },
+            elevation: 8,
+          }}
+        >
+          <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }

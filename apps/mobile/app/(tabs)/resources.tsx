@@ -18,6 +18,7 @@ import { ProfileAvatar } from "../../components/profile-avatar";
 import { ResourceCard } from "../../components/resources/resource-card";
 import { NewResourceSheet } from "../../components/resources/new-resource-sheet";
 import { nextTagColor } from "../../lib/tag-palette";
+import { useIsDesktop } from "../../lib/use-responsive";
 
 function matches(r: Resource, q: string): boolean {
   const n = q.trim().toLowerCase();
@@ -47,6 +48,7 @@ function estimateCardHeight(r: Resource): number {
 export default function ResourcesScreen() {
   const c = useThemeColors();
   const themeVars = useThemeVars();
+  const isDesktop = useIsDesktop();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -76,19 +78,18 @@ export default function ResourcesScreen() {
     [resources, search, selected],
   );
   // Height-balanced masonry: place each card into whichever column is currently shorter (estimated),
-  // instead of a strict left/right alternation that leaves one column with a long trailing gap.
-  const [colA, colB] = useMemo(() => {
-    const cols = [
-      { items: [] as Resource[], h: 0 },
-      { items: [] as Resource[], h: 0 },
-    ];
+  // instead of a strict alternation that leaves one column with a long trailing gap. 2 columns on
+  // mobile, 3 on desktop.
+  const columns = useMemo(() => {
+    const n = isDesktop ? 3 : 2;
+    const cols = Array.from({ length: n }, () => ({ items: [] as Resource[], h: 0 }));
     for (const r of filtered) {
-      const target = cols[0]!.h <= cols[1]!.h ? cols[0]! : cols[1]!;
+      const target = cols.reduce((a, b) => (a.h <= b.h ? a : b));
       target.items.push(r);
       target.h += estimateCardHeight(r);
     }
-    return [cols[0]!.items, cols[1]!.items];
-  }, [filtered]);
+    return cols.map((col) => col.items);
+  }, [filtered, isDesktop]);
 
   const openResource = (r: Resource) => {
     if (r.url && r.type !== "text") Linking.openURL(r.url.startsWith("http") ? r.url : `https://${r.url}`);
@@ -125,7 +126,20 @@ export default function ResourcesScreen() {
             >
               <SlidersHorizontal size={16} color={tagsOpen || tagsActive ? c.accent : c.ink2} strokeWidth={1.8} />
             </Pressable>
-            <ProfileAvatar />
+            {isDesktop ? (
+              <Pressable
+                onPress={() => {
+                  setEditing(null);
+                  setSheetOpen(true);
+                }}
+                accessibilityLabel="New resource"
+                className="bg-accent rounded-pill h-[34px] w-[34px] items-center justify-center"
+              >
+                <Plus size={18} color={c.onAccent} strokeWidth={2.2} />
+              </Pressable>
+            ) : (
+              <ProfileAvatar />
+            )}
           </View>
         </View>
 
@@ -196,33 +210,32 @@ export default function ResourcesScreen() {
             )
           ) : (
             <View className="flex-row gap-[11px]">
-              <View className="flex-1">
-                {colA.map((r) => (
-                  <ResourceCard key={r.id} resource={r} tags={resolveTags(r)} onPress={() => openResource(r)} onLongPress={() => setMenuFor(r)} />
-                ))}
-              </View>
-              <View className="flex-1">
-                {colB.map((r) => (
-                  <ResourceCard key={r.id} resource={r} tags={resolveTags(r)} onPress={() => openResource(r)} onLongPress={() => setMenuFor(r)} />
-                ))}
-              </View>
+              {columns.map((col, ci) => (
+                <View key={ci} className="flex-1">
+                  {col.map((r) => (
+                    <ResourceCard key={r.id} resource={r} tags={resolveTags(r)} onPress={() => openResource(r)} onLongPress={() => setMenuFor(r)} />
+                  ))}
+                </View>
+              ))}
             </View>
           )}
         </View>
       </ScrollView>
 
-      {/* FAB */}
-      <Pressable
-        onPress={() => {
-          setEditing(null);
-          setSheetOpen(true);
-        }}
-        accessibilityLabel="New resource"
-        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-        style={{ right: 20, bottom: 112, shadowColor: c.accent, shadowOpacity: 0.4, shadowRadius: 13, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}
-      >
-        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-      </Pressable>
+      {/* FAB (mobile; desktop creates from the header +) */}
+      {!isDesktop && (
+        <Pressable
+          onPress={() => {
+            setEditing(null);
+            setSheetOpen(true);
+          }}
+          accessibilityLabel="New resource"
+          className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
+          style={{ right: 20, bottom: 112, shadowColor: c.accent, shadowOpacity: 0.4, shadowRadius: 13, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}
+        >
+          <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
+        </Pressable>
+      )}
 
       {/* New / edit resource sheet */}
       <NewResourceSheet visible={sheetOpen} resource={editing} tags={tags} onClose={() => setSheetOpen(false)} />

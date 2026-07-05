@@ -15,6 +15,7 @@ import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
+import { useIsDesktop } from "../../lib/use-responsive";
 import { NoteRow } from "../../components/notes/note-row";
 import { PinnedNoteCard } from "../../components/notes/pinned-note-card";
 import { noteMatches } from "../../components/notes/note-utils";
@@ -36,6 +37,7 @@ export default function NotesScreen() {
   const router = useRouter();
   const c = useThemeColors();
   const themeVars = useThemeVars();
+  const isDesktop = useIsDesktop();
   const [search, setSearch] = useState("");
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -73,7 +75,7 @@ export default function NotesScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150 }}
+        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 760, width: "100%", alignSelf: "center" } : null) }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
@@ -95,7 +97,13 @@ export default function NotesScreen() {
             >
               <FolderPlus size={16} color={c.ink2} strokeWidth={1.8} />
             </Pressable>
-            <ProfileAvatar />
+            {isDesktop ? (
+              <Pressable onPress={createAndOpen} accessibilityLabel="New note" className="bg-accent rounded-pill h-[34px] w-[34px] items-center justify-center">
+                <Plus size={18} color={c.onAccent} strokeWidth={2.2} />
+              </Pressable>
+            ) : (
+              <ProfileAvatar />
+            )}
           </View>
         </View>
 
@@ -195,24 +203,26 @@ export default function NotesScreen() {
         </View>
       </ScrollView>
 
-      {/* FAB */}
-      <Pressable
-        onPress={createAndOpen}
-        accessibilityRole="button"
-        accessibilityLabel="New note"
-        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-        style={{
-          right: 20,
-          bottom: 112,
-          shadowColor: c.accent,
-          shadowOpacity: 0.4,
-          shadowRadius: 13,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        }}
-      >
-        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-      </Pressable>
+      {/* FAB (mobile; desktop creates from the header +) */}
+      {!isDesktop && (
+        <Pressable
+          onPress={createAndOpen}
+          accessibilityRole="button"
+          accessibilityLabel="New note"
+          className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
+          style={{
+            right: 20,
+            bottom: 112,
+            shadowColor: c.accent,
+            shadowOpacity: 0.4,
+            shadowRadius: 13,
+            shadowOffset: { width: 0, height: 10 },
+            elevation: 8,
+          }}
+        >
+          <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
+        </Pressable>
+      )}
 
       {/* New folder modal */}
       <Modal transparent visible={newFolderOpen} animationType="fade" onRequestClose={() => setNewFolderOpen(false)}>
