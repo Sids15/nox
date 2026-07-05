@@ -133,7 +133,8 @@ export default function TaskDetailScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      {/* maxWidth is a no-op on phones (< 680pt) and keeps the editor a readable column on desktop */}
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40, maxWidth: 680, width: "100%", alignSelf: "center" }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {/* Nav */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           <Pressable onPress={goBack} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">

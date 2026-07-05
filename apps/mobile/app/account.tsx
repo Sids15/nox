@@ -40,7 +40,7 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40, maxWidth: 680, width: "100%", alignSelf: "center" }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="px-screen flex-row items-center gap-3 pt-2">
           <Pressable

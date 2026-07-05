@@ -8,6 +8,12 @@ import { CommandPalette } from "./command-palette";
 
 type NavItem = { label: string; icon: LucideIcon; path: string; count: number };
 
+/** The palette shortcut as the user's OS actually types it (⌘K is a lie on Windows). */
+const SHORTCUT_LABEL =
+  Platform.OS === "web" && typeof navigator !== "undefined" && /Mac/i.test(navigator.platform)
+    ? "⌘K"
+    : "Ctrl K";
+
 /** Fixed 232px desktop sidebar — nav + counts + global search + profile. Replaces the tab bar on
  *  wide viewports (see components/tab-bar.tsx for the mobile equivalent). */
 export function Sidebar() {
@@ -60,7 +66,7 @@ export function Sidebar() {
         <Search size={13} color={c.ink3} strokeWidth={1.8} />
         <Text className="text-ink-3 flex-1 text-[12.5px]">Search</Text>
         <View className="bg-bg border-line rounded-[5px] border px-[5px] py-[3px]">
-          <Text className="text-ink-3 font-mono text-[10px] font-semibold">⌘K</Text>
+          <Text className="text-ink-3 font-mono text-[10px] font-semibold">{SHORTCUT_LABEL}</Text>
         </View>
       </Pressable>
 

@@ -13,6 +13,7 @@ import { vars } from "nativewind";
 import { useMemo, useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
 import { useIsDesktop } from "../../lib/use-responsive";
@@ -75,52 +76,65 @@ export default function NotesScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 760, width: "100%", alignSelf: "center" } : null) }}
+        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 760, width: "100%", paddingHorizontal: 10, paddingTop: 16 } : null) }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="px-screen flex-row items-start justify-between pt-2">
-          <View>
-            <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-              {active.length} NOTES · {folders.length} FOLDERS
-            </Text>
-            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
-              Notes
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-2">
+        {/* Header — desktop: 26px title + "New note" pill; mobile: 30px title */}
+        {isDesktop ? (
+          <DesktopHeader
+            eyebrow={`${active.length} NOTES · ${folders.length} FOLDERS`}
+            title="Notes"
+            actionLabel="New note"
+            onAction={createAndOpen}
+          >
             <Pressable
               onPress={() => setNewFolderOpen(true)}
+              accessibilityLabel="New folder"
               className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
             >
               <FolderPlus size={16} color={c.ink2} strokeWidth={1.8} />
             </Pressable>
-            {isDesktop ? (
-              <Pressable onPress={createAndOpen} accessibilityLabel="New note" className="bg-accent rounded-pill h-[34px] w-[34px] items-center justify-center">
-                <Plus size={18} color={c.onAccent} strokeWidth={2.2} />
+          </DesktopHeader>
+        ) : (
+          <View className="px-screen flex-row items-start justify-between pt-2">
+            <View>
+              <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
+                {active.length} NOTES · {folders.length} FOLDERS
+              </Text>
+              <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
+                Notes
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={() => setNewFolderOpen(true)}
+                className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
+              >
+                <FolderPlus size={16} color={c.ink2} strokeWidth={1.8} />
               </Pressable>
-            ) : (
               <ProfileAvatar />
-            )}
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* Search */}
-        <View className="px-screen mt-5">
-          <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
-            <Search size={15} color={c.ink3} strokeWidth={1.8} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search notes…"
-              placeholderTextColor={c.ink3}
-              className="text-ink flex-1 text-[14.5px]"
-              style={{ paddingVertical: 0 }}
-            />
+        {/* Search (mobile — desktop uses the sidebar's ⌘K) */}
+        {!isDesktop && (
+          <View className="px-screen mt-5">
+            <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
+              <Search size={15} color={c.ink3} strokeWidth={1.8} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search notes…"
+                placeholderTextColor={c.ink3}
+                className="text-ink flex-1 text-[14.5px]"
+                style={{ paddingVertical: 0 }}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         <View className="px-screen">
           {isError && notes.length === 0 ? (

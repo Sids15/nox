@@ -14,6 +14,7 @@ import { ChevronDown, ChevronRight, ListChecks, Plus, SlidersHorizontal } from "
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
@@ -155,46 +156,49 @@ export default function TasksScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 760, width: "100%", alignSelf: "center" } : null) }}
+        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 760, width: "100%", paddingHorizontal: 10, paddingTop: 16 } : null) }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="px-screen flex-row items-start justify-between pt-2">
-          <View>
-            <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-              {weekdayShort(focus)} · {monthShort(focus)} {dayOfMonth(focus)}
-            </Text>
-            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
-              {title}
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              onPress={() => setFiltersOpen((v) => !v)}
-              accessibilityLabel="Toggle filters"
-              className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${filtersOpen || filtersActive ? "bg-accent-soft" : "bg-chip"}`}
-            >
-              <SlidersHorizontal size={16} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={1.8} />
-            </Pressable>
-            {isDesktop ? (
-              <Pressable onPress={createAndOpen} accessibilityLabel="Add task" className="bg-accent rounded-pill h-[34px] w-[34px] items-center justify-center">
-                <Plus size={18} color={c.onAccent} strokeWidth={2.2} />
+        {/* Header — desktop: 26px title + "New task" pill; mobile: 30px title + filter toggle */}
+        {isDesktop ? (
+          <DesktopHeader
+            eyebrow={`${weekdayShort(focus)} · ${monthShort(focus)} ${dayOfMonth(focus)}`}
+            title={title}
+            actionLabel="New task"
+            onAction={createAndOpen}
+          />
+        ) : (
+          <View className="px-screen flex-row items-start justify-between pt-2">
+            <View>
+              <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
+                {weekdayShort(focus)} · {monthShort(focus)} {dayOfMonth(focus)}
+              </Text>
+              <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
+                {title}
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <Pressable
+                onPress={() => setFiltersOpen((v) => !v)}
+                accessibilityLabel="Toggle filters"
+                className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${filtersOpen || filtersActive ? "bg-accent-soft" : "bg-chip"}`}
+              >
+                <SlidersHorizontal size={16} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={1.8} />
               </Pressable>
-            ) : (
               <ProfileAvatar />
-            )}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Week strip */}
         <View className="px-screen mt-5">
           <WeekStrip selected={focus} onSelect={setFocus} />
         </View>
 
-        {/* Filters (collapsed behind the header toggle) */}
-        {filtersOpen && (
+        {/* Filters (always on desktop; collapsed behind the header toggle on mobile) */}
+        {(isDesktop || filtersOpen) && (
           <View className="px-screen mt-3.5">
             <FilterChips filters={filters} onChange={setFilters} />
           </View>

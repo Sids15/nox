@@ -12,6 +12,7 @@ import { vars } from "nativewind";
 import { useMemo, useState } from "react";
 import { Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { MasonrySkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
@@ -109,57 +110,58 @@ export default function ResourcesScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View className="px-screen flex-row items-start justify-between pt-2">
-          <View>
-            <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-              {resources.filter((r) => !r.is_archived).length} SAVED · {tags.length} TAGS
-            </Text>
-            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">Resources</Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              onPress={() => setTagsOpen((v) => !v)}
-              accessibilityLabel="Toggle tag filters"
-              className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${tagsOpen || tagsActive ? "bg-accent-soft" : "bg-chip"}`}
-            >
-              <SlidersHorizontal size={16} color={tagsOpen || tagsActive ? c.accent : c.ink2} strokeWidth={1.8} />
-            </Pressable>
-            {isDesktop ? (
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 16, maxWidth: 1100, width: "100%" } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
+        {/* Header — desktop: 26px title + "New resource" pill; mobile: 30px title + tag toggle */}
+        {isDesktop ? (
+          <DesktopHeader
+            eyebrow={`${resources.filter((r) => !r.is_archived).length} SAVED · ${tags.length} TAGS`}
+            title="Resources"
+            actionLabel="New resource"
+            onAction={() => {
+              setEditing(null);
+              setSheetOpen(true);
+            }}
+          />
+        ) : (
+          <View className="px-screen flex-row items-start justify-between pt-2">
+            <View>
+              <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
+                {resources.filter((r) => !r.is_archived).length} SAVED · {tags.length} TAGS
+              </Text>
+              <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">Resources</Text>
+            </View>
+            <View className="flex-row items-center gap-2">
               <Pressable
-                onPress={() => {
-                  setEditing(null);
-                  setSheetOpen(true);
-                }}
-                accessibilityLabel="New resource"
-                className="bg-accent rounded-pill h-[34px] w-[34px] items-center justify-center"
+                onPress={() => setTagsOpen((v) => !v)}
+                accessibilityLabel="Toggle tag filters"
+                className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${tagsOpen || tagsActive ? "bg-accent-soft" : "bg-chip"}`}
               >
-                <Plus size={18} color={c.onAccent} strokeWidth={2.2} />
+                <SlidersHorizontal size={16} color={tagsOpen || tagsActive ? c.accent : c.ink2} strokeWidth={1.8} />
               </Pressable>
-            ) : (
               <ProfileAvatar />
-            )}
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* Search */}
-        <View className="px-screen mt-5">
-          <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
-            <Search size={15} color={c.ink3} strokeWidth={1.8} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search links, media, snippets…"
-              placeholderTextColor={c.ink3}
-              className="text-ink flex-1 text-[14.5px]"
-              style={{ paddingVertical: 0 }}
-            />
+        {/* Search (mobile — desktop uses the sidebar's ⌘K) */}
+        {!isDesktop && (
+          <View className="px-screen mt-5">
+            <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
+              <Search size={15} color={c.ink3} strokeWidth={1.8} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search links, media, snippets…"
+                placeholderTextColor={c.ink3}
+                className="text-ink flex-1 text-[14.5px]"
+                style={{ paddingVertical: 0 }}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* Tag filter (collapsed behind the header toggle) */}
-        {tagsOpen && (
+        {/* Tag filter (always on desktop; collapsed behind the header toggle on mobile) */}
+        {(isDesktop || tagsOpen) && (
           <View className="px-screen mt-3.5 flex-row flex-wrap gap-1.5">
             <Pressable
               onPress={() => setSelected([])}
