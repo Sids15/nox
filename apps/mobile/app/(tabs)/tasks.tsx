@@ -10,10 +10,12 @@ import {
 import type { Task } from "@nox/types";
 import { dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronRight, Plus, SlidersHorizontal } from "lucide-react-native";
+import { ChevronDown, ChevronRight, ListChecks, Plus, SlidersHorizontal } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EmptyState } from "../../components/empty-state";
+import { ListSkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
@@ -77,7 +79,7 @@ export default function TasksScreen() {
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   const filtersActive = filters.status !== "all" || filters.priority !== "all" || filters.time !== "all";
 
-  const { data: tasks = [], isLoading } = useTasks();
+  const { data: tasks = [], isLoading, isError, refetch } = useTasks();
   const createTask = useCreateTask();
   const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
@@ -191,10 +193,26 @@ export default function TasksScreen() {
         )}
 
         <View className="px-screen">
-          {isLoading && tasks.length === 0 ? (
-            <View className="mt-16 items-center">
-              <ActivityIndicator color={c.accent} />
+          {isError && tasks.length === 0 ? (
+            <EmptyState
+              icon={ListChecks}
+              title="Couldn't load your tasks"
+              subtitle="Check your connection and try again."
+              actionLabel="Try again"
+              onAction={() => refetch()}
+            />
+          ) : isLoading && tasks.length === 0 ? (
+            <View className="mt-2">
+              <ListSkeleton />
             </View>
+          ) : tasks.length === 0 ? (
+            <EmptyState
+              icon={ListChecks}
+              title="Plan your first task"
+              subtitle="Add what's on your plate — set a time, a reminder, or make it repeat."
+              actionLabel="Add a task"
+              onAction={createAndOpen}
+            />
           ) : (
             <>
               {overdue.length > 0 && (

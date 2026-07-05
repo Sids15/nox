@@ -8,11 +8,13 @@ import {
 } from "@nox/features";
 import type { Note } from "@nox/types";
 import { useRouter } from "expo-router";
-import { ChevronRight, Folder, FolderPlus, Plus, Search } from "lucide-react-native";
+import { ChevronRight, Folder, FolderPlus, NotebookPen, Plus, Search } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState, type ReactNode } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EmptyState } from "../../components/empty-state";
+import { ListSkeleton } from "../../components/skeleton";
 import { NoteRow } from "../../components/notes/note-row";
 import { PinnedNoteCard } from "../../components/notes/pinned-note-card";
 import { noteMatches } from "../../components/notes/note-utils";
@@ -38,7 +40,7 @@ export default function NotesScreen() {
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
 
-  const { data: notes = [], isLoading } = useNotes();
+  const { data: notes = [], isLoading, isError, refetch } = useNotes();
   const { data: folders = [] } = useFolders();
   const createNote = useCreateNote();
   const createFolder = useCreateFolder();
@@ -113,10 +115,30 @@ export default function NotesScreen() {
         </View>
 
         <View className="px-screen">
-          {isLoading && notes.length === 0 ? (
-            <View className="mt-16 items-center">
-              <ActivityIndicator color={c.accent} />
+          {isError && notes.length === 0 ? (
+            <EmptyState
+              icon={NotebookPen}
+              title="Couldn't load your notes"
+              subtitle="Check your connection and try again."
+              actionLabel="Try again"
+              onAction={() => refetch()}
+            />
+          ) : isLoading && notes.length === 0 ? (
+            <View className="mt-2">
+              <ListSkeleton />
             </View>
+          ) : active.length === 0 && folders.length === 0 ? (
+            search ? (
+              <EmptyState icon={Search} title="No notes match" subtitle="Try a different search." />
+            ) : (
+              <EmptyState
+                icon={NotebookPen}
+                title="Start your first note"
+                subtitle="Text, checklists, photos, and voice — organized into folders when you want."
+                actionLabel="New note"
+                onAction={createAndOpen}
+              />
+            )
           ) : (
             <>
               {pinned.length > 0 && (
@@ -153,21 +175,21 @@ export default function NotesScreen() {
                 </>
               )}
 
-              <SectionLabel>RECENT</SectionLabel>
               {recent.length > 0 ? (
-                <Card>
-                  {recent.map((n, i) => (
-                    <View key={n.id}>
-                      {i > 0 && <View className="bg-line ml-[14px] h-px" />}
-                      <NoteRow note={n} onPress={() => openNote(n)} />
-                    </View>
-                  ))}
-                </Card>
-              ) : (
-                <Text className="text-ink-3 mt-4 text-center text-[14px]">
-                  {search ? "No notes match." : "No notes yet — tap + to write one."}
-                </Text>
-              )}
+                <>
+                  <SectionLabel>RECENT</SectionLabel>
+                  <Card>
+                    {recent.map((n, i) => (
+                      <View key={n.id}>
+                        {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                        <NoteRow note={n} onPress={() => openNote(n)} />
+                      </View>
+                    ))}
+                  </Card>
+                </>
+              ) : search ? (
+                <Text className="text-ink-3 mt-6 text-center text-[14px]">No notes match.</Text>
+              ) : null}
             </>
           )}
         </View>

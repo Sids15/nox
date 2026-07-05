@@ -7,11 +7,13 @@ import {
   useThemeVars,
 } from "@nox/features";
 import type { Resource, Tag } from "@nox/types";
-import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
+import { Bookmark, Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EmptyState } from "../../components/empty-state";
+import { MasonrySkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { ResourceCard } from "../../components/resources/resource-card";
 import { NewResourceSheet } from "../../components/resources/new-resource-sheet";
@@ -55,7 +57,7 @@ export default function ResourcesScreen() {
   const [tagsOpen, setTagsOpen] = useState(true);
   const tagsActive = selected.length > 0;
 
-  const { data: resources = [], isLoading } = useResources();
+  const { data: resources = [], isLoading, isError, refetch } = useResources();
   const { data: tags = [] } = useTags();
   const createTag = useCreateTag();
   const deleteResource = useDeleteResource();
@@ -167,14 +169,31 @@ export default function ResourcesScreen() {
 
         {/* Masonry */}
         <View className="px-screen mt-4">
-          {isLoading && resources.length === 0 ? (
-            <View className="mt-16 items-center">
-              <ActivityIndicator color={c.accent} />
-            </View>
+          {isError && resources.length === 0 ? (
+            <EmptyState
+              icon={Bookmark}
+              title="Couldn't load your resources"
+              subtitle="Check your connection and try again."
+              actionLabel="Try again"
+              onAction={() => refetch()}
+            />
+          ) : isLoading && resources.length === 0 ? (
+            <MasonrySkeleton />
           ) : filtered.length === 0 ? (
-            <Text className="text-ink-3 mt-10 text-center text-[14px]">
-              {search || selected.length ? "Nothing matches." : "No resources yet — tap + to save one."}
-            </Text>
+            search || selected.length ? (
+              <EmptyState icon={Search} title="No resources match" subtitle="Try a different search or tag." />
+            ) : (
+              <EmptyState
+                icon={Bookmark}
+                title="Save your first resource"
+                subtitle="Keep links, images, videos, and snippets in one searchable place."
+                actionLabel="Add resource"
+                onAction={() => {
+                  setEditing(null);
+                  setSheetOpen(true);
+                }}
+              />
+            )
           ) : (
             <View className="flex-row gap-[11px]">
               <View className="flex-1">

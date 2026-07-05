@@ -8,11 +8,12 @@ import {
   useThemeVars,
 } from "@nox/features";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, MoreHorizontal, Plus } from "lucide-react-native";
+import { ChevronLeft, FolderOpen, MoreHorizontal, Plus } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EmptyState } from "../../components/empty-state";
 import { NoteRow } from "../../components/notes/note-row";
 
 export default function FolderScreen() {
@@ -90,9 +91,13 @@ export default function FolderScreen() {
               ))}
             </View>
           ) : (
-            <Text className="text-ink-3 mt-10 text-center text-[14px]">
-              Empty folder — tap + to add a note.
-            </Text>
+            <EmptyState
+              icon={FolderOpen}
+              title="This folder is empty"
+              subtitle="Add a note here to keep related thoughts together."
+              actionLabel="New note"
+              onAction={createInFolder}
+            />
           )}
         </View>
       </ScrollView>

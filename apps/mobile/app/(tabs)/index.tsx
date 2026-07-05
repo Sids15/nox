@@ -1,10 +1,12 @@
 import { useCreateIdea, useIdeas, useThemeColors } from "@nox/features";
 import type { Idea } from "@nox/types";
 import { useRouter } from "expo-router";
-import { Plus, Search, SlidersHorizontal } from "lucide-react-native";
+import { Lightbulb, Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EmptyState } from "../../components/empty-state";
+import { ListSkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { IdeaCard } from "../../components/ideas/idea-card";
 import {
@@ -31,8 +33,9 @@ export default function IdeasScreen() {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const filtersActive = filters.status !== "all" || filters.priority !== "all";
 
-  const { data: ideas = [], isLoading } = useIdeas();
+  const { data: ideas = [], isLoading, isError, refetch } = useIdeas();
   const createIdea = useCreateIdea();
+  const isFiltering = !!search || filters.status !== "all" || filters.priority !== "all";
 
   const visible = useMemo(
     () =>
@@ -120,16 +123,28 @@ export default function IdeasScreen() {
 
         {/* List */}
         <View className="px-screen mt-4 gap-[10px]">
-          {isLoading && ideas.length === 0 ? (
-            <View className="mt-16 items-center">
-              <ActivityIndicator color={c.accent} />
-            </View>
+          {isError && ideas.length === 0 ? (
+            <EmptyState
+              icon={Lightbulb}
+              title="Couldn't load your ideas"
+              subtitle="Check your connection and try again."
+              actionLabel="Try again"
+              onAction={() => refetch()}
+            />
+          ) : isLoading && ideas.length === 0 ? (
+            <ListSkeleton />
           ) : visible.length === 0 ? (
-            <Text className="text-ink-3 mt-10 text-center text-[14px]">
-              {search || filters.status !== "all" || filters.priority !== "all"
-                ? "No ideas match."
-                : "No ideas yet — tap + to capture one."}
-            </Text>
+            isFiltering ? (
+              <EmptyState icon={Search} title="No ideas match" subtitle="Try a different search or filter." />
+            ) : (
+              <EmptyState
+                icon={Lightbulb}
+                title="Capture your first idea"
+                subtitle="Jot a spark, then grow it with notes, links, and voice — right here."
+                actionLabel="New idea"
+                onAction={onCreate}
+              />
+            )
           ) : (
             visible.map((idea) => (
               <IdeaCard key={idea.id} idea={idea} onPress={() => router.push(`/idea/${idea.id}`)} />
