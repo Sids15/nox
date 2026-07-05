@@ -2,8 +2,10 @@ import { supabase } from "@nox/db";
 import {
   credentials,
   magicLinkInput,
+  signUpInput,
   type Credentials,
   type MagicLinkInput,
+  type SignUpInput,
 } from "@nox/types";
 import type { Session } from "@supabase/supabase-js";
 
@@ -19,9 +21,13 @@ export const AuthRepository = {
     return data.session;
   },
 
-  async signUp(input: Credentials): Promise<Session | null> {
-    const creds = credentials.parse(input);
-    const { data, error } = await supabase.auth.signUp(creds);
+  async signUp(input: SignUpInput): Promise<Session | null> {
+    const { email, password, name } = signUpInput.parse(input);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: name ? { data: { name } } : undefined,
+    });
     if (error) throw error;
     return data.session;
   },
@@ -29,6 +35,13 @@ export const AuthRepository = {
   async sendMagicLink(input: MagicLinkInput): Promise<void> {
     const { email } = magicLinkInput.parse(input);
     const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) throw error;
+  },
+
+  /** Send a password-reset email. Completing the reset (deep link) is a later beta slice. */
+  async sendPasswordReset(input: MagicLinkInput): Promise<void> {
+    const { email } = magicLinkInput.parse(input);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;
   },
 

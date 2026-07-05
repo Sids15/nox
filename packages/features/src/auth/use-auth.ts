@@ -28,6 +28,7 @@ export function useAuth() {
     signInWithPassword: AuthRepository.signInWithPassword,
     signUp: AuthRepository.signUp,
     sendMagicLink: AuthRepository.sendMagicLink,
+    sendPasswordReset: AuthRepository.sendPasswordReset,
     signOut: AuthRepository.signOut,
   };
 }
