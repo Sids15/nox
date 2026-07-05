@@ -10,12 +10,10 @@ import { useForm } from "react-hook-form";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { authErrorMessage } from "../../lib/auth-errors";
+import { CORAL, CORAL_GRADIENT } from "../../lib/auth-theme";
 
 type Mode = "signin" | "signup";
 
-// Auth screens carry their own warm accent (the in-app theme picker is a post-login concern).
-const CORAL = "#E8674C";
-const CORAL_GRADIENT = ["#F2896F", "#E0563B"] as const;
 const STRENGTH_COLOR = ["transparent", CORAL, "#3FB56E", "#3FB56E"] as const;
 const emailValid = (v: string) => credentials.shape.email.safeParse(v).success;
 
