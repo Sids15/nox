@@ -110,7 +110,7 @@ export default function ResourcesScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 16, maxWidth: 1100, width: "100%" } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 28, maxWidth: 1020, width: "100%", alignSelf: "center" } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
         {/* Header — desktop: 26px title + "New resource" pill; mobile: 30px title + tag toggle */}
         {isDesktop ? (
           <DesktopHeader

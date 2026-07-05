@@ -69,7 +69,7 @@ export default function IdeasScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 16, maxWidth: 1100, width: "100%" } : null) }}
+        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 28, maxWidth: 1020, width: "100%", alignSelf: "center" } : null) }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}

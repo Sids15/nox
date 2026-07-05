@@ -2,12 +2,11 @@ import { useThemeColors } from "@nox/features";
 import { Plus } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
-import { ProfileAvatar } from "./profile-avatar";
 
 /**
- * Desktop window header (handoff): mono eyebrow over a 26/700 title on the left; on the right a
- * labeled "New …" accent pill with glow, any extra controls, and the profile avatar. Desktop type
- * is one step smaller than mobile (26 vs 30) and search lives in the sidebar (⌘K), not here.
+ * Desktop page header: mono eyebrow over a 26/700 title on the left, the "New …" accent pill (plus
+ * any extra controls) on the right — all inside the page's centered canvas so title and actions
+ * share edges with the content. Identity lives in the sidebar, so no avatar here.
  */
 export function DesktopHeader({
   eyebrow,
@@ -41,7 +40,6 @@ export function DesktopHeader({
           <Plus size={13} color={c.onAccent} strokeWidth={2.2} />
           <Text className="text-on-accent text-[13px] font-semibold">{actionLabel}</Text>
         </Pressable>
-        <ProfileAvatar />
       </View>
     </View>
   );

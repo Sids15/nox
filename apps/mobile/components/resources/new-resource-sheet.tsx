@@ -11,6 +11,7 @@ import { pickImage } from "../../lib/media";
 import { uploadToBucket, useSignedUrl } from "../../lib/storage";
 import { fetchUrlMeta, videoThumbnail } from "../../lib/url-meta";
 import { nextTagColor, TAG_PALETTE } from "../../lib/tag-palette";
+import { useIsDesktop } from "../../lib/use-responsive";
 
 // Keep in sync with the `images` bucket policy (migration 0006).
 const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
@@ -47,6 +48,7 @@ export function NewResourceSheet({
 }) {
   const c = useThemeColors();
   const themeVars = useThemeVars();
+  const isDesktop = useIsDesktop();
   const userId = useSessionStore((s) => s.session?.user.id ?? null);
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
@@ -176,14 +178,27 @@ export function NewResourceSheet({
   };
 
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={[{ flex: 1 }, vars(themeVars)]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <Pressable className="flex-1 bg-black/55" onPress={onClose} />
+    // Mobile: a bottom sheet. Desktop: a centered dialog — a window-wide sheet is a phone gesture
+    // that reads broken on a 1900px window.
+    <Modal transparent visible={visible} animationType={isDesktop ? "fade" : "slide"} onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={[{ flex: 1 }, isDesktop ? { justifyContent: "center", alignItems: "center", padding: 24 } : null, vars(themeVars)]}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <Pressable className={isDesktop ? "absolute inset-0 bg-black/55" : "flex-1 bg-black/55"} onPress={onClose} />
         <View
-          className="bg-sheet gap-4 rounded-t-[28px] px-5 pb-9 pt-2.5"
-          style={{ shadowColor: "rgb(4,4,10)", shadowOpacity: 0.4, shadowRadius: 40, shadowOffset: { width: 0, height: -14 } }}
+          className={
+            isDesktop
+              ? "bg-sheet border-line w-full gap-4 rounded-[18px] border p-5"
+              : "bg-sheet gap-4 rounded-t-[28px] px-5 pb-9 pt-2.5"
+          }
+          style={
+            isDesktop
+              ? { maxWidth: 520, shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 60, shadowOffset: { width: 0, height: 24 }, elevation: 20 }
+              : { shadowColor: "rgb(4,4,10)", shadowOpacity: 0.4, shadowRadius: 40, shadowOffset: { width: 0, height: -14 } }
+          }
         >
-          <View className="bg-ink-3 h-1 w-9 self-center rounded-full opacity-50" />
+          {!isDesktop && <View className="bg-ink-3 h-1 w-9 self-center rounded-full opacity-50" />}
           <View className="flex-row items-center justify-between">
             <Text className="text-ink text-[19px] font-bold tracking-[-0.02em]">
               {resource ? "Edit resource" : "New resource"}
