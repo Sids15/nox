@@ -6,7 +6,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Sidebar } from "../components/sidebar";
 import { ensurePermission } from "../lib/notifications";
+import { useIsDesktop } from "../lib/use-responsive";
 
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 const ACCENT_ORDER: AccentName[] = ["violet", "green", "coral", "blue"];
@@ -54,6 +56,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
 export default function SettingsScreen() {
   const router = useRouter();
   const c = useThemeColors();
+  const isDesktop = useIsDesktop();
   const { session, signOut } = useAuth();
   const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, toggleTheme, setAccent, setNotif } =
     usePrefs();
@@ -95,7 +98,10 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40, maxWidth: 680, width: "100%", alignSelf: "center" }} showsVerticalScrollIndicator={false}>
+      <View className="flex-1 flex-row">
+      {isDesktop && <Sidebar />}
+      <View className="flex-1">
+      <ScrollView contentContainerStyle={{ paddingBottom: 40, maxWidth: 620, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 26 } : null) }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="px-screen flex-row items-center gap-3 pt-2">
           <Pressable
@@ -219,6 +225,8 @@ export default function SettingsScreen() {
 
         <Text className="text-ink-3 mt-3 text-center font-mono text-[10px]">nox 1.0.0</Text>
       </ScrollView>
+      </View>
+      </View>
     </SafeAreaView>
   );
 }

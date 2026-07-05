@@ -1,7 +1,7 @@
 import { useAuth, useIdeas, useNotes, useResources, useTasks, useThemeColors } from "@nox/features";
 import { displayNameFrom, initialsFrom } from "@nox/utils";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, FileText, Lightbulb, Search, Settings, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, FileText, Lightbulb, Search, SlidersHorizontal, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { CommandPalette } from "./command-palette";
@@ -109,7 +109,7 @@ export function Sidebar() {
           <Text className="text-ink text-[12.5px] font-semibold">{displayNameFrom(email)}</Text>
           <Text className="text-ink-3 text-[10.5px]">{email || "not signed in"}</Text>
         </View>
-        <Settings size={14} color={c.ink3} strokeWidth={1.7} />
+        <SlidersHorizontal size={14} color={c.ink3} strokeWidth={1.7} />
       </Pressable>
 
       <CommandPalette visible={searchOpen} onClose={() => setSearchOpen(false)} />
