@@ -15,6 +15,7 @@ import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AutoGrowInput } from "../../components/blocks/auto-grow-input";
 import { BlockList } from "../../components/blocks/block-list";
 import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
@@ -101,12 +102,12 @@ export default function NoteEditorScreen() {
       >
         {/* Title + save state */}
         <View className="px-[22px] pt-5">
-          <TextInput
+          <AutoGrowInput
             value={title}
             onChangeText={onTitle}
-            multiline
             placeholder="Title"
             placeholderTextColor={c.ink3}
+            minHeight={30}
             className="text-ink text-[24px] font-bold leading-[30px] tracking-[-0.02em]"
           />
           <View className="mt-1.5 flex-row items-center gap-[7px]">

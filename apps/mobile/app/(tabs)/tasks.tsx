@@ -156,7 +156,7 @@ export default function TasksScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 760, width: "100%", paddingHorizontal: 10, paddingTop: 16 } : null) }}
+        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 1100, width: "100%", paddingHorizontal: 10, paddingTop: 16 } : null) }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
@@ -193,6 +193,8 @@ export default function TasksScreen() {
         )}
 
         {/* Week strip */}
+        {/* List column — capped on desktop so rows stay readable while the header spans the frame */}
+        <View style={isDesktop ? { maxWidth: 720, width: "100%" } : undefined}>
         <View className="px-screen mt-5">
           <WeekStrip selected={focus} onSelect={setFocus} />
         </View>
@@ -286,6 +288,7 @@ export default function TasksScreen() {
               )}
             </>
           )}
+        </View>
         </View>
       </ScrollView>
 

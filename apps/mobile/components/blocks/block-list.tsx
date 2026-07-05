@@ -1,7 +1,8 @@
 import { useThemeColors } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
-import { Text, TextInput, View } from "react-native";
+import { View } from "react-native";
 import { AudioBlock } from "./audio-block";
+import { AutoGrowInput } from "./auto-grow-input";
 import { ImageBlock } from "./image-block";
 import { LinkCard } from "./link-card";
 
@@ -25,25 +26,25 @@ export function BlockList({
         switch (block.type) {
           case "heading":
             return (
-              <TextInput
+              <AutoGrowInput
                 key={i}
                 value={block.text}
                 onChangeText={(t) => setText(i, t)}
-                multiline
                 placeholder="Heading"
                 placeholderTextColor={c.ink3}
+                minHeight={24}
                 className="text-ink text-[18px] font-bold leading-[24px] tracking-[-0.01em]"
               />
             );
           case "paragraph":
             return (
-              <TextInput
+              <AutoGrowInput
                 key={i}
                 value={block.text}
                 onChangeText={(t) => setText(i, t)}
-                multiline
                 placeholder={i === 0 ? firstPlaceholder : ""}
                 placeholderTextColor={c.ink3}
+                minHeight={26}
                 className="text-ink text-[16px] leading-[26px]"
                 style={{ textAlignVertical: "top" }}
               />

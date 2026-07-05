@@ -13,6 +13,7 @@ import { ChevronLeft, MoreHorizontal, Plus } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AutoGrowInput } from "../../components/blocks/auto-grow-input";
 import { BlockList } from "../../components/blocks/block-list";
 import { BlockToolbar } from "../../components/blocks/block-toolbar";
 import { useBlockEditor } from "../../components/blocks/use-block-editor";
@@ -110,7 +111,7 @@ export default function IdeaDetailScreen() {
 
         {/* Title */}
         <View className="px-screen mt-[22px]">
-          <TextInput
+          <AutoGrowInput
             value={title}
             onChangeText={setTitle}
             onBlur={() => {
@@ -118,9 +119,9 @@ export default function IdeaDetailScreen() {
               if (t && t !== idea.title) patch({ title: t });
               else if (!t) setTitle(idea.title);
             }}
-            multiline
             placeholder="Idea title"
             placeholderTextColor={c.ink3}
+            minHeight={30}
             className="text-ink text-[24px] font-bold leading-[30px] tracking-[-0.02em]"
           />
 
@@ -178,7 +179,7 @@ export default function IdeaDetailScreen() {
 
         {/* Writing canvas — the idea's free-flow body (controls above, document below) */}
         <View className="mx-screen border-line mt-7 border-t" />
-        <View className="px-screen mt-5" style={{ minHeight: 240 }}>
+        <View className="px-screen mt-5" style={{ minHeight: 360 }}>
           <BlockList
             blocks={editor.blocks}
             setText={editor.setText}

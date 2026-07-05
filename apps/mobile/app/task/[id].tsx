@@ -13,6 +13,7 @@ import { Bell, Calendar, Check, ChevronLeft, MoreHorizontal, Plus, Repeat, X } f
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AutoGrowInput } from "../../components/blocks/auto-grow-input";
 import { NoxDateTimePicker } from "../../components/date-time-picker";
 import { DropdownChip } from "../../components/dropdown-chip";
 import { OverflowMenu } from "../../components/overflow-menu";
@@ -162,7 +163,7 @@ export default function TaskDetailScreen() {
               <View className="border-ink-3 h-[26px] w-[26px] rounded-full border-[1.5px]" />
             )}
           </Pressable>
-          <TextInput
+          <AutoGrowInput
             value={title}
             onChangeText={setTitle}
             onBlur={() => {
@@ -170,9 +171,9 @@ export default function TaskDetailScreen() {
               if (t && t !== task.title) patch({ title: t });
               else if (!t) setTitle(task.title);
             }}
-            multiline
             placeholder="Task title"
             placeholderTextColor={c.ink3}
+            minHeight={27}
             className={`ml-[14px] flex-1 text-[22px] font-bold leading-[27px] tracking-[-0.02em] ${complete ? "text-ink-3 line-through" : "text-ink"}`}
           />
         </View>
@@ -308,16 +309,16 @@ export default function TaskDetailScreen() {
         {/* NOTES */}
         <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">NOTES</Text>
         <View className="mx-[20px] border-line bg-surface rounded-card min-h-[92px] border p-[14px]">
-          <TextInput
+          <AutoGrowInput
             value={notes}
             onChangeText={setNotes}
             onBlur={() => {
               const next = notes.trim() ? notes : null;
               if (next !== (task.notes ?? null)) patch({ notes: next });
             }}
-            multiline
             placeholder="Add notes…"
             placeholderTextColor={c.ink3}
+            minHeight={64}
             className="text-ink-2 text-[14px] leading-[22px]"
             style={{ textAlignVertical: "top", paddingTop: 0, marginTop: -2 }}
           />
