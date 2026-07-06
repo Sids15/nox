@@ -50,3 +50,17 @@ textarea:focus-visible,
   outline: none;
   box-shadow: none;
 }
+
+/*
+ * Monospace (labels / eyebrows / counts / timestamps). The Tailwind preset sets `font-mono: Menlo`,
+ * which only exists on macOS/iOS — so on Windows the browser falls back to its default `monospace`
+ * (Courier New), which looks dated. Override the WEB family with a modern technical stack (native
+ * keeps Menlo, compiled from the preset). Consolas ships on every Windows install, so this never
+ * falls back to Courier. `!important` beats NativeWind's generated `.font-mono` rule regardless of
+ * injection order.
+ */
+.font-mono {
+  font-family:
+    ui-monospace, "SF Mono", "SFMono-Regular", "Cascadia Code", "Cascadia Mono",
+    "JetBrains Mono", "Segoe UI Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
+}
