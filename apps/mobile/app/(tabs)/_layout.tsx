@@ -9,8 +9,9 @@ import { useIsDesktop } from "../../lib/use-responsive";
 export const unstable_settings = { initialRouteName: "tasks" };
 
 export default function TabsLayout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, recovery } = useAuth();
   const isDesktop = useIsDesktop();
+  if (recovery) return <Redirect href="/(auth)/reset-password" />;
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
 
   // Ideas · Notes · Tasks · Resources — no Settings tab (avatar/profile opens Settings). Tasks first.

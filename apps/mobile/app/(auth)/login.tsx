@@ -3,6 +3,7 @@ import { useAuth, useThemeColors } from "@nox/features";
 import { credentials, signUpInput, type SignUpInput } from "@nox/types";
 import { passwordStrength } from "@nox/utils";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Linking from "expo-linking";
 import { Apple, ArrowLeft, Check, ChevronLeft, Eye, EyeOff, Lock, Mail, MailCheck, User } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
@@ -16,6 +17,8 @@ type Mode = "signin" | "signup";
 
 const STRENGTH_COLOR = ["transparent", CORAL, "#3FB56E", "#3FB56E"] as const;
 const emailValid = (v: string) => credentials.shape.email.safeParse(v).success;
+/** Where confirmation / reset links return to — useAuthDeepLink exchanges the PKCE code there. */
+const authRedirect = () => Linking.createURL("/auth-callback");
 
 /** Uppercase field label (mono, tracked) matching the section labels used across the app. */
 function FieldLabel({ children }: { children: string }) {
@@ -102,7 +105,7 @@ export default function LoginScreen() {
       if (mode === "signin") {
         await signInWithPassword({ email: values.email, password: values.password });
       } else {
-        const session = await signUp(values);
+        const session = await signUp(values, authRedirect());
         if (!session) setSentTo(values.email); // "Confirm email" is on → verify by email
       }
     } catch (e) {
@@ -116,7 +119,7 @@ export default function LoginScreen() {
       return;
     }
     try {
-      await sendPasswordReset({ email });
+      await sendPasswordReset({ email }, authRedirect());
       Alert.alert("Check your email", `We sent a password reset link to ${email}.`);
     } catch (e) {
       Alert.alert("Couldn't send reset", authErrorMessage(e));

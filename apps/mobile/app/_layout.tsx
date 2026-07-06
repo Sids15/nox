@@ -21,6 +21,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { initSentry } from "../lib/sentry";
+import { useAuthDeepLink } from "../lib/use-auth-deeplink";
 import { useNotifications } from "../lib/use-notifications";
 
 initSentry();
@@ -55,6 +56,7 @@ function NotificationsBridge() {
 
 function RootNavigator() {
   useAuthBootstrap();
+  useAuthDeepLink();
   useRealtimeSync();
   const status = useSessionStore((s) => s.status);
   const prefsHydrated = usePrefs((s) => s.hydrated);
@@ -76,6 +78,7 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="auth-callback" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="account" />
