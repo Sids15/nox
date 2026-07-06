@@ -1,6 +1,6 @@
 import { useAuth, usePrefs, useThemeColors, type NotifKey } from "@nox/features";
 import { accents, type AccentName } from "@nox/ui";
-import { displayNameFrom, initialsFrom } from "@nox/utils";
+import { capitalize as cap, displayNameFrom, initialsFrom } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
@@ -10,7 +10,6 @@ import { Sidebar } from "../components/sidebar";
 import { ensurePermission } from "../lib/notifications";
 import { useIsDesktop } from "../lib/use-responsive";
 
-const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 const ACCENT_ORDER: AccentName[] = ["violet", "green", "coral", "blue"];
 
 function SectionLabel({ children }: { children: string }) {

@@ -1,7 +1,7 @@
 import { newId } from "@nox/db";
 import { useCreateResource, useCreateTag, useSessionStore, useThemeColors, useThemeVars, useUpdateResource } from "@nox/features";
 import { resourceTypes, type Resource, type ResourceInput, type Tag } from "@nox/types";
-import { domainFrom } from "@nox/utils";
+import { capitalize as cap, domainFrom } from "@nox/utils";
 import { ImagePlus, Link2, Plus, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useRef, useState } from "react";
@@ -26,7 +26,6 @@ function ImagePreview({ localUri, path }: { localUri: string | null; path: strin
   return <Image source={{ uri }} style={{ width: "100%", height: 150 }} resizeMode="cover" />;
 }
 
-const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 const TYPE_OPTS = resourceTypes.map((t) => ({ value: t, label: cap(t) }));
 
 function letterColor(seed: string): string {

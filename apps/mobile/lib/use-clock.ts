@@ -1,11 +1,24 @@
 import { useEffect, useState } from "react";
 
-/** Minute-resolution clock for desktop chrome (re-renders at most twice a minute). */
+/**
+ * Minute-resolution clock for desktop chrome. Ticks once per minute, aligned to the minute boundary,
+ * so it re-renders the sidebar exactly when the HH:MM label actually changes — not on a blind 30s
+ * timer that wasted half its renders (and their nav-count refilters) mid-minute.
+ */
 export function useClock(): Date {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(id);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const tick = () => setNow(new Date());
+    // Fire on the next minute boundary, then every 60s.
+    const timeout = setTimeout(() => {
+      tick();
+      interval = setInterval(tick, 60_000);
+    }, 60_000 - (Date.now() % 60_000));
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
   }, []);
   return now;
 }

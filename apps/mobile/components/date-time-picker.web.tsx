@@ -11,7 +11,7 @@ export interface NoxDateTimePickerProps {
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /** Web date/time picker — a native HTML input (rendered via ReactDOM in the web bundle). */
-export function NoxDateTimePicker({ value, mode, onChange, textColor }: NoxDateTimePickerProps) {
+export function NoxDateTimePicker({ value, mode, onChange, theme, textColor }: NoxDateTimePickerProps) {
   const asString =
     mode === "date"
       ? `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`
@@ -41,7 +41,7 @@ export function NoxDateTimePicker({ value, mode, onChange, textColor }: NoxDateT
           background: "transparent",
           color: textColor ?? "#fff",
           border: "none",
-          colorScheme: "dark",
+          colorScheme: theme === "light" ? "light" : "dark",
         }}
       />
     </View>

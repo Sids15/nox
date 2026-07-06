@@ -8,7 +8,7 @@ import {
   useToggleTask,
 } from "@nox/features";
 import type { Task } from "@nox/types";
-import { dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
+import { capitalize, dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, ListChecks, Plus, SlidersHorizontal } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
@@ -24,8 +24,6 @@ import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
 import { TaskEditor } from "../../components/tasks/task-editor";
 import { TaskRow } from "../../components/tasks/task-row";
 import { WeekStrip } from "../../components/tasks/week-strip";
-
-const capitalize = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
 /** A rounded group card of swipeable task rows. */
 function GroupCard({

@@ -7,7 +7,7 @@ import {
   useUpdateIdea,
 } from "@nox/features";
 import { priorityLevels, type ContentBlock, type Idea, type IdeaInput } from "@nox/types";
-import { relativeFromNow, shortDate } from "@nox/utils";
+import { capitalize as cap, relativeFromNow, shortDate } from "@nox/utils";
 import { ChevronLeft, MoreHorizontal, Plus } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -21,8 +21,6 @@ import { StatusStepper } from "./status-stepper";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { TagChip } from "../tag-chip";
 import { SegmentedControl } from "../tasks/segmented-control";
-
-const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
 function SectionLabel({ children }: { children: string }) {
   return (
