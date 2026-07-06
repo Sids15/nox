@@ -19,7 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
-import { OverflowMenu } from "../../components/overflow-menu";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { NoteEditor } from "../../components/notes/note-editor";
 import { NoteRow } from "../../components/notes/note-row";
@@ -39,21 +38,19 @@ function Card({ children }: { children: ReactNode }) {
   return <View className="border-line bg-surface rounded-card overflow-hidden border">{children}</View>;
 }
 
-/** A folder-pane nav row (desktop): icon · name · count, with an optional ⋯ for rename/delete. */
+/** A folder-pane nav row (desktop): icon · name · count. Folder actions live in the note-list header. */
 function FolderNavRow({
   icon: Icon,
   label,
   count,
   active,
   onPress,
-  onMenu,
 }: {
   icon: LucideIcon;
   label: string;
   count: number;
   active: boolean;
   onPress: () => void;
-  onMenu?: () => void;
 }) {
   const c = useThemeColors();
   return (
@@ -66,11 +63,6 @@ function FolderNavRow({
         {label}
       </Text>
       <Text className="text-ink-3 font-mono text-[10.5px] font-medium">{count}</Text>
-      {onMenu && (
-        <Pressable onPress={onMenu} hitSlop={8} accessibilityLabel="Folder options" className="ml-0.5">
-          <MoreHorizontal size={14} color={c.ink3} strokeWidth={1.8} />
-        </Pressable>
-      )}
     </Pressable>
   );
 }
@@ -85,7 +77,7 @@ export default function NotesScreen() {
   // Desktop 3-pane state: which folder scopes the list, which note is open, folder ⋯ menu / rename.
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [folderMenuId, setFolderMenuId] = useState<string | null>(null);
+  const [folderMenuOpen, setFolderMenuOpen] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
@@ -178,7 +170,6 @@ export default function NotesScreen() {
                     count={noteCount(f.id)}
                     active={selectedFolderId === f.id}
                     onPress={() => setSelectedFolderId(f.id)}
-                    onMenu={() => setFolderMenuId(f.id)}
                   />
                 ))}
               </View>
@@ -188,6 +179,21 @@ export default function NotesScreen() {
           {/* Pane 2 — note list */}
           <View className="border-line w-[320px] border-r pt-6">
             <View className="px-3">
+              {/* Scope header — folder name + rename/delete (act on the selected folder) */}
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text numberOfLines={1} className="text-ink flex-1 text-[15px] font-bold tracking-[-0.02em]">
+                  {scopeLabel}
+                </Text>
+                {selectedFolder && (
+                  <Pressable
+                    onPress={() => setFolderMenuOpen((v) => !v)}
+                    accessibilityLabel="Folder options"
+                    className="bg-chip rounded-pill hover:bg-elev ml-2 h-[28px] w-[28px] items-center justify-center"
+                  >
+                    <MoreHorizontal size={15} color={c.ink2} strokeWidth={1.8} />
+                  </Pressable>
+                )}
+              </View>
               <View className="bg-chip border-line rounded-input h-10 flex-row items-center gap-2.5 border px-3">
                 <Search size={14} color={c.ink3} strokeWidth={1.8} />
                 <TextInput
@@ -245,7 +251,7 @@ export default function NotesScreen() {
                     )}
                     {scopedRecent.length > 0 && (
                       <>
-                        <SectionLabel>{scopeLabel.toUpperCase()}</SectionLabel>
+                        <SectionLabel>NOTES</SectionLabel>
                         <Card>
                           {scopedRecent.map((n, i) => (
                             <View key={n.id}>
@@ -260,6 +266,37 @@ export default function NotesScreen() {
                 )}
               </View>
             </ScrollView>
+
+            {/* Folder actions dropdown — anchored inside this pane, under the header ⋯ */}
+            {folderMenuOpen && (
+              <>
+                <Pressable onPress={() => setFolderMenuOpen(false)} className="absolute inset-0 z-10" />
+                <View
+                  className="border-line bg-elev rounded-input absolute right-3 top-[56px] z-20 overflow-hidden border py-1"
+                  style={{ minWidth: 168, shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 12 }}
+                >
+                  <Pressable
+                    onPress={() => {
+                      setFolderMenuOpen(false);
+                      setRenameValue(selectedFolder?.name ?? "");
+                      setRenameId(selectedFolderId);
+                    }}
+                    className="hover:bg-chip px-4 py-2.5"
+                  >
+                    <Text className="text-ink text-[14px]">Rename folder</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setFolderMenuOpen(false);
+                      if (selectedFolderId) removeFolder(selectedFolderId);
+                    }}
+                    className="hover:bg-chip border-line border-t px-4 py-2.5"
+                  >
+                    <Text className="text-high text-[14px]">Delete folder</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Pane 3 — editor */}
@@ -279,29 +316,6 @@ export default function NotesScreen() {
             )}
           </View>
         </View>
-
-        {/* Folder ⋯ menu (rename / delete) */}
-        <OverflowMenu
-          visible={folderMenuId !== null}
-          onClose={() => setFolderMenuId(null)}
-          items={[
-            {
-              label: "Rename folder",
-              onPress: () => {
-                const f = folders.find((x) => x.id === folderMenuId);
-                setRenameValue(f?.name ?? "");
-                setRenameId(folderMenuId);
-              },
-            },
-            {
-              label: "Delete folder",
-              destructive: true,
-              onPress: () => {
-                if (folderMenuId) removeFolder(folderMenuId);
-              },
-            },
-          ]}
-        />
 
         {/* New folder modal */}
         <FolderNameModal
