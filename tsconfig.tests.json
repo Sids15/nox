@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "Type-checks the bun:test files, which the per-workspace app/package configs exclude (they'd otherwise fail on the bun:test import and pull bun globals into the app build). Wired into `typecheck` so the gate covers test code too.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["bun-types"]
+  },
+  "include": ["packages/**/*.test.ts", "apps/**/*.test.ts"],
+  "exclude": ["node_modules", "**/dist/**"]
+}
