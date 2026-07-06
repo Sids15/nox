@@ -13,14 +13,17 @@ const PRIORITY_LABEL: Record<Idea["priority"], string> = {
 };
 
 /** An idea list card: priority label + status pill · title · optional description · tags + age. */
-export function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
+export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPress: () => void; selected?: boolean }) {
   const c = useThemeColors();
   const priorityColor = { low: c.ink3, medium: c.medium, high: c.high, critical: c.critical }[
     idea.priority
   ];
 
   return (
-    <Pressable onPress={onPress} className="border-line bg-surface rounded-card hover:border-accent/[0.4] gap-2 border p-[14px]">
+    <Pressable
+      onPress={onPress}
+      className={`rounded-card gap-2 border p-[14px] ${selected ? "border-accent/[0.6] bg-elev" : "border-line bg-surface hover:border-accent/[0.4]"}`}
+    >
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-1.5">
           <View style={{ width: 6, height: 6, borderRadius: 99, backgroundColor: priorityColor }} />
