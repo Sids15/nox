@@ -7,18 +7,16 @@ import {
   useUpdateTask,
 } from "@nox/features";
 import { taskPriorityLevels, type Task, type TaskInput } from "@nox/types";
-import { formatTime12, relativeDayLabel, relativeFromNow, shortDate, toDateKey } from "@nox/utils";
+import { capitalize as cap, formatTime12, relativeDayLabel, relativeFromNow, shortDate, toDateKey } from "@nox/utils";
 import { Bell, Calendar, Check, ChevronLeft, MoreHorizontal, Plus, Repeat, X } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
 import { NoxDateTimePicker } from "../date-time-picker";
 import { DropdownChip } from "../dropdown-chip";
 import { OverflowMenu } from "../overflow-menu";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { SegmentedControl } from "./segmented-control";
-
-const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
 const PRIORITY_SOFT: Record<Task["priority"], string> = {
   low: "bg-chip",
@@ -107,12 +105,27 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
     setTemp(initial);
     setPicker(state);
   };
+  // A reminder is a time on the task's due day (or today if undated). Anchoring to the due date is
+  // what makes a reminder for a task due later actually schedule — planTaskReminders drops past times,
+  // so a time-only pick left on today's date would be silently discarded for a future-dated task.
+  const reminderInitial = () => {
+    const now = new Date();
+    const base = task.due_date ? dateFromKey(task.due_date) : new Date();
+    base.setHours(now.getHours(), now.getMinutes(), 0, 0);
+    return base;
+  };
   const confirmPicker = () => {
     if (!picker) return;
     if (picker.target === "due") {
       if (picker.mode === "date") patch({ due_date: toDateKey(temp) });
       else patch({ due_time: timeString(temp) });
     } else {
+      // Never add a chip that would be filtered out as past — tell the user instead of silently dropping it.
+      if (temp.getTime() <= Date.now()) {
+        Alert.alert("Time already passed", "Pick a future time so this reminder can fire.");
+        setPicker(null);
+        return;
+      }
       patch({ reminder_times: [...task.reminder_times, temp.toISOString()] });
     }
     setPicker(null);
@@ -246,7 +259,7 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
                 </Pressable>
               ))}
               <Pressable
-                onPress={() => openPicker({ mode: "time", target: "reminder" }, new Date())}
+                onPress={() => openPicker({ mode: "time", target: "reminder" }, reminderInitial())}
                 className="border-accent/[0.5] rounded-[8px] flex-row items-center border border-dashed px-2.5 py-1.5"
               >
                 <Plus size={12} color={c.accent} strokeWidth={2} />

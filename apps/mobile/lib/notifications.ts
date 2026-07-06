@@ -101,6 +101,19 @@ export async function setDailyNudge(kind: DailyKind, on: boolean): Promise<void>
   }
 }
 
+/**
+ * Cancel every scheduled local notification. Called on sign-out (the notifications bridge unmounts):
+ * one user's task reminders carry their task titles, so they must not keep firing for the next user
+ * on a shared device.
+ */
+export async function cancelAllNotifications(): Promise<void> {
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  } catch {
+    /* best-effort — notifications unsupported on this runtime */
+  }
+}
+
 /** The task id a notification tap should open, if any. */
 export function taskIdFromResponse(response: Notifications.NotificationResponse): string | null {
   const data = response.notification.request.content.data;

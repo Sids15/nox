@@ -17,6 +17,8 @@ export async function reconcileTaskReminders(_tasks: Task[]): Promise<void> {}
 
 export async function setDailyNudge(_kind: DailyKind, _on: boolean): Promise<void> {}
 
+export async function cancelAllNotifications(): Promise<void> {}
+
 export function taskIdFromResponse(_response: unknown): string | null {
   return null;
 }
