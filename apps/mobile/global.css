@@ -33,3 +33,20 @@
     --info: 76 127 224; /* #4C7FE0 — info / exploring */
   }
 }
+
+/*
+ * react-native-web renders every <TextInput> as a native <input>/<textarea>, which shows the
+ * browser's focus outline (a light ring/border) on focus. Nox uses its own focus affordances
+ * (accent borders + fills), so suppress the UA outline on text-entry elements app-wide rather than
+ * per-input. Scoped to inputs only, so buttons/links keep their keyboard-focus outline. Placed
+ * after @tailwind utilities so it wins on source order.
+ */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+[contenteditable]:focus,
+[contenteditable]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
