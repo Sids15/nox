@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Bookmark, FileText, Lightbulb, Search, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useState } from "react";
-import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Linking, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { noteMatches, noteTitle } from "./notes/note-utils";
 
 interface Hit {
@@ -12,6 +12,8 @@ interface Hit {
   type: string;
   icon: LucideIcon;
   route: string;
+  /** Resources have no detail route — open their link directly (undefined for other types). */
+  url?: string | null;
 }
 
 /** Global search across all four modules (the sidebar's ⌘K). Opens on click or Ctrl/⌘+K (web). */
@@ -60,14 +62,20 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
     for (const r of resources) {
       if (r.is_archived) continue;
       const hay = [r.title, r.url, r.body, r.domain].some((v) => v?.toLowerCase().includes(needle));
-      if (hay) out.push({ key: `res:${r.id}`, title: r.title ?? r.url ?? "Untitled", type: "Resource", icon: Bookmark, route: "/resources" });
+      if (hay) out.push({ key: `res:${r.id}`, title: r.title ?? r.url ?? "Untitled", type: "Resource", icon: Bookmark, route: "/resources", url: r.url });
     }
     return out.slice(0, 30);
   }, [q, ideas, notes, tasks, resources]);
 
-  const open = (route: string) => {
+  const open = (hit: Hit) => {
     onClose();
-    router.push(route as never);
+    // A resource with a link opens it (what tapping its card does); text resources fall back to the list.
+    if (hit.type === "Resource" && hit.url) {
+      const href = hit.url.startsWith("http") ? hit.url : `https://${hit.url}`;
+      Linking.openURL(href);
+      return;
+    }
+    router.push(hit.route as never);
   };
 
   return (
@@ -82,7 +90,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
               onChangeText={setQ}
               placeholder="Search ideas, notes, tasks, resources…"
               placeholderTextColor={c.ink3}
-              onSubmitEditing={() => hits[0] && open(hits[0].route)}
+              onSubmitEditing={() => hits[0] && open(hits[0])}
               className="text-ink flex-1 text-[15px]"
               style={{ paddingVertical: 0 }}
             />
@@ -94,7 +102,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
               <Text className="text-ink-3 px-4 py-6 text-center text-[13px]">No matches.</Text>
             ) : (
               hits.map((h) => (
-                <Pressable key={h.key} onPress={() => open(h.route)} className="hover:bg-chip flex-row items-center gap-3 px-4 py-2.5">
+                <Pressable key={h.key} onPress={() => open(h)} className="hover:bg-chip flex-row items-center gap-3 px-4 py-2.5">
                   <h.icon size={16} color={c.ink3} strokeWidth={1.7} />
                   <Text numberOfLines={1} className="text-ink flex-1 text-[14px]">{h.title}</Text>
                   <Text className="text-ink-3 font-mono text-[10px] uppercase tracking-[0.1em]">{h.type}</Text>
