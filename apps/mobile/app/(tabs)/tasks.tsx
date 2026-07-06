@@ -21,6 +21,7 @@ import { ProfileAvatar } from "../../components/profile-avatar";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
+import { TaskEditor } from "../../components/tasks/task-editor";
 import { TaskRow } from "../../components/tasks/task-row";
 import { WeekStrip } from "../../components/tasks/week-strip";
 
@@ -33,12 +34,15 @@ function GroupCard({
   onToggle,
   onDelete,
   onOpen,
+  selectedId,
 }: {
   rows: Task[];
   overdue?: boolean;
   onToggle: (t: Task) => void;
   onDelete: (t: Task) => void;
   onOpen: (t: Task) => void;
+  /** Desktop master-detail: which row is open in the editor pane (null on mobile). */
+  selectedId?: string | null;
 }) {
   return (
     <View className="border-line bg-surface rounded-card overflow-hidden border">
@@ -50,7 +54,7 @@ function GroupCard({
             onComplete={() => onToggle(t)}
             onDelete={() => onDelete(t)}
           >
-            <TaskRow task={t} overdue={overdue} onToggle={() => onToggle(t)} onPress={() => onOpen(t)} />
+            <TaskRow task={t} overdue={overdue} selected={t.id === selectedId} onToggle={() => onToggle(t)} onPress={() => onOpen(t)} />
           </SwipeableTaskRow>
         </View>
       ))}
@@ -80,6 +84,9 @@ export default function TasksScreen() {
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
+  // Desktop master-detail: the task currently open in the right-hand editor pane.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIsNew, setSelectedIsNew] = useState(false);
   const filtersActive = filters.status !== "all" || filters.priority !== "all" || filters.time !== "all";
 
   const { data: tasks = [], isLoading, isError, refetch } = useTasks();
@@ -133,7 +140,15 @@ export default function TasksScreen() {
   const onToggle = (t: Task) =>
     toggleTask.mutate({ id: t.id, status: t.status === "complete" ? "pending" : "complete" });
   const onDelete = (t: Task) => deleteTask.mutate(t.id);
-  const onOpen = (t: Task) => router.push(`/task/${t.id}`);
+  // Desktop: open in the editor pane (no navigation). Mobile: push the standalone route.
+  const onOpen = (t: Task) => {
+    if (isDesktop) {
+      setSelectedId(t.id);
+      setSelectedIsNew(false);
+    } else {
+      router.push(`/task/${t.id}`);
+    }
+  };
 
   // Create a draft task on the focused day and open its editor to configure it.
   const createAndOpen = () => {
@@ -147,16 +162,20 @@ export default function TasksScreen() {
       repeat: "none",
       repeat_config: null,
     });
-    router.push(`/task/${id}?new=1`);
+    if (isDesktop) {
+      setSelectedId(id);
+      setSelectedIsNew(true);
+    } else {
+      router.push(`/task/${id}?new=1`);
+    }
   };
 
   const title = focus === today ? "Today" : capitalize(relativeDayLabel(focus, today));
 
-  return (
-    <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+  const list = (
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 780, width: "100%", alignSelf: "center", paddingHorizontal: 10, paddingTop: 28 } : null) }}
+        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 12, paddingTop: 24 } : null) }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
@@ -230,7 +249,7 @@ export default function TasksScreen() {
               {overdue.length > 0 && (
                 <>
                   <SectionLabel text="OVERDUE" count={overdue.length} tone="overdue" />
-                  <GroupCard rows={overdue} overdue onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} />
+                  <GroupCard rows={overdue} overdue onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
                 </>
               )}
 
@@ -238,7 +257,7 @@ export default function TasksScreen() {
                 <>
                   <SectionLabel text="COMPLETED" count={completedOnly.length} />
                   {completedOnly.length > 0 ? (
-                    <GroupCard rows={completedOnly} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} />
+                    <GroupCard rows={completedOnly} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
                   ) : (
                     <Text className="text-ink-3 mt-2 text-[14px]">Nothing completed yet.</Text>
                   )}
@@ -247,7 +266,7 @@ export default function TasksScreen() {
                 <>
                   <SectionLabel text={title.toUpperCase()} count={dayTasks.length} />
                   {dayTasks.length > 0 && (
-                    <GroupCard rows={dayTasks} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} />
+                    <GroupCard rows={dayTasks} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
                   )}
                   <Pressable
                     onPress={createAndOpen}
@@ -277,7 +296,7 @@ export default function TasksScreen() {
                       </Pressable>
                       {upcomingOpen && (
                         <View className="mt-2">
-                          <GroupCard rows={upcoming} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} />
+                          <GroupCard rows={upcoming} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
                         </View>
                       )}
                     </>
@@ -288,27 +307,63 @@ export default function TasksScreen() {
           )}
         </View>
       </ScrollView>
+  );
 
-      {/* FAB (mobile; desktop creates from the header +) */}
-      {!isDesktop && (
-        <Pressable
-          onPress={createAndOpen}
-          accessibilityRole="button"
-          accessibilityLabel="Add task"
-          className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-          style={{
-            right: 20,
-            bottom: 112,
-            shadowColor: c.accent,
-            shadowOpacity: 0.4,
-            shadowRadius: 13,
-            shadowOffset: { width: 0, height: 10 },
-            elevation: 8,
-          }}
-        >
-          <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-        </Pressable>
-      )}
+  // Desktop: master-detail — the list on the left, the editor pane (or a placeholder) on the right.
+  if (isDesktop) {
+    const selectedTask = selectedId ? tasks.find((t) => t.id === selectedId) : undefined;
+    return (
+      <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+        <View className="flex-1 flex-row">
+          <View className="border-line w-[400px] border-r">{list}</View>
+          <View className="flex-1">
+            {selectedTask ? (
+              <TaskEditor
+                key={selectedId}
+                id={selectedId!}
+                isNew={selectedIsNew}
+                onClose={() => setSelectedId(null)}
+              />
+            ) : (
+              <View className="flex-1 items-center justify-center">
+                <EmptyState
+                  icon={ListChecks}
+                  title="No task selected"
+                  subtitle="Pick a task to see its details, or start a new one."
+                  actionLabel="New task"
+                  onAction={createAndOpen}
+                />
+              </View>
+            )}
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Mobile: single-column list; a task opens the standalone /task/[id] route.
+  return (
+    <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+      {list}
+
+      {/* FAB */}
+      <Pressable
+        onPress={createAndOpen}
+        accessibilityRole="button"
+        accessibilityLabel="Add task"
+        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
+        style={{
+          right: 20,
+          bottom: 112,
+          shadowColor: c.accent,
+          shadowOpacity: 0.4,
+          shadowRadius: 13,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 8,
+        }}
+      >
+        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
+      </Pressable>
     </SafeAreaView>
   );
 }

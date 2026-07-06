@@ -17,12 +17,15 @@ export function TaskRow({
   onToggle,
   onPress,
   overdue = false,
+  selected = false,
 }: {
   task: Task;
   onToggle: () => void;
   onPress: () => void;
   /** Overdue rows show the relative due day + time in the coral overdue color. */
   overdue?: boolean;
+  /** Desktop master-detail: the row currently open in the editor pane (accent rail + raised fill). */
+  selected?: boolean;
 }) {
   const c = useThemeColors();
   const complete = task.status === "complete";
@@ -32,7 +35,8 @@ export function TaskRow({
   const recurring = task.repeat !== "none" || task.origin_task_id !== null;
 
   return (
-    <Pressable onPress={onPress} className="bg-surface hover:bg-elev min-h-[58px] flex-row items-center px-[14px]">
+    <Pressable onPress={onPress} className={`min-h-[58px] flex-row items-center px-[14px] ${selected ? "bg-elev" : "bg-surface hover:bg-elev"}`}>
+      {selected && <View className="bg-accent absolute bottom-0 left-0 top-0 w-[2px]" />}
       <Pressable onPress={onToggle} hitSlop={10} accessibilityRole="checkbox" accessibilityState={{ checked: complete }}>
         {complete ? (
           <View className="bg-accent h-[22px] w-[22px] items-center justify-center rounded-full">
