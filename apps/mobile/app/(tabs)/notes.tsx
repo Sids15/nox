@@ -1,14 +1,17 @@
 import {
   useCreateFolder,
   useCreateNote,
+  useDeleteFolder,
   useFolders,
   useNotes,
+  useRenameFolder,
   useThemeColors,
   useThemeVars,
 } from "@nox/features";
+import type { LucideIcon } from "lucide-react-native";
 import type { Note } from "@nox/types";
 import { useRouter } from "expo-router";
-import { ChevronRight, Folder, FolderPlus, NotebookPen, Plus, Search } from "lucide-react-native";
+import { ChevronRight, Folder, FolderPlus, MoreHorizontal, NotebookPen, Plus, Search } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -16,7 +19,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
+import { OverflowMenu } from "../../components/overflow-menu";
 import { useIsDesktop } from "../../lib/use-responsive";
+import { NoteEditor } from "../../components/notes/note-editor";
 import { NoteRow } from "../../components/notes/note-row";
 import { PinnedNoteCard } from "../../components/notes/pinned-note-card";
 import { noteMatches } from "../../components/notes/note-utils";
@@ -34,19 +39,62 @@ function Card({ children }: { children: ReactNode }) {
   return <View className="border-line bg-surface rounded-card overflow-hidden border">{children}</View>;
 }
 
+/** A folder-pane nav row (desktop): icon · name · count, with an optional ⋯ for rename/delete. */
+function FolderNavRow({
+  icon: Icon,
+  label,
+  count,
+  active,
+  onPress,
+  onMenu,
+}: {
+  icon: LucideIcon;
+  label: string;
+  count: number;
+  active: boolean;
+  onPress: () => void;
+  onMenu?: () => void;
+}) {
+  const c = useThemeColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-row items-center gap-2.5 rounded-[10px] px-[11px] py-2 ${active ? "bg-accent/[0.12]" : "hover:bg-chip"}`}
+    >
+      <Icon size={16} color={active ? c.accent : c.ink2} strokeWidth={1.8} />
+      <Text numberOfLines={1} className={`flex-1 text-[13px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>
+        {label}
+      </Text>
+      <Text className="text-ink-3 font-mono text-[10.5px] font-medium">{count}</Text>
+      {onMenu && (
+        <Pressable onPress={onMenu} hitSlop={8} accessibilityLabel="Folder options" className="ml-0.5">
+          <MoreHorizontal size={14} color={c.ink3} strokeWidth={1.8} />
+        </Pressable>
+      )}
+    </Pressable>
+  );
+}
+
 export default function NotesScreen() {
   const router = useRouter();
   const c = useThemeColors();
-  const themeVars = useThemeVars();
   const isDesktop = useIsDesktop();
   const [search, setSearch] = useState("");
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
+  // Desktop 3-pane state: which folder scopes the list, which note is open, folder ⋯ menu / rename.
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [folderMenuId, setFolderMenuId] = useState<string | null>(null);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const { data: notes = [], isLoading, isError, refetch } = useNotes();
   const { data: folders = [] } = useFolders();
   const createNote = useCreateNote();
   const createFolder = useCreateFolder();
+  const renameFolder = useRenameFolder();
+  const deleteFolder = useDeleteFolder();
 
   const active = useMemo(() => notes.filter((n) => !n.is_archived), [notes]);
   const filtered = useMemo(() => active.filter((n) => noteMatches(n, search)), [active, search]);
@@ -54,16 +102,21 @@ export default function NotesScreen() {
   const recent = filtered.filter((n) => !n.is_pinned);
   const noteCount = (folderId: string) => active.filter((n) => n.folder_id === folderId).length;
 
-  const openNote = (n: Note) => router.push(`/note/${n.id}`);
+  const openNote = (n: Note) => {
+    if (isDesktop) setSelectedNoteId(n.id);
+    else router.push(`/note/${n.id}`);
+  };
   const createAndOpen = () => {
     const id = createNote.create({
       title: null,
       type: "text",
       content: [{ type: "paragraph", text: "" }],
-      folder_id: null,
+      // Desktop: drop the new note into whatever folder is in focus.
+      folder_id: isDesktop ? selectedFolderId : null,
       tags: [],
     });
-    router.push(`/note/${id}`);
+    if (isDesktop) setSelectedNoteId(id);
+    else router.push(`/note/${id}`);
   };
   const submitFolder = () => {
     const name = folderName.trim();
@@ -71,70 +124,253 @@ export default function NotesScreen() {
     setFolderName("");
     setNewFolderOpen(false);
   };
+  const submitRename = () => {
+    const next = renameValue.trim();
+    if (next && renameId) renameFolder.mutate({ id: renameId, name: next });
+    setRenameId(null);
+  };
+  const removeFolder = (fid: string) => {
+    deleteFolder.mutate(fid);
+    if (selectedFolderId === fid) setSelectedFolderId(null);
+  };
 
+  // ── Desktop: folders · note list · editor ─────────────────────────────────────────────────────
+  if (isDesktop) {
+    const scoped = filtered.filter((n) => selectedFolderId === null || n.folder_id === selectedFolderId);
+    const scopedPinned = scoped.filter((n) => n.is_pinned);
+    const scopedRecent = scoped.filter((n) => !n.is_pinned);
+    const selectedNote = selectedNoteId ? notes.find((n) => n.id === selectedNoteId) : undefined;
+    const selectedFolder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : undefined;
+    const scopeLabel = selectedFolder ? selectedFolder.name : "All notes";
+
+    return (
+      <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+        <View className="flex-1 flex-row">
+          {/* Pane 1 — folders */}
+          <View className="border-line w-[248px] border-r px-2 pt-6">
+            <View className="flex-row items-center justify-between px-[9px]">
+              <Text className="text-ink text-[17px] font-bold tracking-[-0.02em]">Notes</Text>
+              <Pressable
+                onPress={() => setNewFolderOpen(true)}
+                accessibilityLabel="New folder"
+                className="bg-chip rounded-pill hover:bg-elev h-[30px] w-[30px] items-center justify-center"
+              >
+                <FolderPlus size={15} color={c.ink2} strokeWidth={1.8} />
+              </Pressable>
+            </View>
+            <Text className="text-ink-3 mb-3 mt-1.5 px-[9px] font-mono text-[10px] font-medium tracking-[0.14em]">
+              {active.length} NOTES · {folders.length} FOLDERS
+            </Text>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              <View className="gap-0.5">
+                <FolderNavRow
+                  icon={NotebookPen}
+                  label="All notes"
+                  count={active.length}
+                  active={selectedFolderId === null}
+                  onPress={() => setSelectedFolderId(null)}
+                />
+                {folders.map((f) => (
+                  <FolderNavRow
+                    key={f.id}
+                    icon={Folder}
+                    label={f.name}
+                    count={noteCount(f.id)}
+                    active={selectedFolderId === f.id}
+                    onPress={() => setSelectedFolderId(f.id)}
+                    onMenu={() => setFolderMenuId(f.id)}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Pane 2 — note list */}
+          <View className="border-line w-[320px] border-r pt-6">
+            <View className="px-3">
+              <View className="bg-chip border-line rounded-input h-10 flex-row items-center gap-2.5 border px-3">
+                <Search size={14} color={c.ink3} strokeWidth={1.8} />
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search notes…"
+                  placeholderTextColor={c.ink3}
+                  className="text-ink flex-1 text-[13.5px]"
+                  style={{ paddingVertical: 0 }}
+                />
+              </View>
+              <Pressable
+                onPress={createAndOpen}
+                className="bg-accent/[0.12] rounded-input mt-2.5 h-10 flex-row items-center justify-center gap-2"
+              >
+                <Plus size={15} color={c.accent} strokeWidth={2.2} />
+                <Text className="text-accent text-[13.5px] font-semibold">New note</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+              <View className="px-3">
+                {isError && notes.length === 0 ? (
+                  <EmptyState
+                    icon={NotebookPen}
+                    title="Couldn't load notes"
+                    subtitle="Check your connection and try again."
+                    actionLabel="Try again"
+                    onAction={() => refetch()}
+                  />
+                ) : isLoading && notes.length === 0 ? (
+                  <View className="mt-3">
+                    <ListSkeleton />
+                  </View>
+                ) : scoped.length === 0 ? (
+                  <EmptyState
+                    icon={search ? Search : NotebookPen}
+                    title={search ? "No notes match" : "No notes here"}
+                    subtitle={search ? "Try a different search." : "Create one to fill this folder."}
+                  />
+                ) : (
+                  <>
+                    {scopedPinned.length > 0 && (
+                      <>
+                        <SectionLabel>PINNED</SectionLabel>
+                        <Card>
+                          {scopedPinned.map((n, i) => (
+                            <View key={n.id}>
+                              {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                              <NoteRow note={n} selected={n.id === selectedNoteId} onPress={() => openNote(n)} />
+                            </View>
+                          ))}
+                        </Card>
+                      </>
+                    )}
+                    {scopedRecent.length > 0 && (
+                      <>
+                        <SectionLabel>{scopeLabel.toUpperCase()}</SectionLabel>
+                        <Card>
+                          {scopedRecent.map((n, i) => (
+                            <View key={n.id}>
+                              {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                              <NoteRow note={n} selected={n.id === selectedNoteId} onPress={() => openNote(n)} />
+                            </View>
+                          ))}
+                        </Card>
+                      </>
+                    )}
+                  </>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Pane 3 — editor */}
+          <View className="flex-1">
+            {selectedNote ? (
+              <NoteEditor key={selectedNoteId} id={selectedNoteId!} onClose={() => setSelectedNoteId(null)} />
+            ) : (
+              <View className="flex-1 items-center justify-center">
+                <EmptyState
+                  icon={NotebookPen}
+                  title="No note selected"
+                  subtitle="Pick a note to read or edit, or start a new one."
+                  actionLabel="New note"
+                  onAction={createAndOpen}
+                />
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Folder ⋯ menu (rename / delete) */}
+        <OverflowMenu
+          visible={folderMenuId !== null}
+          onClose={() => setFolderMenuId(null)}
+          items={[
+            {
+              label: "Rename folder",
+              onPress: () => {
+                const f = folders.find((x) => x.id === folderMenuId);
+                setRenameValue(f?.name ?? "");
+                setRenameId(folderMenuId);
+              },
+            },
+            {
+              label: "Delete folder",
+              destructive: true,
+              onPress: () => {
+                if (folderMenuId) removeFolder(folderMenuId);
+              },
+            },
+          ]}
+        />
+
+        {/* New folder modal */}
+        <FolderNameModal
+          visible={newFolderOpen}
+          title="New folder"
+          value={folderName}
+          onChange={setFolderName}
+          onSubmit={submitFolder}
+          onCancel={() => setNewFolderOpen(false)}
+          submitLabel="Create"
+        />
+
+        {/* Rename folder modal */}
+        <FolderNameModal
+          visible={renameId !== null}
+          title="Rename folder"
+          value={renameValue}
+          onChange={setRenameValue}
+          onSubmit={submitRename}
+          onCancel={() => setRenameId(null)}
+          submitLabel="Save"
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Mobile: Notes home (pinned cards · folders · recent) ──────────────────────────────────────
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { maxWidth: 780, width: "100%", alignSelf: "center", paddingHorizontal: 10, paddingTop: 28 } : null) }}
+        contentContainerStyle={{ paddingBottom: 150 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header — desktop: 26px title + "New note" pill; mobile: 30px title */}
-        {isDesktop ? (
-          <DesktopHeader
-            eyebrow={`${active.length} NOTES · ${folders.length} FOLDERS`}
-            title="Notes"
-            actionLabel="New note"
-            onAction={createAndOpen}
-          >
+        <View className="px-screen flex-row items-start justify-between pt-2">
+          <View>
+            <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
+              {active.length} NOTES · {folders.length} FOLDERS
+            </Text>
+            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
+              Notes
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
             <Pressable
               onPress={() => setNewFolderOpen(true)}
-              accessibilityLabel="New folder"
               className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
             >
               <FolderPlus size={16} color={c.ink2} strokeWidth={1.8} />
             </Pressable>
-          </DesktopHeader>
-        ) : (
-          <View className="px-screen flex-row items-start justify-between pt-2">
-            <View>
-              <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-                {active.length} NOTES · {folders.length} FOLDERS
-              </Text>
-              <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
-                Notes
-              </Text>
-            </View>
-            <View className="flex-row items-center gap-2">
-              <Pressable
-                onPress={() => setNewFolderOpen(true)}
-                className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
-              >
-                <FolderPlus size={16} color={c.ink2} strokeWidth={1.8} />
-              </Pressable>
-              <ProfileAvatar />
-            </View>
+            <ProfileAvatar />
           </View>
-        )}
+        </View>
 
-        {/* Search (mobile — desktop uses the sidebar's ⌘K) */}
-        {!isDesktop && (
-          <View className="px-screen mt-5">
-            <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
-              <Search size={15} color={c.ink3} strokeWidth={1.8} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search notes…"
-                placeholderTextColor={c.ink3}
-                className="text-ink flex-1 text-[14.5px]"
-                style={{ paddingVertical: 0 }}
-              />
-            </View>
+        <View className="px-screen mt-5">
+          <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
+            <Search size={15} color={c.ink3} strokeWidth={1.8} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search notes…"
+              placeholderTextColor={c.ink3}
+              className="text-ink flex-1 text-[14.5px]"
+              style={{ paddingVertical: 0 }}
+            />
           </View>
-        )}
+        </View>
 
         <View className="px-screen">
           {isError && notes.length === 0 ? (
@@ -217,58 +453,85 @@ export default function NotesScreen() {
         </View>
       </ScrollView>
 
-      {/* FAB (mobile; desktop creates from the header +) */}
-      {!isDesktop && (
-        <Pressable
-          onPress={createAndOpen}
-          accessibilityRole="button"
-          accessibilityLabel="New note"
-          className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-          style={{
-            right: 20,
-            bottom: 112,
-            shadowColor: c.accent,
-            shadowOpacity: 0.4,
-            shadowRadius: 13,
-            shadowOffset: { width: 0, height: 10 },
-            elevation: 8,
-          }}
-        >
-          <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-        </Pressable>
-      )}
+      {/* FAB */}
+      <Pressable
+        onPress={createAndOpen}
+        accessibilityRole="button"
+        accessibilityLabel="New note"
+        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
+        style={{
+          right: 20,
+          bottom: 112,
+          shadowColor: c.accent,
+          shadowOpacity: 0.4,
+          shadowRadius: 13,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 8,
+        }}
+      >
+        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
+      </Pressable>
 
       {/* New folder modal */}
-      <Modal transparent visible={newFolderOpen} animationType="fade" onRequestClose={() => setNewFolderOpen(false)}>
-        <Pressable
-          onPress={() => setNewFolderOpen(false)}
-          style={vars(themeVars)}
-          className="flex-1 items-center justify-center bg-black/60 px-8"
-        >
-          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full border p-4">
-            <Text className="text-ink mb-3 text-[15px] font-semibold">New folder</Text>
-            <TextInput
-              autoFocus
-              value={folderName}
-              onChangeText={setFolderName}
-              onSubmitEditing={submitFolder}
-              returnKeyType="done"
-              placeholder="Folder name"
-              placeholderTextColor={c.ink3}
-              className="bg-chip rounded-input text-ink mb-3 h-11 px-3 text-[14px]"
-              style={{ paddingVertical: 0 }}
-            />
-            <View className="flex-row justify-end gap-2">
-              <Pressable onPress={() => setNewFolderOpen(false)} className="px-4 py-2">
-                <Text className="text-ink-2 text-[14px]">Cancel</Text>
-              </Pressable>
-              <Pressable onPress={submitFolder} className="bg-accent rounded-input px-4 py-2">
-                <Text className="text-on-accent text-[14px] font-semibold">Create</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <FolderNameModal
+        visible={newFolderOpen}
+        title="New folder"
+        value={folderName}
+        onChange={setFolderName}
+        onSubmit={submitFolder}
+        onCancel={() => setNewFolderOpen(false)}
+        submitLabel="Create"
+      />
     </SafeAreaView>
+  );
+}
+
+/** Shared new-folder / rename-folder modal (a single labeled input + Cancel/confirm). */
+function FolderNameModal({
+  visible,
+  title,
+  value,
+  onChange,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: {
+  visible: boolean;
+  title: string;
+  value: string;
+  onChange: (t: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  submitLabel: string;
+}) {
+  const c = useThemeColors();
+  const themeVars = useThemeVars();
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
+      <Pressable onPress={onCancel} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-8">
+        <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full max-w-[380px] border p-4">
+          <Text className="text-ink mb-3 text-[15px] font-semibold">{title}</Text>
+          <TextInput
+            autoFocus
+            value={value}
+            onChangeText={onChange}
+            onSubmitEditing={onSubmit}
+            returnKeyType="done"
+            placeholder="Folder name"
+            placeholderTextColor={c.ink3}
+            className="bg-chip rounded-input text-ink mb-3 h-11 px-3 text-[14px]"
+            style={{ paddingVertical: 0 }}
+          />
+          <View className="flex-row justify-end gap-2">
+            <Pressable onPress={onCancel} className="px-4 py-2">
+              <Text className="text-ink-2 text-[14px]">Cancel</Text>
+            </Pressable>
+            <Pressable onPress={onSubmit} className="bg-accent rounded-input px-4 py-2">
+              <Text className="text-on-accent text-[14px] font-semibold">{submitLabel}</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
