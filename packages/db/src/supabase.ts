@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
 import { env } from "./env";
 import { secureStoreAdapter } from "./secure-store-adapter";
 
@@ -14,7 +14,10 @@ export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     storage: secureStoreAdapter,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // On web, let supabase-js parse the redirect URL itself — it handles both the PKCE `?code=`
+    // and the token fragment (`#access_token=…`) that Supabase's default confirmation link returns.
+    // Native has no URL bar, so `useAuthDeepLink` exchanges the `?code=` from the deep link instead.
+    detectSessionInUrl: Platform.OS === "web",
     flowType: "pkce",
   },
 });

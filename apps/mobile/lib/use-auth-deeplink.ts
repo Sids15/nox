@@ -5,16 +5,20 @@ import { useEffect } from "react";
 import { Platform } from "react-native";
 
 /**
- * Handles auth redirect links — email confirmation, password reset (and, later, OAuth). Every link
- * returns to `/auth-callback` carrying a PKCE `?code=…`, which we exchange for a session on this
- * device (the matching code verifier was stored locally when the flow was started). On success the
- * auth state change drives routing; on failure we fall back to the login screen. Mount once at the
- * root, inside the navigation tree.
+ * Handles auth redirect links on NATIVE — email confirmation, password reset (and, later, OAuth).
+ * Every link returns to `nox://auth-callback` carrying a PKCE `?code=…`, which we exchange for a
+ * session on this device (the matching code verifier was stored locally when the flow was started).
+ * On success the auth state change drives routing; on failure we fall back to the login screen.
+ * On web, supabase-js parses the redirect URL itself (`detectSessionInUrl`), so this is a no-op.
+ * Mount once at the root, inside the navigation tree.
  */
 export function useAuthDeepLink(): void {
   const { exchangeCodeForSession } = useAuth();
 
   useEffect(() => {
+    // Web is handled by supabase-js's detectSessionInUrl; exchanging here too would spend the code
+    // twice and bounce the just-authed user to login.
+    if (Platform.OS === "web") return;
     let cancelled = false;
     // A cold-start link can arrive via both getInitialURL and the listener; exchange each code once
     // (a spent code would throw and wrongly bounce an already-authed user to login).
@@ -30,8 +34,6 @@ export function useAuthDeepLink(): void {
         // Success: onAuthStateChange sets the session (or the recovery flag); the gate routes onward.
       } catch {
         if (!cancelled) router.replace("/(auth)/login");
-      } finally {
-        clearCodeFromUrl();
       }
     };
 
@@ -47,14 +49,4 @@ export function useAuthDeepLink(): void {
       sub.remove();
     };
   }, [exchangeCodeForSession]);
-}
-
-/** Drop the spent `?code=` from the web URL so a refresh can't try to re-exchange it. */
-function clearCodeFromUrl(): void {
-  if (Platform.OS !== "web" || typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  if (url.searchParams.has("code")) {
-    url.searchParams.delete("code");
-    window.history.replaceState({}, "", url.toString());
-  }
 }
