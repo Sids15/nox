@@ -1,4 +1,5 @@
 import { AuthRepository } from "@nox/api";
+import { queryClient, queryPersister } from "@nox/db";
 import { useEffect } from "react";
 import { useSessionStore } from "./session-store";
 
@@ -17,7 +18,16 @@ export function useAuthBootstrap(): void {
     const unsubscribe = AuthRepository.onAuthStateChange((event, session) => {
       setSession(session);
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
-      else if (event === "SIGNED_OUT") setRecovery(false);
+      else if (event === "SIGNED_OUT") {
+        setRecovery(false);
+        // Purge cached data AND any queued offline writes so nothing crosses an account boundary on
+        // a shared device: without this, a write queued by the previous user would replay under the
+        // next user's session (creating their private content in the new account), and cached rows
+        // would linger. clear() empties both caches in memory; removeClient() drops the persisted
+        // snapshot so a queued write can't resume on the next launch either.
+        queryClient.clear();
+        void queryPersister.removeClient();
+      }
     });
     return unsubscribe;
   }, [setSession, setRecovery]);
