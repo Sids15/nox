@@ -106,8 +106,11 @@ export default function RootLayout() {
           client={queryClient}
           persistOptions={{
             persister: queryPersister,
-            // Persist paused (offline-queued) writes too, not just the query cache.
-            dehydrateOptions: { shouldDehydrateMutation: () => true },
+            // Persist only paused (offline-queued) writes — the ones resumePausedMutations can
+            // actually resume. Persisting an in-flight mutation would leave it stuck "pending"
+            // forever after a mid-flight kill (never paused, so never resumed), inflating the
+            // sync indicator permanently.
+            dehydrateOptions: { shouldDehydrateMutation: (m) => m.state.isPaused },
           }}
           onSuccess={() => {
             // Cache rehydrated on launch — flush any writes that were queued before the last exit.
