@@ -4,6 +4,9 @@ import type { Folder, FolderInput } from "@nox/types";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { folderKeys } from "./note-keys";
 
+// FolderRepository is still the sole Supabase touchpoint via useFolders' list query; the write
+// functions now live in the mutation registry (keyed by ["folder", …]) for offline durability.
+
 function snapshot(qc: QueryClient): Folder[] {
   return qc.getQueryData<Folder[]>(folderKeys.all) ?? [];
 }
@@ -16,7 +19,7 @@ export function useFolders() {
 export function useCreateFolder() {
   const qc = useQueryClient();
   const mutation = useMutation<Folder, Error, { input: FolderInput; id: string }, { previous: Folder[] }>({
-    mutationFn: ({ input, id }) => FolderRepository.create(input, id),
+    mutationKey: ["folder", "create"],
     onMutate: async ({ input, id }) => {
       await qc.cancelQueries({ queryKey: folderKeys.all });
       const previous = snapshot(qc);
@@ -50,16 +53,16 @@ export function useCreateFolder() {
 
 export function useRenameFolder() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => FolderRepository.rename(id, name),
+  return useMutation<Folder, Error, { id: string; name: string }>({
+    mutationKey: ["folder", "rename"],
     onSettled: () => qc.invalidateQueries({ queryKey: folderKeys.all }),
   });
 }
 
 export function useDeleteFolder() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => FolderRepository.softDelete(id),
+  return useMutation<unknown, Error, string, { previous: Folder[] }>({
+    mutationKey: ["folder", "delete"],
     onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: folderKeys.all });
       const previous = snapshot(qc);

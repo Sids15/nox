@@ -2,8 +2,9 @@ import "react-native-gesture-handler";
 import "react-native-url-polyfill/auto";
 import "../global.css";
 
-import { queryClient, queryPersister } from "@nox/db";
+import { queryClient, queryPersister, setupOnlineManager } from "@nox/db";
 import {
+  registerMutationDefaults,
   useAuthBootstrap,
   usePrefs,
   useRealtimeSync,
@@ -21,10 +22,15 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { initSentry } from "../lib/sentry";
+import { SyncBanner } from "../components/sync-banner";
 import { useAuthDeepLink } from "../lib/use-auth-deeplink";
 import { useNotifications } from "../lib/use-notifications";
 
 initSentry();
+// Wire real connectivity so offline writes pause (queue) instead of failing, and register every
+// write's network function by key so a persisted, queued write can resume after an app restart.
+setupOnlineManager();
+registerMutationDefaults(queryClient);
 
 /**
  * Applies the active theme at runtime: the NativeWind `vars()` map drives every class-based color,
@@ -73,8 +79,9 @@ function RootNavigator() {
   }
 
   return (
-    <>
+    <View className="flex-1">
       {status === "authenticated" && <NotificationsBridge />}
+      <SyncBanner />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
@@ -87,7 +94,7 @@ function RootNavigator() {
         <Stack.Screen name="note/[id]" />
         <Stack.Screen name="folder/[id]" />
       </Stack>
-    </>
+    </View>
   );
 }
 
@@ -97,7 +104,15 @@ export default function RootLayout() {
       <ThemeProvider>
         <PersistQueryClientProvider
           client={queryClient}
-          persistOptions={{ persister: queryPersister }}
+          persistOptions={{
+            persister: queryPersister,
+            // Persist paused (offline-queued) writes too, not just the query cache.
+            dehydrateOptions: { shouldDehydrateMutation: () => true },
+          }}
+          onSuccess={() => {
+            // Cache rehydrated on launch — flush any writes that were queued before the last exit.
+            void queryClient.resumePausedMutations();
+          }}
         >
           <SafeAreaProvider>
             <RootNavigator />

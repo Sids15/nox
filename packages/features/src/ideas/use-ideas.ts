@@ -1,7 +1,7 @@
 import { IdeaRepository, type IdeaStatus } from "@nox/api";
 import { newId } from "@nox/db";
 import type { Idea, IdeaInput } from "@nox/types";
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type MutationKey, type QueryClient } from "@tanstack/react-query";
 import { ideaKeys } from "./idea-keys";
 
 function snapshot(qc: QueryClient): Idea[] {
@@ -25,7 +25,7 @@ export function useCreateIdea() {
     { input: IdeaInput; id: string },
     { previous: Idea[] }
   >({
-    mutationFn: ({ input, id }) => IdeaRepository.create(input, id),
+    mutationKey: ["idea", "create"],
     onMutate: async ({ input, id }) => {
       await qc.cancelQueries({ queryKey: ideaKeys.all });
       const previous = snapshot(qc);
@@ -63,10 +63,10 @@ export function useCreateIdea() {
 }
 
 /** Shared optimistic-patch mutation helper for the single-idea updates below. */
-function useIdeaPatch<V>(mutationFn: (v: V) => Promise<Idea>, patchFor: (v: V) => Partial<Idea>) {
+function useIdeaPatch<V>(mutationKey: MutationKey, patchFor: (v: V) => Partial<Idea>) {
   const qc = useQueryClient();
   return useMutation<Idea, Error, V, { previous: Idea[] }>({
-    mutationFn,
+    mutationKey,
     onMutate: async (v) => {
       await qc.cancelQueries({ queryKey: ideaKeys.all });
       const previous = snapshot(qc);
@@ -86,33 +86,26 @@ function useIdeaPatch<V>(mutationFn: (v: V) => Promise<Idea>, patchFor: (v: V) =
 
 /** Patch an idea's editable fields (title/description/priority/status/tags). */
 export function useUpdateIdea() {
-  return useIdeaPatch<{ id: string; patch: Partial<IdeaInput> }>(
-    ({ id, patch }) => IdeaRepository.update(id, patch),
-    ({ patch }) => patch,
-  );
+  return useIdeaPatch<{ id: string; patch: Partial<IdeaInput> }>(["idea", "update"], ({ patch }) => patch);
 }
 
 /** Advance an idea along the status pipeline (or drop it). */
 export function useSetIdeaStatus() {
-  return useIdeaPatch<{ id: string; status: IdeaStatus }>(
-    ({ id, status }) => IdeaRepository.setStatus(id, status),
-    ({ status }) => ({ status }),
-  );
+  return useIdeaPatch<{ id: string; status: IdeaStatus }>(["idea", "status"], ({ status }) => ({ status }));
 }
 
 /** Archive / unarchive (archived ideas drop out of the active list). */
 export function useArchiveIdea() {
-  return useIdeaPatch<{ id: string; isArchived: boolean }>(
-    ({ id, isArchived }) => IdeaRepository.setArchived(id, isArchived),
-    ({ isArchived }) => ({ is_archived: isArchived }),
-  );
+  return useIdeaPatch<{ id: string; isArchived: boolean }>(["idea", "archive"], ({ isArchived }) => ({
+    is_archived: isArchived,
+  }));
 }
 
 /** Soft-delete an idea, removing it from the cache immediately. */
 export function useDeleteIdea() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => IdeaRepository.softDelete(id),
+  return useMutation<unknown, Error, string, { previous: Idea[] }>({
+    mutationKey: ["idea", "delete"],
     onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: ideaKeys.all });
       const previous = snapshot(qc);

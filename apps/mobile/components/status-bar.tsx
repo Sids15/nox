@@ -1,8 +1,22 @@
-import { useFolders, useIdeas, useNotes, useResources, useTags, useTasks } from "@nox/features";
+import { useFolders, useIdeas, useNotes, useResources, useSyncStatus, useTags, useTasks, useThemeColors } from "@nox/features";
 import { todayKey } from "@nox/utils";
 import { usePathname } from "expo-router";
 import { Text, View } from "react-native";
 import { MODULE_CHORD, SEARCH_CHORD } from "./sidebar";
+
+/** Offline / queued-write indicator; renders nothing when online and idle. */
+function SyncChip() {
+  const { online, pending } = useSyncStatus();
+  const c = useThemeColors();
+  if (online && pending === 0) return null;
+  const label = !online ? (pending > 0 ? `Offline · ${pending} queued` : "Offline") : `Syncing ${pending}…`;
+  return (
+    <View className="flex-row items-center gap-1.5">
+      <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: online ? c.accent : c.ink3 }} />
+      <Text className="text-ink-3 font-mono text-[10px] font-medium tracking-[0.04em]">{label}</Text>
+    </View>
+  );
+}
 
 /**
  * Desktop status strip: live facts about the current module on the left, quiet keyboard hints on
@@ -38,9 +52,12 @@ export function StatusBar() {
   return (
     <View className="border-line bg-surface h-[26px] flex-row items-center justify-between border-t px-4">
       <Text className="text-ink-3 font-mono text-[10px] font-medium tracking-[0.04em]">{summary}</Text>
-      <Text className="text-ink-3 font-mono text-[10px] font-medium tracking-[0.04em]">
-        {SEARCH_CHORD} search · {MODULE_CHORD} modules
-      </Text>
+      <View className="flex-row items-center gap-4">
+        <SyncChip />
+        <Text className="text-ink-3 font-mono text-[10px] font-medium tracking-[0.04em]">
+          {SEARCH_CHORD} search · {MODULE_CHORD} modules
+        </Text>
+      </View>
     </View>
   );
 }

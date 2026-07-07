@@ -1,7 +1,7 @@
 import { NoteRepository } from "@nox/api";
 import { newId } from "@nox/db";
 import type { Note, NoteInput } from "@nox/types";
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type MutationKey, type QueryClient } from "@tanstack/react-query";
 import { noteKeys } from "./note-keys";
 
 function snapshot(qc: QueryClient): Note[] {
@@ -17,7 +17,7 @@ export function useNotes() {
 export function useCreateNote() {
   const qc = useQueryClient();
   const mutation = useMutation<Note, Error, { input: NoteInput; id: string }, { previous: Note[] }>({
-    mutationFn: ({ input, id }) => NoteRepository.create(input, id),
+    mutationKey: ["note", "create"],
     onMutate: async ({ input, id }) => {
       await qc.cancelQueries({ queryKey: noteKeys.all });
       const previous = snapshot(qc);
@@ -52,10 +52,10 @@ export function useCreateNote() {
 }
 
 /** Optimistic-patch helper shared by the single-note updates below. */
-function useNotePatch<V>(mutationFn: (v: V) => Promise<Note>, patchFor: (v: V) => Partial<Note>) {
+function useNotePatch<V>(mutationKey: MutationKey, patchFor: (v: V) => Partial<Note>) {
   const qc = useQueryClient();
   return useMutation<Note, Error, V, { previous: Note[] }>({
-    mutationFn,
+    mutationKey,
     onMutate: async (v) => {
       await qc.cancelQueries({ queryKey: noteKeys.all });
       const previous = snapshot(qc);
@@ -78,31 +78,26 @@ function useNotePatch<V>(mutationFn: (v: V) => Promise<Note>, patchFor: (v: V) =
 
 /** Patch a note's editable fields (title/content/tags/folder) — the editor's debounced auto-save. */
 export function useUpdateNote() {
-  return useNotePatch<{ id: string; patch: Partial<NoteInput> }>(
-    ({ id, patch }) => NoteRepository.update(id, patch),
-    ({ patch }) => patch,
-  );
+  return useNotePatch<{ id: string; patch: Partial<NoteInput> }>(["note", "update"], ({ patch }) => patch);
 }
 
 export function useSetNotePinned() {
-  return useNotePatch<{ id: string; isPinned: boolean }>(
-    ({ id, isPinned }) => NoteRepository.setPinned(id, isPinned),
-    ({ isPinned }) => ({ is_pinned: isPinned }),
-  );
+  return useNotePatch<{ id: string; isPinned: boolean }>(["note", "pin"], ({ isPinned }) => ({
+    is_pinned: isPinned,
+  }));
 }
 
 export function useArchiveNote() {
-  return useNotePatch<{ id: string; isArchived: boolean }>(
-    ({ id, isArchived }) => NoteRepository.setArchived(id, isArchived),
-    ({ isArchived }) => ({ is_archived: isArchived }),
-  );
+  return useNotePatch<{ id: string; isArchived: boolean }>(["note", "archive"], ({ isArchived }) => ({
+    is_archived: isArchived,
+  }));
 }
 
 /** Soft-delete a note, removing it from the cache immediately. */
 export function useDeleteNote() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => NoteRepository.softDelete(id),
+  return useMutation<unknown, Error, string, { previous: Note[] }>({
+    mutationKey: ["note", "delete"],
     onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: noteKeys.all });
       const previous = snapshot(qc);

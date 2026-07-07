@@ -17,7 +17,7 @@ export function useTags() {
 export function useCreateTag() {
   const qc = useQueryClient();
   const mutation = useMutation<Tag, Error, { input: TagInput; id: string }, { previous: Tag[] }>({
-    mutationFn: ({ input, id }) => TagRepository.create(input, id),
+    mutationKey: ["tag", "create"],
     onMutate: async ({ input, id }) => {
       await qc.cancelQueries({ queryKey: tagKeys.all });
       const previous = snapshot(qc);
@@ -45,8 +45,8 @@ export function useCreateTag() {
 
 export function useDeleteTag() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => TagRepository.softDelete(id),
+  return useMutation<unknown, Error, string, { previous: Tag[] }>({
+    mutationKey: ["tag", "delete"],
     onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: tagKeys.all });
       const previous = snapshot(qc);

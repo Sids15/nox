@@ -48,7 +48,7 @@ export function useCreateTask() {
     { input: TaskInput; id: string },
     { previous: Task[] }
   >({
-    mutationFn: ({ input, id }) => TaskRepository.create(input, id),
+    mutationKey: ["task", "create"],
     onMutate: async ({ input, id }) => {
       await qc.cancelQueries({ queryKey: taskKeys.all });
       const previous = snapshot(qc);
@@ -94,9 +94,8 @@ export function useCreateTask() {
 /** Complete / un-complete a task, updating the cache immediately. */
 export function useToggleTask() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: ToggleableStatus }) =>
-      TaskRepository.setStatus(id, status),
+  return useMutation<Task, Error, { id: string; status: ToggleableStatus }, { previous: Task[] }>({
+    mutationKey: ["task", "status"],
     onMutate: async ({ id, status }) => {
       await qc.cancelQueries({ queryKey: taskKeys.all });
       const previous = snapshot(qc);
@@ -116,9 +115,8 @@ export function useToggleTask() {
 /** Patch a task's editable fields (used by the detail editor). */
 export function useUpdateTask() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<TaskInput> }) =>
-      TaskRepository.update(id, patch),
+  return useMutation<Task, Error, { id: string; patch: Partial<TaskInput> }, { previous: Task[] }>({
+    mutationKey: ["task", "update"],
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey: taskKeys.all });
       const previous = snapshot(qc);
@@ -138,8 +136,8 @@ export function useUpdateTask() {
 /** Soft-delete a task, removing it from the cache immediately. */
 export function useDeleteTask() {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => TaskRepository.softDelete(id),
+  return useMutation<unknown, Error, string, { previous: Task[] }>({
+    mutationKey: ["task", "delete"],
     onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: taskKeys.all });
       const previous = snapshot(qc);

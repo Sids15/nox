@@ -50,3 +50,5 @@ export {
 export { useTags, useCreateTag, useDeleteTag } from "./resources/use-tags";
 export { resourceKeys, tagKeys } from "./resources/resource-keys";
 export { useRealtimeSync } from "./sync/use-realtime-sync";
+export { registerMutationDefaults } from "./sync/mutation-registry";
+export { useSyncStatus } from "./sync/use-sync-status";

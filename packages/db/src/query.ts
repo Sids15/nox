@@ -17,6 +17,10 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: 2,
+      // Always fire the first attempt optimistically; if the network is unreachable, pause and queue
+      // the write instead of erroring + rolling back, so offline edits survive to reconnect. Requires
+      // onlineManager to be wired to real connectivity — see setupOnlineManager in online.ts.
+      networkMode: "offlineFirst",
     },
   },
 });
