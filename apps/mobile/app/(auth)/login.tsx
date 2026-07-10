@@ -8,7 +8,8 @@ import { Apple, ArrowLeft, Check, ChevronLeft, Eye, EyeOff, Lock, Mail, MailChec
 import { useState, type ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
 import { useForm } from "react-hook-form";
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert } from "../../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { authErrorMessage } from "../../lib/auth-errors";
 import { CORAL, CORAL_GRADIENT } from "../../lib/auth-theme";

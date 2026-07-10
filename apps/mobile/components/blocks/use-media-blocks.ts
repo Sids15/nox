@@ -1,7 +1,7 @@
 import { newId } from "@nox/db";
 import { useSessionStore } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
-import { Alert } from "react-native";
+import { Alert } from "../../lib/alert";
 import { pickImage } from "../../lib/media";
 import { uploadToBucket } from "../../lib/storage";
 
