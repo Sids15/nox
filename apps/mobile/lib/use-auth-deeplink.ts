@@ -2,23 +2,20 @@ import { useAuth } from "@nox/features";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { Platform } from "react-native";
 
 /**
  * Handles auth redirect links on NATIVE — email confirmation, password reset (and, later, OAuth).
  * Every link returns to `nox://auth-callback` carrying a PKCE `?code=…`, which we exchange for a
  * session on this device (the matching code verifier was stored locally when the flow was started).
  * On success the auth state change drives routing; on failure we fall back to the login screen.
- * On web, supabase-js parses the redirect URL itself (`detectSessionInUrl`), so this is a no-op.
+ * The web target has its own sibling (`use-auth-deeplink.web.ts`): a browser tab lets supabase-js
+ * parse the URL, while the Tauri shell receives the same `nox://` link over the deep-link plugin.
  * Mount once at the root, inside the navigation tree.
  */
 export function useAuthDeepLink(): void {
   const { exchangeCodeForSession } = useAuth();
 
   useEffect(() => {
-    // Web is handled by supabase-js's detectSessionInUrl; exchanging here too would spend the code
-    // twice and bounce the just-authed user to login.
-    if (Platform.OS === "web") return;
     let cancelled = false;
     // A cold-start link can arrive via both getInitialURL and the listener; exchange each code once
     // (a spent code would throw and wrongly bounce an already-authed user to login).

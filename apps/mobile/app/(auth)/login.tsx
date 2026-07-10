@@ -3,7 +3,6 @@ import { useAuth, useThemeColors } from "@nox/features";
 import { credentials, signUpInput, type SignUpInput } from "@nox/types";
 import { passwordStrength } from "@nox/utils";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Linking from "expo-linking";
 import { Apple, ArrowLeft, Check, ChevronLeft, Eye, EyeOff, Lock, Mail, MailCheck, User } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
@@ -12,14 +11,13 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, Tex
 import { Alert } from "../../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { authErrorMessage } from "../../lib/auth-errors";
+import { authRedirect } from "../../lib/auth-redirect";
 import { CORAL, CORAL_GRADIENT } from "../../lib/auth-theme";
 
 type Mode = "signin" | "signup";
 
 const STRENGTH_COLOR = ["transparent", CORAL, "#3FB56E", "#3FB56E"] as const;
 const emailValid = (v: string) => credentials.shape.email.safeParse(v).success;
-/** Where confirmation / reset links return to — useAuthDeepLink exchanges the PKCE code there. */
-const authRedirect = () => Linking.createURL("/auth-callback");
 
 /** Uppercase field label (mono, tracked) matching the section labels used across the app. */
 function FieldLabel({ children }: { children: string }) {
