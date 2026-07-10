@@ -26,7 +26,18 @@ export default function AccountScreen() {
   const c = useThemeColors();
   const themeVars = useThemeVars();
   const isDesktop = useIsDesktop();
-  const { session, updatePassword, updateEmail } = useAuth();
+  const { session, updatePassword, updateEmail, signOut } = useAuth();
+
+  // Mirrors reset-password.tsx: end the session and send the user back to sign in with the new
+  // credential. `finally` so a failed sign-out still leaves them on the login screen rather than
+  // stranded in an authed shell whose password just changed.
+  const afterPasswordChange = async () => {
+    try {
+      await signOut();
+    } finally {
+      router.replace("/(auth)/login");
+    }
+  };
 
   const email = session?.user?.email ?? "";
   const name = displayNameFrom(email);
@@ -158,7 +169,7 @@ export default function AccountScreen() {
         <View className="flex-1">{isDesktop ? desktopBody : mobileBody}</View>
       </View>
 
-      <ChangePasswordModal visible={pwOpen} desktop={isDesktop} onClose={() => setPwOpen(false)} onSubmit={updatePassword} themeVars={themeVars} />
+      <ChangePasswordModal visible={pwOpen} desktop={isDesktop} onClose={() => setPwOpen(false)} onSubmit={updatePassword} onChanged={() => void afterPasswordChange()} themeVars={themeVars} />
       <ChangeEmailModal visible={emailOpen} desktop={isDesktop} currentEmail={email} onClose={() => setEmailOpen(false)} onSubmit={updateEmail} themeVars={themeVars} />
     </SafeAreaView>
   );
@@ -308,12 +319,15 @@ function ChangePasswordModal({
   desktop,
   onClose,
   onSubmit,
+  onChanged,
   themeVars,
 }: {
   visible: boolean;
   desktop: boolean;
   onClose: () => void;
   onSubmit: (pw: string) => Promise<void>;
+  /** Runs after a successful change: signs the user out and returns them to the login screen. */
+  onChanged: () => void;
   themeVars: Record<string, string>;
 }) {
   const c = useThemeColors();
@@ -343,7 +357,10 @@ function ChangePasswordModal({
     try {
       await onSubmit(pw);
       close();
-      Alert.alert("Password updated", "Use your new password next time you sign in.");
+      Alert.alert("Password updated", "Sign in again with your new password.");
+      // Changing the password invalidates nothing on other devices by itself, so end this session
+      // explicitly and make the user re-authenticate with the new credential.
+      onChanged();
     } catch (e) {
       setError(authErrorMessage(e));
       setBusy(false);

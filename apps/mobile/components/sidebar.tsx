@@ -97,7 +97,7 @@ export function Sidebar() {
       <View className="flex-row items-center justify-between px-2 pb-1">
         <View className="flex-row items-center gap-2">
           <Image
-            source={require("../assets/nox-logo.png")}
+            source={require("../assets/nox-wordmark.png")}
             style={{ width: 48, height: 28 }}
             resizeMode="contain"
             accessibilityLabel="Nox"

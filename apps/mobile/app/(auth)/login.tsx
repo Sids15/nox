@@ -188,15 +188,12 @@ export default function LoginScreen() {
           {/* Heading */}
           {mode === "signin" ? (
             <>
-              <View className="flex-row items-end gap-2">
-                <Image
-                  source={require("../../assets/nox-logo.png")}
-                  style={{ width: 96, height: 56 }}
-                  resizeMode="contain"
-                  accessibilityLabel="Nox"
-                />
-                <Text style={{ color: CORAL, marginBottom: 6 }} className="text-[30px] font-bold">.</Text>
-              </View>
+              <Image
+                source={require("../../assets/nox-wordmark.png")}
+                style={{ width: 96, height: 56 }}
+                resizeMode="contain"
+                accessibilityLabel="Nox"
+              />
               <Text className="text-ink-2 mt-3 text-[15px] leading-[22px]">
                 Ideas, notes, tasks and resources —{"\n"}one quiet place, on every device.
               </Text>
