@@ -36,9 +36,9 @@ function BreathingDot({ color }: { color: string }) {
 }
 
 /**
- * Desktop rail. The wordmark's dot is the sky right now (violet at night — Nox at night is itself,
- * gold by day, ember at dusk), with a matching faint crown gradient and an hour-true greeting under
- * a live clock. Alt+1–4 switches modules; Ctrl/⌘K opens search.
+ * Desktop rail. A faint crown gradient carries the sky right now (violet at night — Nox at night is
+ * itself, gold by day, ember at dusk), over an hour-true greeting and a live clock. Alt+1–4 switches
+ * modules; Ctrl/⌘K opens search.
  */
 export function Sidebar() {
   const c = useThemeColors();
@@ -93,28 +93,14 @@ export function Sidebar() {
         style={{ position: "absolute", top: 0, left: 0, right: 0, height: 130, pointerEvents: "none" }}
       />
 
-      {/* Logomark + sky dot + live clock */}
+      {/* Logomark + live clock */}
       <View className="flex-row items-center justify-between px-2 pb-1">
-        <View className="flex-row items-center gap-2">
-          <Image
-            source={require("../assets/nox-wordmark.png")}
-            style={{ width: 48, height: 28 }}
-            resizeMode="contain"
-            accessibilityLabel="Nox"
-          />
-          <View
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: 99,
-              backgroundColor: sky,
-              shadowColor: sky,
-              shadowOpacity: 0.9,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 0 },
-            }}
-          />
-        </View>
+        <Image
+          source={require("../assets/nox-wordmark.png")}
+          style={{ width: 48, height: 28 }}
+          resizeMode="contain"
+          accessibilityLabel="Nox"
+        />
         <Text className="text-ink-3 font-mono text-[11px] font-medium">{clockLabel(now)}</Text>
       </View>
       <Text className="text-ink-2 px-2 pb-3.5 text-[12px]">{greeting(now, name)}</Text>
