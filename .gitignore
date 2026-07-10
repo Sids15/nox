@@ -34,6 +34,10 @@ supabase/.branches/
 supabase/.temp/
 **/.supabase/
 
+# Tauri / Rust build output (Cargo.lock is committed — this is a binary crate)
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+
 # Build / cache
 *.tsbuildinfo
 .cache/
