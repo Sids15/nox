@@ -3,7 +3,8 @@ import { Heading, Image as ImageIcon, Link2, Mic, Pilcrow, Square } from "lucide
 import { vars } from "nativewind";
 import { useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
-import { useVoiceRecorder } from "../../lib/audio";
+import { Alert } from "../../lib/alert";
+import { useVoiceRecorder, type Recording } from "../../lib/audio";
 
 const fmt = (ms: number) => {
   const s = Math.round(ms / 1000);
@@ -26,7 +27,7 @@ export function BlockToolbar({
   onAddParagraph: () => void;
   onAddLink: (url: string) => void;
   onAddImage?: () => void;
-  onRecordComplete?: (uri: string, durationMs: number) => void;
+  onRecordComplete?: (rec: Recording) => void;
 }) {
   const c = useThemeColors();
   const themeVars = useThemeVars();
@@ -41,7 +42,14 @@ export function BlockToolbar({
   };
   const stopRec = async () => {
     const r = await rec.stop();
-    if (r && onRecordComplete) onRecordComplete(r.uri, r.durationMs);
+    if (r && onRecordComplete) onRecordComplete(r);
+  };
+
+  // start() returns false when there's no mic, no supported container, or permission was refused.
+  // Without this the mic button would look like a no-op and the user would just keep tapping it.
+  const startRec = async () => {
+    if (await rec.start()) return;
+    Alert.alert("Can't record", "Nox needs microphone access to record a voice note. Check your browser or system permissions and try again.");
   };
 
   return (
@@ -76,7 +84,7 @@ export function BlockToolbar({
             <Pressable onPress={onAddImage} disabled={!onAddImage} hitSlop={6} className="px-2">
               <ImageIcon size={19} color={onAddImage ? c.ink2 : c.ink3} strokeWidth={1.9} />
             </Pressable>
-            <Pressable onPress={() => rec.start()} disabled={!onRecordComplete} hitSlop={6} className="px-2">
+            <Pressable onPress={() => void startRec()} disabled={!onRecordComplete} hitSlop={6} className="px-2">
               <Mic size={19} color={onRecordComplete ? c.ink2 : c.ink3} strokeWidth={1.9} />
             </Pressable>
           </View>

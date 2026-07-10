@@ -12,7 +12,15 @@ import { useEffect, useRef } from "react";
 export interface Recording {
   uri: string;
   durationMs: number;
+  /** Content type to upload with. Must be in the `audio` bucket's allowed_mime_types. */
+  mimeType: string;
+  /** File extension for the storage object, matching `mimeType`. */
+  ext: string;
 }
+
+/** expo-audio's HIGH_QUALITY preset records AAC in an MP4 container. */
+const NATIVE_MIME = "audio/m4a";
+const NATIVE_EXT = "m4a";
 
 /** Inline voice recorder. `start` requests mic permission and begins; `stop` returns the local
  *  `.m4a` file + duration (null if nothing was captured). */
@@ -52,7 +60,7 @@ export function useVoiceRecorder() {
   const stop = async (): Promise<Recording | null> => {
     const durationMs = Math.round(state.durationMillis ?? 0);
     await recorder.stop();
-    return recorder.uri ? { uri: recorder.uri, durationMs } : null;
+    return recorder.uri ? { uri: recorder.uri, durationMs, mimeType: NATIVE_MIME, ext: NATIVE_EXT } : null;
   };
 
   return { isRecording: state.isRecording, durationMs: state.durationMillis ?? 0, start, stop };

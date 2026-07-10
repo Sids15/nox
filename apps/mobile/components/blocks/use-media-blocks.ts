@@ -2,6 +2,7 @@ import { newId } from "@nox/db";
 import { useSessionStore } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { Alert } from "../../lib/alert";
+import type { Recording } from "../../lib/audio";
 import { pickImage } from "../../lib/media";
 import { uploadToBucket } from "../../lib/storage";
 
@@ -53,10 +54,13 @@ export function useMediaBlocks(parentId: string, editor: EditorMediaApi) {
     if (path) editor.patchMedia((b) => b.type === "image" && b.localUri === localUri, { storagePath: path });
   };
 
-  const addAudio = async (localUri: string, durationMs: number) => {
+  // The container isn't fixed: native records AAC/m4a, the browser may only offer WebM/Opus. Upload
+  // what was actually captured — a webm blob labelled audio/m4a is rejected by the bucket's
+  // allowed_mime_types, and the failure looks like a silently vanishing voice note.
+  const addAudio = async ({ uri: localUri, durationMs, mimeType, ext }: Recording) => {
     if (!userId) return;
     editor.insertMedia({ type: "audio", localUri, storagePath: null, durationMs });
-    const path = await uploadToBucket("audio", `${userId}/${parentId}/${newId()}.m4a`, localUri, "audio/m4a");
+    const path = await uploadToBucket("audio", `${userId}/${parentId}/${newId()}.${ext}`, localUri, mimeType);
     if (path) editor.patchMedia((b) => b.type === "audio" && b.localUri === localUri, { storagePath: path });
   };
 
