@@ -57,7 +57,14 @@ export const usePrefs = create<PrefsState>()(
         taskReminders: s.taskReminders,
         lastCarryoverOn: s.lastCarryoverOn,
       }),
-      onRehydrateStorage: () => (state) => state?.setHydrated(),
+      // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
+      // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first
+      // paint on that flag, so a broken store hung the app on its spinner instead of falling back to
+      // the default theme. Always mark hydrated; surface the failure rather than swallowing it.
+      onRehydrateStorage: () => (state, error) => {
+        if (error) console.warn("[prefs] rehydrate failed; using defaults:", error);
+        (state ?? usePrefs.getState()).setHydrated();
+      },
     },
   ),
 );
