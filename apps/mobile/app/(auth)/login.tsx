@@ -188,9 +188,11 @@ export default function LoginScreen() {
           {/* Heading */}
           {mode === "signin" ? (
             <>
+              {/* Tinted, not raw: the asset is white-on-transparent and this screen's bg-bg follows
+                  the theme, so an untinted mark would vanish on light. */}
               <Image
                 source={require("../../assets/nox-wordmark.png")}
-                style={{ width: 96, height: 56 }}
+                style={{ width: 96, height: 56, tintColor: c.ink }}
                 resizeMode="contain"
                 accessibilityLabel="Nox"
               />

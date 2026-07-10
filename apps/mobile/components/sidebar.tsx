@@ -95,9 +95,11 @@ export function Sidebar() {
 
       {/* Logomark + live clock */}
       <View className="flex-row items-center justify-between px-2 pb-1">
+        {/* The wordmark asset is white-on-transparent, so it must be tinted or it disappears on the
+            light theme. react-native-web composites tintColor against the alpha channel. */}
         <Image
           source={require("../assets/nox-wordmark.png")}
-          style={{ width: 48, height: 28 }}
+          style={{ width: 48, height: 28, tintColor: c.ink }}
           resizeMode="contain"
           accessibilityLabel="Nox"
         />
