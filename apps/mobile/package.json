@@ -7,6 +7,7 @@
     "ios": "expo start --ios",
     "android": "expo start --android",
     "web": "expo start --web --port 8081",
+    "web:desktop": "EXPO_NO_DEPENDENCY_VALIDATION=1 expo start --web --port 8081",
     "export:web": "expo export -p web",
     "typecheck": "tsc --noEmit"
   },

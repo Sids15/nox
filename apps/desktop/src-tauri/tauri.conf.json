@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "app.nox.desktop",
   "build": {
-    "beforeDevCommand": "bun run --cwd ../mobile web",
+    "beforeDevCommand": "bun run --cwd ../mobile web:desktop",
     "devUrl": "http://localhost:8081",
     "beforeBuildCommand": "bun run --cwd ../mobile export:web",
     "frontendDist": "../../mobile/dist"
