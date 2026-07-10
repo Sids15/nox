@@ -46,3 +46,8 @@ Thumbs.db
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+
+# Markdown — project docs stay local-only, never committed.
+# Note: this only affects UNtracked files. To drop a doc that's already in the index,
+# `git rm --cached <file>` first. A doc you genuinely want in the repo needs `git add -f`.
+*.md
