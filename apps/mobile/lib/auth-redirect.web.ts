@@ -1,4 +1,4 @@
-import { isTauri } from "./tauri";
+import { isTauri } from "@nox/db";
 
 /** The deep link Windows routes back to the running app. Already in the Supabase allow-list. */
 const DESKTOP_REDIRECT = "nox://auth-callback";

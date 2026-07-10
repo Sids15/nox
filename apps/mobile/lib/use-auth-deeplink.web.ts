@@ -1,8 +1,8 @@
+import { isTauri } from "@nox/db";
 import { useAuth } from "@nox/features";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { isTauri } from "./tauri";
 
 /**
  * Read a `nox://auth-callback?code=…` / `…#error=…` link. Supabase puts a success code in the query

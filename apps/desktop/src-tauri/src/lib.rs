@@ -1,5 +1,7 @@
-/// Nox desktop shell. The whole UI is the Expo web build running in the system WebView2;
-/// this crate only owns the window, the `nox://` deep link, and (later) the OS-keystore adapter.
+mod secret_store;
+
+/// Nox desktop shell. The whole UI is the Expo web build running in the system WebView2; this crate
+/// owns the window, the `nox://` deep link, and the OS-keystore backing for the auth session.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
@@ -14,6 +16,11 @@ pub fn run() {
 
     builder
         .plugin(tauri_plugin_deep_link::init())
+        .invoke_handler(tauri::generate_handler![
+            secret_store::secret_get,
+            secret_store::secret_set,
+            secret_store::secret_delete,
+        ])
         .setup(|_app| {
             // Installers register `nox://` for us, but a dev build was never installed, so claim the
             // scheme at runtime. Windows-only in effect; harmless to call each launch.
