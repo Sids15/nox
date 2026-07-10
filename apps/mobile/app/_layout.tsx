@@ -22,6 +22,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { initSentry } from "../lib/sentry";
+import { DialogHost } from "../components/dialog-host";
 import { SyncChrome } from "../components/sync-banner";
 import { useAuthDeepLink } from "../lib/use-auth-deeplink";
 import { useNotifications } from "../lib/use-notifications";
@@ -95,6 +96,8 @@ function RootNavigator() {
           <Stack.Screen name="folder/[id]" />
         </Stack>
       </SyncChrome>
+      {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}
+      <DialogHost />
     </View>
   );
 }
