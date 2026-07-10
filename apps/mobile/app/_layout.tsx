@@ -22,7 +22,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { initSentry } from "../lib/sentry";
-import { SyncBanner } from "../components/sync-banner";
+import { SyncChrome } from "../components/sync-banner";
 import { useAuthDeepLink } from "../lib/use-auth-deeplink";
 import { useNotifications } from "../lib/use-notifications";
 
@@ -81,19 +81,20 @@ function RootNavigator() {
   return (
     <View className="flex-1">
       {status === "authenticated" && <NotificationsBridge />}
-      <SyncBanner />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="auth-callback" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="settings" />
-        <Stack.Screen name="account" />
-        <Stack.Screen name="task/[id]" />
-        <Stack.Screen name="idea/[id]" />
-        <Stack.Screen name="note/[id]" />
-        <Stack.Screen name="folder/[id]" />
-      </Stack>
+      <SyncChrome>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="auth-callback" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="settings" />
+          <Stack.Screen name="account" />
+          <Stack.Screen name="task/[id]" />
+          <Stack.Screen name="idea/[id]" />
+          <Stack.Screen name="note/[id]" />
+          <Stack.Screen name="folder/[id]" />
+        </Stack>
+      </SyncChrome>
     </View>
   );
 }

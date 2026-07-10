@@ -1,27 +1,33 @@
 import { useSyncStatus, useThemeColors } from "@nox/features";
+import type { ReactNode } from "react";
 import { Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsDesktop } from "../lib/use-responsive";
+
+/** Visible only for work the user needs to know about: offline, or writes still queued. */
+function useBannerVisible(): boolean {
+  const { online, queued } = useSyncStatus();
+  const isDesktop = useIsDesktop();
+  // Desktop carries this in the StatusBar chip instead. Never show for merely in-flight writes —
+  // that would flash the bar on every tap (see useSyncStatus).
+  return !isDesktop && (!online || queued > 0);
+}
 
 /**
  * Slim top strip shown only when the device is offline or writes are still queued — so the user knows
- * their edits are saved locally and will sync. Hidden when online + idle, and on desktop (where the
- * StatusBar already carries the sync chip). Uses the active theme tokens; no dedicated palette.
+ * their edits are saved locally and will sync. Uses the active theme tokens; no dedicated palette.
  */
-export function SyncBanner() {
-  const { online, pending } = useSyncStatus();
+function SyncBanner() {
+  const { online, queued } = useSyncStatus();
   const insets = useSafeAreaInsets();
-  const isDesktop = useIsDesktop();
   const c = useThemeColors();
 
-  if (isDesktop || (online && pending === 0)) return null;
-
-  const plural = pending === 1 ? "" : "s";
+  const plural = queued === 1 ? "" : "s";
   const label = !online
-    ? pending > 0
-      ? `Offline · ${pending} change${plural} queued`
+    ? queued > 0
+      ? `Offline · ${queued} change${plural} queued`
       : "Offline · changes will sync when you reconnect"
-    : `Syncing ${pending} change${plural}…`;
+    : `Syncing ${queued} change${plural}…`;
 
   return (
     <View style={{ paddingTop: insets.top, backgroundColor: c.surface }}>
@@ -30,5 +36,25 @@ export function SyncBanner() {
         <Text className="text-ink-2 text-[12px] font-medium">{label}</Text>
       </View>
     </View>
+  );
+}
+
+/**
+ * Renders the sync banner above the app and, while it's showing, zeroes the top safe-area inset for
+ * everything below it. Screens each mount their own `SafeAreaView edges={["top"]}`; without this the
+ * banner's `paddingTop: insets.top` and the screen's own top inset would both apply, double-padding
+ * the header and visibly shoving the app down the moment the banner appears.
+ */
+export function SyncChrome({ children }: { children: ReactNode }) {
+  const visible = useBannerVisible();
+  const insets = useSafeAreaInsets();
+
+  if (!visible) return <>{children}</>;
+
+  return (
+    <>
+      <SyncBanner />
+      <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0 }}>{children}</SafeAreaInsetsContext.Provider>
+    </>
   );
 }

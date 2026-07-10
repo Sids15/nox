@@ -4,12 +4,14 @@ import { usePathname } from "expo-router";
 import { Text, View } from "react-native";
 import { MODULE_CHORD, SEARCH_CHORD } from "./sidebar";
 
-/** Offline / queued-write indicator; renders nothing when online and idle. */
+/** Offline / queued-write indicator; renders nothing when online with nothing queued. */
 function SyncChip() {
-  const { online, pending } = useSyncStatus();
+  const { online, queued } = useSyncStatus();
   const c = useThemeColors();
-  if (online && pending === 0) return null;
-  const label = !online ? (pending > 0 ? `Offline · ${pending} queued` : "Offline") : `Syncing ${pending}…`;
+  // Keyed off queued, not pending: an in-flight write is already reflected optimistically, so
+  // showing it here would blink the chip on every tap.
+  if (online && queued === 0) return null;
+  const label = !online ? (queued > 0 ? `Offline · ${queued} queued` : "Offline") : `Syncing ${queued}…`;
   return (
     <View className="flex-row items-center gap-1.5">
       <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: online ? c.accent : c.ink3 }} />
