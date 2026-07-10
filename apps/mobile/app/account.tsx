@@ -126,7 +126,9 @@ export default function AccountScreen() {
         ) : null}
       </View>
 
-      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-0.5 font-mono text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
+      {/* pl-[22px] not pl-0.5: px-screen's 20px is overridden by the pl-* that follows it, and the
+          card below is mx-[20px] — matches the SCHEDULE/PRIORITY labels in task-editor. */}
+      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
       <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
         <Pressable onPress={() => setPwOpen(true)} className="border-line flex-row items-center gap-3 border-b px-[14px] py-[14px]">
           <Lock size={17} color={c.ink3} strokeWidth={1.8} />

@@ -85,7 +85,7 @@ export function BlockToolbar({
 
       <Modal transparent visible={linkOpen} animationType="fade" onRequestClose={() => setLinkOpen(false)}>
         <Pressable onPress={() => setLinkOpen(false)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-8">
-          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full border p-4">
+          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full max-w-[380px] border p-4">
             <Text className="text-ink mb-3 text-[15px] font-semibold">Add link</Text>
             <TextInput
               autoFocus

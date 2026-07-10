@@ -146,7 +146,7 @@ export default function FolderScreen() {
       {/* Rename modal */}
       <Modal transparent visible={renameOpen} animationType="fade" onRequestClose={() => setRenameOpen(false)}>
         <Pressable onPress={() => setRenameOpen(false)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-8">
-          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full border p-4">
+          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full max-w-[380px] border p-4">
             <Text className="text-ink mb-3 text-[15px] font-semibold">Rename folder</Text>
             <TextInput
               autoFocus

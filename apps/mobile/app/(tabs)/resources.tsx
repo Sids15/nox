@@ -245,7 +245,7 @@ export default function ResourcesScreen() {
       {/* Long-press menu */}
       <Modal transparent visible={!!menuFor} animationType="fade" onRequestClose={() => setMenuFor(null)}>
         <Pressable onPress={() => setMenuFor(null)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-10">
-          <View className="border-line bg-elev rounded-card w-full overflow-hidden border">
+          <View className="border-line bg-elev rounded-card w-full max-w-[280px] overflow-hidden border">
             <Pressable
               onPress={() => {
                 setEditing(menuFor);
@@ -272,7 +272,7 @@ export default function ResourcesScreen() {
       {/* New tag modal */}
       <Modal transparent visible={newTagOpen} animationType="fade" onRequestClose={() => setNewTagOpen(false)}>
         <Pressable onPress={() => setNewTagOpen(false)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-8">
-          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full border p-4">
+          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full max-w-[380px] border p-4">
             <Text className="text-ink mb-3 text-[15px] font-semibold">New tag</Text>
             <TextInput
               autoFocus
