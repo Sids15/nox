@@ -18,6 +18,11 @@ import { authRedirect } from "./auth-redirect";
  */
 export async function startOAuth(provider: OAuthProvider): Promise<boolean> {
   const redirectTo = authRedirect();
+  // Expo Go builds this from the LAN address, so it differs per machine and per network and cannot
+  // be guessed. Supabase silently swaps a redirect it doesn't recognise for the project's Site URL,
+  // which looks like "page not available" rather than an auth error, so print the exact string that
+  // has to be in the allow-list.
+  if (__DEV__) console.log("[auth] OAuth redirectTo:", redirectTo);
   const url = await AuthRepository.signInWithOAuth(provider, redirectTo, true);
   if (!url) throw new Error("Could not start sign-in. Please try again.");
 
