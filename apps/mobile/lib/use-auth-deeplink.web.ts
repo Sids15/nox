@@ -61,8 +61,12 @@ export function useAuthDeepLink(): void {
       try {
         await exchangeCodeForSession(code);
         // Success: onAuthStateChange sets the session (or the recovery flag); the gate routes onward.
-      } catch {
-        if (!cancelled) router.replace("/(auth)/login");
+      } catch (e) {
+        // Land on the error screen, NOT login. Replacing with login is invisible when the user is
+        // already there — a failed exchange then looks exactly like the link doing nothing, with no
+        // console trace either, which is impossible to diagnose from the outside.
+        console.warn("[auth] deep-link code exchange failed:", e);
+        if (!cancelled) router.replace("/auth-callback?error_code=exchange_failed");
       }
     };
 

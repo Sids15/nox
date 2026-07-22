@@ -14,6 +14,11 @@ export function authErrorCopy(errorCode: string | null | undefined): string | nu
       return "This link has expired or was already used.";
     case "access_denied":
       return "This link is no longer valid.";
+    case "exchange_failed":
+      // Not one of Supabase's codes — ours, for a link that arrived intact but couldn't be
+      // redeemed. Almost always because the flow was started on a different device or surface:
+      // the PKCE verifier never leaves the client that began it, by design.
+      return "This link couldn't be completed here. Start the request again on this device.";
     default:
       return "This link is invalid or has expired.";
   }
