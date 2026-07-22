@@ -1,32 +1,8 @@
 import { useAuth, useThemeColors } from "@nox/features";
-import { Redirect, router } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
-/**
- * Detects an auth error handed back in the redirect URL (Supabase puts it in the fragment, e.g.
- * `#error=access_denied&error_code=otp_expired&error_description=…`). Web only — native error paths
- * are covered by the deep-link handler falling back to login.
- *
- * We map the machine-readable `error_code` to our own fixed copy and NEVER render the URL's
- * `error_description`: it is attacker-controllable, so reflecting it verbatim on this trusted page
- * would let a crafted link show arbitrary phishing text ("call this number to unlock…").
- */
-function readAuthError(): string | null {
-  if (Platform.OS !== "web" || typeof window === "undefined") return null;
-  const raw = window.location.hash.replace(/^#/, "") || window.location.search.replace(/^\?/, "");
-  if (!raw) return null;
-  const params = new URLSearchParams(raw);
-  if (!params.get("error") && !params.get("error_code")) return null;
-  switch (params.get("error_code")) {
-    case "otp_expired":
-      return "This link has expired or was already used.";
-    case "access_denied":
-      return "This link is no longer valid.";
-    default:
-      return "This link is invalid or has expired.";
-  }
-}
+import { authErrorCopy, initialAuthErrorCode } from "../lib/auth-url-error";
 
 /**
  * Landing route for auth redirect links (`/auth-callback`). On success the root `useAuthDeepLink`
@@ -38,8 +14,11 @@ function readAuthError(): string | null {
 export default function AuthCallback() {
   const { isAuthenticated, recovery } = useAuth();
   const c = useThemeColors();
-  // Captured on first render, before supabase-js can strip the fragment.
-  const [authError] = useState(readAuthError);
+  // Two arrival paths. Native (and the Tauri shell) get here via the deep-link handler, which
+  // forwards the code as a route param; a plain browser tab lands on the URL Supabase redirected
+  // to, whose fragment was captured at module load before supabase-js could strip it.
+  const { error_code } = useLocalSearchParams<{ error_code?: string }>();
+  const authError = authErrorCopy(error_code ?? initialAuthErrorCode);
 
   if (recovery) return <Redirect href="/(auth)/reset-password" />;
   if (isAuthenticated) return <Redirect href="/(tabs)/tasks" />;

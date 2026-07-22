@@ -3,6 +3,11 @@ import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useEffect } from "react";
 
+/** expo-linking types a query param as string | string[]; only a lone string is meaningful here. */
+function asString(value: string | string[] | undefined): string | null {
+  return typeof value === "string" && value ? value : null;
+}
+
 /**
  * Handles auth redirect links on NATIVE — email confirmation, password reset (and, later, OAuth).
  * Every link returns to `nox://auth-callback` carrying a PKCE `?code=…`, which we exchange for a
@@ -23,7 +28,25 @@ export function useAuthDeepLink(): void {
 
     const handleUrl = async (url: string | null) => {
       if (!url) return;
-      const code = Linking.parse(url).queryParams?.code;
+      const parsed = Linking.parse(url);
+
+      // A REJECTED link carries no code at all — Supabase puts `error`/`error_code` in the
+      // fragment, which Linking.parse drops entirely. Without this branch an expired or
+      // already-used link routed to /auth-callback and span there forever, because the screen had
+      // nothing to tell it the link had failed. Forward the machine-readable code as a route param
+      // so it can render "This link didn't work" and offer a way back.
+      const fragment = url.includes("#") ? url.slice(url.indexOf("#") + 1) : "";
+      const frag = new URLSearchParams(fragment);
+      const error = frag.get("error") ?? asString(parsed.queryParams?.error);
+      const errorCode = frag.get("error_code") ?? asString(parsed.queryParams?.error_code);
+      if (error || errorCode) {
+        if (!cancelled) {
+          router.replace(`/auth-callback?error_code=${encodeURIComponent(errorCode ?? "unknown")}`);
+        }
+        return;
+      }
+
+      const code = parsed.queryParams?.code;
       if (typeof code !== "string" || !code || seen.has(code)) return;
       seen.add(code);
       try {

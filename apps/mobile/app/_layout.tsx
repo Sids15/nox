@@ -2,6 +2,11 @@ import "react-native-gesture-handler";
 import "react-native-url-polyfill/auto";
 import "../global.css";
 
+// MUST stay above the @nox/db import. Constructing the Supabase client starts detectSessionInUrl,
+// which strips the auth params out of window.location; this module captures any error carried by
+// the launch URL at load time, and ESM evaluates imports in order.
+import "../lib/auth-url-error";
+
 import { queryClient, queryPersister, setupOnlineManager } from "@nox/db";
 import {
   registerMutationDefaults,
