@@ -20,8 +20,11 @@ export default function AuthCallback() {
   const { error_code } = useLocalSearchParams<{ error_code?: string }>();
   const authError = authErrorCopy(error_code ?? initialAuthErrorCode);
 
-  if (recovery) return <Redirect href="/(auth)/reset-password" />;
-  if (isAuthenticated) return <Redirect href="/(tabs)/tasks" />;
+  // Errors are checked FIRST. `recovery` is sticky session state from an earlier link, so a stale
+  // flag would otherwise send a user whose link just failed to the new-password screen, where they
+  // would type a password that cannot possibly save.
+  if (!authError && recovery) return <Redirect href="/(auth)/reset-password" />;
+  if (!authError && isAuthenticated) return <Redirect href="/(tabs)/tasks" />;
 
   if (authError) {
     return (
