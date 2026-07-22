@@ -17,3 +17,11 @@ export const magicLinkInput = z.object({
   email: z.string().email().max(320),
 });
 export type MagicLinkInput = z.infer<typeof magicLinkInput>;
+
+/**
+ * Social providers Nox offers. A closed enum rather than Supabase's full `Provider` union so a
+ * typo or a caller-supplied string can never reach `signInWithOAuth` and send the user to a
+ * provider we never configured.
+ */
+export const oauthProvider = z.enum(["google", "apple"]);
+export type OAuthProvider = z.infer<typeof oauthProvider>;

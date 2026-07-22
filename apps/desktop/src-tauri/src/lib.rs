@@ -16,6 +16,7 @@ pub fn run() {
 
     builder
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             secret_store::secret_get,
             secret_store::secret_set,

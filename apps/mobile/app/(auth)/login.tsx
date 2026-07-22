@@ -1,17 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth, useThemeColors } from "@nox/features";
-import { credentials, signUpInput, type SignUpInput } from "@nox/types";
+import { credentials, signUpInput, type OAuthProvider, type SignUpInput } from "@nox/types";
 import { passwordStrength } from "@nox/utils";
 import { LinearGradient } from "expo-linear-gradient";
 import { Apple, ArrowLeft, Check, ChevronLeft, Eye, EyeOff, Lock, Mail, MailCheck, User } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { Controller, type Control } from "react-hook-form";
 import { useForm } from "react-hook-form";
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Alert } from "../../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { authErrorMessage } from "../../lib/auth-errors";
 import { authRedirect } from "../../lib/auth-redirect";
+import { startOAuth } from "../../lib/oauth";
 import { CORAL, CORAL_GRADIENT } from "../../lib/auth-theme";
 
 type Mode = "signin" | "signup";
@@ -125,8 +126,24 @@ export default function LoginScreen() {
     }
   };
 
-  const social = (provider: string) =>
-    Alert.alert(`${provider} sign-in`, "Social sign-in is coming soon — use email for now.");
+  // Which provider is mid-flight, so the tapped button shows progress and neither can be
+  // double-fired (a second consent window would invalidate the first one's PKCE verifier).
+  const [socialBusy, setSocialBusy] = useState<OAuthProvider | null>(null);
+
+  const social = async (provider: OAuthProvider, label: string) => {
+    if (socialBusy) return;
+    setServerError(null);
+    setSocialBusy(provider);
+    try {
+      const signedIn = await startOAuth(provider);
+      // Desktop hands off to the system browser and comes back via the nox:// deep link, so there
+      // is no session yet and nothing to route to — leaving the spinner up would strand the user.
+      if (!signedIn) setSocialBusy(null);
+    } catch (e) {
+      setSocialBusy(null);
+      Alert.alert(`Couldn't sign in with ${label}`, authErrorMessage(e));
+    }
+  };
 
   const switchMode = (next: Mode) => {
     setMode(next);
@@ -301,13 +318,35 @@ export default function LoginScreen() {
                 <View className="bg-line h-px flex-1" />
               </View>
               <View className="flex-row gap-3">
-                <Pressable onPress={() => social("Apple")} className="bg-surface border-line h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border">
-                  <Apple size={18} color={c.ink} fill={c.ink} />
-                  <Text className="text-ink text-[14.5px] font-semibold">Apple</Text>
+                <Pressable
+                  onPress={() => void social("apple", "Apple")}
+                  disabled={socialBusy !== null}
+                  style={{ opacity: socialBusy !== null && socialBusy !== "apple" ? 0.5 : 1 }}
+                  className="bg-surface border-line h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border"
+                >
+                  {socialBusy === "apple" ? (
+                    <ActivityIndicator color={c.ink} />
+                  ) : (
+                    <>
+                      <Apple size={18} color={c.ink} fill={c.ink} />
+                      <Text className="text-ink text-[14.5px] font-semibold">Apple</Text>
+                    </>
+                  )}
                 </Pressable>
-                <Pressable onPress={() => social("Google")} className="bg-surface border-line h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border">
-                  <Text className="text-[16px] font-bold" style={{ color: "#4285F4" }}>G</Text>
-                  <Text className="text-ink text-[14.5px] font-semibold">Google</Text>
+                <Pressable
+                  onPress={() => void social("google", "Google")}
+                  disabled={socialBusy !== null}
+                  style={{ opacity: socialBusy !== null && socialBusy !== "google" ? 0.5 : 1 }}
+                  className="bg-surface border-line h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border"
+                >
+                  {socialBusy === "google" ? (
+                    <ActivityIndicator color={c.ink} />
+                  ) : (
+                    <>
+                      <Text className="text-[16px] font-bold" style={{ color: "#4285F4" }}>G</Text>
+                      <Text className="text-ink text-[14.5px] font-semibold">Google</Text>
+                    </>
+                  )}
                 </Pressable>
               </View>
             </>

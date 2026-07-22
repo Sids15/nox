@@ -1,7 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions granted to the Nox window. Deliberately minimal: core plus the deep-link listener used to receive nox://auth-callback.",
+  "description": "Permissions granted to the Nox window. Deliberately minimal: core, the deep-link listener used to receive nox://auth-callback, and opening the Supabase OAuth consent URL in the real browser.",
   "windows": ["main"],
-  "permissions": ["core:default", "deep-link:default"]
+  "permissions": [
+    "core:default",
+    "deep-link:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "description": "Only the Supabase auth host. The single URL the app ever opens externally is the OAuth consent URL that signInWithOAuth returns, which lives there — so anything else asking to launch a browser is a bug or an injection, and is denied.",
+      "allow": [{ "url": "https://*.supabase.co/*" }]
+    }
+  ]
 }

@@ -2,9 +2,11 @@ import { supabase } from "@nox/db";
 import {
   credentials,
   magicLinkInput,
+  oauthProvider,
   signUpInput,
   type Credentials,
   type MagicLinkInput,
+  type OAuthProvider,
   type SignUpInput,
 } from "@nox/types";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
@@ -51,6 +53,29 @@ export const AuthRepository = {
     });
     if (error) throw error;
     return data.session;
+  },
+
+  /**
+   * Begin a social sign-in. Returns the provider's consent URL when `skipRedirect` is set, which is
+   * what native and the desktop shell need — they hand that URL to an in-app browser tab / the
+   * system browser rather than navigating the app itself. In a plain browser tab `skipRedirect` is
+   * false and supabase-js navigates the page, so this never returns.
+   *
+   * PKCE throughout: the verifier stays on this device and only the `code` travels back through
+   * `redirectTo`, which `useAuthDeepLink` (native/desktop) or `detectSessionInUrl` (web) exchanges.
+   */
+  async signInWithOAuth(
+    provider: OAuthProvider,
+    redirectTo: string,
+    skipRedirect = false,
+  ): Promise<string | null> {
+    const validated = oauthProvider.parse(provider);
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: validated,
+      options: { redirectTo, skipBrowserRedirect: skipRedirect },
+    });
+    if (error) throw error;
+    return data?.url ?? null;
   },
 
   async sendMagicLink(input: MagicLinkInput): Promise<void> {
