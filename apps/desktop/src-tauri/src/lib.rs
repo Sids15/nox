@@ -11,7 +11,16 @@ pub fn run() {
     // a second Nox. The closure body can stay empty — the `deep-link` feature does the forwarding.
     #[cfg(any(windows, target_os = "linux"))]
     {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}));
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            // The `deep-link` feature forwards the URL for us; what it does NOT do is raise the
+            // window. Without this, finishing a sign-in in the browser leaves Nox signed in but
+            // buried behind the consent tab, which reads as "nothing happened".
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }));
     }
 
     builder
