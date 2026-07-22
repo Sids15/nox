@@ -105,6 +105,21 @@ export const AuthRepository = {
     return data.session;
   },
 
+  /**
+   * Adopt a session handed back directly in a redirect fragment (the implicit shape,
+   * `#access_token=…&refresh_token=…`). Used for links that arrive already redeemed rather than as
+   * a PKCE `code`. Emits SIGNED_IN — a recovery link therefore needs its recovery flag set by the
+   * caller, since no PASSWORD_RECOVERY event will fire.
+   */
+  async setSessionFromTokens(accessToken: string, refreshToken: string): Promise<Session | null> {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) throw error;
+    return data.session;
+  },
+
   /** Update the signed-in user's password (validated min length before the call). */
   async updatePassword(newPassword: string): Promise<void> {
     const password = credentials.shape.password.parse(newPassword);

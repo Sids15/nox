@@ -51,6 +51,7 @@ export function useAuth() {
     sendMagicLink: AuthRepository.sendMagicLink,
     sendPasswordReset: AuthRepository.sendPasswordReset,
     exchangeCodeForSession: AuthRepository.exchangeCodeForSession,
+    setSessionFromTokens: AuthRepository.setSessionFromTokens,
     updatePassword: AuthRepository.updatePassword,
     updateEmail: AuthRepository.updateEmail,
     signOut: AuthRepository.signOut,
