@@ -54,5 +54,6 @@ export function useAuth() {
     updatePassword: AuthRepository.updatePassword,
     updateEmail: AuthRepository.updateEmail,
     signOut: AuthRepository.signOut,
+    deleteAccount: AuthRepository.deleteAccount,
   };
 }

@@ -2,7 +2,7 @@ import { useAuth, useThemeColors, useThemeVars } from "@nox/features";
 import { credentials } from "@nox/types";
 import { displayNameFrom, initialsFrom, monthShort, toDateKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { AlertCircle, Check, ChevronLeft, ChevronRight, Eye, EyeOff, Lock, Mail, X } from "lucide-react-native";
+import { AlertCircle, Check, ChevronLeft, ChevronRight, Eye, EyeOff, Lock, Mail, Trash2, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -26,7 +26,7 @@ export default function AccountScreen() {
   const c = useThemeColors();
   const themeVars = useThemeVars();
   const isDesktop = useIsDesktop();
-  const { session, updatePassword, updateEmail, signOut } = useAuth();
+  const { session, updatePassword, updateEmail, signOut, deleteAccount } = useAuth();
 
   // Mirrors reset-password.tsx: end the session and send the user back to sign in with the new
   // credential. `finally` so a failed sign-out still leaves them on the login screen rather than
@@ -45,6 +45,12 @@ export default function AccountScreen() {
 
   const [pwOpen, setPwOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const afterDelete = () => {
+    setDeleteOpen(false);
+    router.replace("/(auth)/login");
+  };
 
   const back = (
     <Pressable
@@ -110,9 +116,23 @@ export default function AccountScreen() {
         </View>
       </View>
 
-      <Text className="text-ink-3 mt-5 text-center font-mono text-[10px] tracking-[0.04em]">
-        account deletion ships in a later build
-      </Text>
+      <Text className="text-ink-3 mb-2 mt-7 pl-0.5 font-mono text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
+      <View className="rounded-card overflow-hidden border" style={{ borderColor: `${c.high}30` }}>
+        <View className="flex-row items-center gap-3 px-4 py-[15px]">
+          <Trash2 size={16} color={c.high} strokeWidth={1.8} />
+          <View className="flex-1">
+            <Text className="text-ink text-[14.5px] font-medium">Delete account</Text>
+            <Text className="text-ink-3 mt-1 text-[12px]">Erases everything, everywhere. No undo.</Text>
+          </View>
+          <Pressable
+            onPress={() => setDeleteOpen(true)}
+            className="rounded-[9px] border px-3 py-[7px]"
+            style={{ borderColor: `${c.high}55`, backgroundColor: `${c.high}12` }}
+          >
+            <Text style={{ color: c.high }} className="text-[12.5px] font-semibold">Delete…</Text>
+          </Pressable>
+        </View>
+      </View>
     </ScrollView>
   );
 
@@ -156,9 +176,19 @@ export default function AccountScreen() {
         </Pressable>
       </View>
 
-      <Text className="text-ink-3 mt-4 text-center font-mono text-[10px] tracking-[0.04em]">
-        account deletion ships in a later build
-      </Text>
+      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
+      <Pressable
+        onPress={() => setDeleteOpen(true)}
+        className="rounded-card mx-[20px] flex-row items-center gap-3 border px-[14px] py-[14px]"
+        style={{ borderColor: `${c.high}30`, backgroundColor: `${c.high}0D` }}
+      >
+        <Trash2 size={17} color={c.high} strokeWidth={1.8} />
+        <View className="flex-1">
+          <Text style={{ color: c.high }} className="text-[14.5px] font-medium">Delete account</Text>
+          <Text className="text-ink-3 mt-0.5 text-[12px]">Erases everything, everywhere. No undo.</Text>
+        </View>
+        <ChevronRight size={16} color={c.high} strokeWidth={2} />
+      </Pressable>
     </ScrollView>
   );
 
@@ -171,6 +201,7 @@ export default function AccountScreen() {
 
       <ChangePasswordModal visible={pwOpen} desktop={isDesktop} onClose={() => setPwOpen(false)} onSubmit={updatePassword} onChanged={() => void afterPasswordChange()} themeVars={themeVars} />
       <ChangeEmailModal visible={emailOpen} desktop={isDesktop} currentEmail={email} onClose={() => setEmailOpen(false)} onSubmit={updateEmail} themeVars={themeVars} />
+      <DeleteAccountModal visible={deleteOpen} desktop={isDesktop} email={email} onClose={() => setDeleteOpen(false)} onSubmit={deleteAccount} onDeleted={afterDelete} themeVars={themeVars} />
     </SafeAreaView>
   );
 }
@@ -279,6 +310,7 @@ function ModalButtons({
   valid,
   desktop,
   accentColor,
+  confirmColor,
 }: {
   onCancel: () => void;
   onConfirm: () => void;
@@ -287,8 +319,10 @@ function ModalButtons({
   valid: boolean;
   desktop: boolean;
   accentColor: string;
+  /** Overrides the accent/coral fill — used by destructive confirms, which must not look routine. */
+  confirmColor?: string;
 }) {
-  const bg = desktop ? accentColor : CORAL;
+  const bg = confirmColor ?? (desktop ? accentColor : CORAL);
   return (
     <View className="mt-5 flex-row gap-3">
       <Pressable onPress={onCancel} className="bg-chip border-line flex-1 items-center rounded-[13px] border py-[13px]">
@@ -414,6 +448,105 @@ function ChangePasswordModal({
         ) : null}
 
         <ModalButtons onCancel={close} onConfirm={save} confirmLabel="Save" busy={busy} valid={valid} desktop={desktop} accentColor={c.accent} />
+      </ModalCard>
+    </Modal>
+  );
+}
+
+/**
+ * Permanent account deletion. Nothing here is recoverable and there is no undo, so the confirm is
+ * gated on typing the account's own email rather than a single tap — the one input the user can't
+ * produce by reflex. Deliberately not styled with the accent: this is the only destructive action
+ * in the app and it should not look like the other two rows in SECURITY.
+ */
+function DeleteAccountModal({
+  visible,
+  desktop,
+  email,
+  onClose,
+  onSubmit,
+  onDeleted,
+  themeVars,
+}: {
+  visible: boolean;
+  desktop: boolean;
+  email: string;
+  onClose: () => void;
+  onSubmit: () => Promise<void>;
+  onDeleted: () => void;
+  themeVars: Record<string, string>;
+}) {
+  const c = useThemeColors();
+  const [typed, setTyped] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const close = () => {
+    setTyped("");
+    setError(null);
+    setBusy(false);
+    onClose();
+  };
+
+  const valid = typed.trim().toLowerCase() === email.toLowerCase() && email.length > 0;
+
+  const destroy = async () => {
+    if (!valid) return;
+    setError(null);
+    setBusy(true);
+    try {
+      await onSubmit();
+      // The session is already gone; don't reset state through `close()` on a screen that is
+      // about to unmount — just hand control back to the caller, which navigates to sign-in.
+      onDeleted();
+    } catch (e) {
+      setError(authErrorMessage(e));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={close}>
+      <ModalCard desktop={desktop} themeVars={themeVars} onClose={close} title="Delete account">
+        <View
+          className="mb-4 flex-row items-start gap-2.5 rounded-[12px] p-3"
+          style={{ backgroundColor: `${c.high}14`, borderWidth: 1, borderColor: `${c.high}38` }}
+        >
+          <AlertCircle size={15} color={c.high} strokeWidth={2} style={{ marginTop: 1 }} />
+          <Text className="text-ink-2 flex-1 text-[12px] leading-[17px]">
+            This deletes your tasks, ideas, notes, resources and uploaded media on every device.
+            It cannot be undone.
+          </Text>
+        </View>
+
+        <FieldLabel desktop={desktop}>{`TYPE ${email ? email.toUpperCase() : "YOUR EMAIL"} TO CONFIRM`}</FieldLabel>
+        <ModalField
+          desktop={desktop}
+          inkColor={c.ink}
+          placeholderColor={c.ink3}
+          lineColor={c.line}
+          accentColor={c.high}
+          autoFocus
+          icon={<Mail size={16} color={c.ink3} strokeWidth={1.8} />}
+          value={typed}
+          onChangeText={setTyped}
+          placeholder={email || "your email"}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+        />
+        {error ? <Text style={{ color: c.high }} className="mt-2 text-[12px] font-semibold">{error}</Text> : null}
+
+        <ModalButtons
+          onCancel={close}
+          onConfirm={destroy}
+          confirmLabel="Delete forever"
+          busy={busy}
+          valid={valid}
+          desktop={desktop}
+          accentColor={c.accent}
+          confirmColor={c.high}
+        />
       </ModalCard>
     </Modal>
   );

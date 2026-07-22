@@ -10,6 +10,23 @@ import {
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 /**
+ * supabase-js collapses every non-2xx Edge Function response into the same opaque
+ * "non-2xx status code" message and hides the real body on `error.context`. Dig it out so the UI
+ * can say what actually went wrong, falling back to the generic message if the shape is unfamiliar.
+ */
+async function functionErrorMessage(error: unknown): Promise<string> {
+  const fallback = error instanceof Error ? error.message : "Could not delete your account.";
+  const context = (error as { context?: unknown }).context;
+  if (!(context instanceof Response)) return fallback;
+  try {
+    const body = (await context.clone().json()) as { error?: unknown };
+    return typeof body.error === "string" ? body.error : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * The only module that touches Supabase Auth. Inputs are validated with Zod before hitting the
  * network; errors are surfaced (never swallowed) for the UI to handle.
  */
@@ -80,6 +97,23 @@ export const AuthRepository = {
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+  },
+
+  /**
+   * Permanently delete the signed-in account and everything it owns. Deleting a user needs the
+   * service_role key, which never ships in the client, so the work happens in the `delete-account`
+   * Edge Function; invoke() attaches this session's access token, and the function deletes only
+   * the account that token belongs to.
+   *
+   * The local sign-out is `scope: "local"` on purpose: the JWT is already dead server-side by the
+   * time this returns, so a normal sign-out's network call would fail and leave the user sitting
+   * in an authed shell for an account that no longer exists. Local scope still emits SIGNED_OUT,
+   * which clears the query cache and the persisted snapshot.
+   */
+  async deleteAccount(): Promise<void> {
+    const { error } = await supabase.functions.invoke("delete-account", { method: "POST" });
+    if (error) throw new Error(await functionErrorMessage(error));
+    await supabase.auth.signOut({ scope: "local" });
   },
 
   async getSession(): Promise<Session | null> {
