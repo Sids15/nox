@@ -24,9 +24,15 @@ const MAX_DEPTH = 4;
 // Safe as `*`: authorization is a bearer token the caller must attach deliberately, there are no
 // cookies, and the response carries no credentials — so a hostile page cannot make this call on a
 // signed-in user's behalf the way it could with cookie auth.
+//
+// Allow-Headers must list EVERY header supabase-js attaches, not just the obvious two: it also
+// sends `apikey` and `x-client-info`. A browser preflight that doesn't get all of them back blocks
+// the POST outright, and supabase-js surfaces that as "Failed to send a request to the Edge
+// Function" — a network-layer failure with no server-side log, because the request never left.
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, content-type, apikey, x-client-info, x-supabase-api-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
