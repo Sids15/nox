@@ -58,3 +58,12 @@ export function parseAuthCallbackUrl(url: string): AuthCallback {
 
   return { kind: "none", keys: [...params.keys()] };
 }
+
+/**
+ * Whether a URL is even claiming to be an auth callback. Cold start hands us the app's plain launch
+ * URL (`exp://host:8081`, no params), which is not an auth link and must not be reported as a
+ * malformed one — a warning that fires on every launch is noise that hides the real one.
+ */
+export function looksLikeAuthCallback(url: string): boolean {
+  return url.includes("auth-callback");
+}

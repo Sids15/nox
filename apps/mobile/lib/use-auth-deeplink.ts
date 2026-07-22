@@ -3,7 +3,7 @@ import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import { useEffect } from "react";
 
-import { parseAuthCallbackUrl } from "./auth-callback-url";
+import { looksLikeAuthCallback, parseAuthCallbackUrl } from "./auth-callback-url";
 
 /**
  * Handles auth redirect links on NATIVE — email confirmation, password reset, OAuth.
@@ -65,7 +65,11 @@ export function useAuthDeepLink(): void {
           return;
 
         case "none":
-          console.warn("[auth] deep link had no code, tokens or error. Params:", result.keys);
+          // Only noteworthy if the link claimed to be an auth callback; a plain launch URL lands
+          // here on every cold start and must not cry wolf.
+          if (looksLikeAuthCallback(url)) {
+            console.warn("[auth] auth-callback link had no code, tokens or error. Params:", result.keys);
+          }
           return;
       }
     };
