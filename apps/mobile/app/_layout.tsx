@@ -52,8 +52,12 @@ function ThemeProvider({ children }: { children: ReactNode }) {
     colorScheme.set(theme);
   }, [theme]);
 
+  // bg-bg on the root guarantees the themed backdrop paints behind everything. Without it, the
+  // wrapper Views are transparent and any area a screen doesn't cover shows the browser's default
+  // white — which is exactly what bled through beside the content in the packaged web build. The
+  // class resolves against the same --bg custom property the inline vars() sets on this element.
   return (
-    <View style={[{ flex: 1 }, vars(themeVars)]}>
+    <View className="bg-bg" style={[{ flex: 1 }, vars(themeVars)]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       {children}
     </View>

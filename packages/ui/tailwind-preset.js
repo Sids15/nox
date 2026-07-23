@@ -48,10 +48,22 @@ module.exports = {
         destructive: c("--high"), // alias: destructive == high/coral
       },
       fontFamily: {
-        // System UI font per the handoff (SF Pro on iOS). Mono for labels/counts/timestamps —
-        // Menlo is the iOS system monospace; revisit for Android in the Windows/Android pass.
-        sans: ["System"],
-        mono: ["Menlo"],
+        // System UI font per the handoff (SF Pro on iOS, Segoe UI on Windows). The platform name
+        // ("System"/"Menlo") stays FIRST so native is untouched — React Native resolves it to the OS
+        // font. The web fallbacks matter because NativeWind's static CSS export emits the literal
+        // `font-family: System`, which no browser recognises (it silently fell back to serif in the
+        // packaged desktop build); CSS just skips the unknown leading token and uses the real stack.
+        sans: [
+          "System",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
+        mono: ["Menlo", "ui-monospace", "SFMono-Regular", "Consolas", "Liberation Mono", "monospace"],
       },
       borderRadius: {
         badge: "6px",
