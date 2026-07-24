@@ -1,66 +1,53 @@
-import { domainFrom, faviconFor } from "@nox/utils";
+import { supabase } from "@nox/db";
+import { classifySource, domainFrom, faviconFor } from "@nox/utils";
 
 export interface UrlMeta {
   title?: string;
   image?: string;
   domain: string;
   favicon: string;
+  /** Whether this URL is a trusted source eligible for a preview / inline video. */
+  trusted: boolean;
 }
 
-/** A deterministic thumbnail for known video hosts (YouTube), used when og:image can't be fetched. */
+function normalize(url: string): string {
+  return /^[a-z]+:\/\//i.test(url) ? url : `https://${url}`;
+}
+
+/** Deterministic thumbnail with no network call (YouTube). Undefined for everything else. */
 export function videoThumbnail(url: string): string | undefined {
-  const yt = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/,
-  );
-  if (yt) return `https://img.youtube.com/vi/${yt[1]}/hqdefault.jpg`;
-  return undefined;
-}
-
-function decode(s?: string): string | undefined {
-  if (!s) return undefined;
-  return s
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .trim();
-}
-
-function ogContent(html: string, prop: string): string | undefined {
-  const a = new RegExp(`<meta[^>]+property=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i");
-  const b = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${prop}["']`, "i");
-  return decode(html.match(a)?.[1] ?? html.match(b)?.[1]);
+  return classifySource(url)?.thumbnailUrl;
 }
 
 /**
- * Best-effort page metadata for a pasted URL. The domain + favicon are always derived; the title +
- * image are parsed from og-tags when the fetch succeeds (native `fetch` has no CORS). Never throws.
+ * Best-effort preview metadata for a pasted URL.
+ *
+ * Previews are gated to trusted hosts (`classifySource`): an untrusted URL gets its domain/favicon
+ * and nothing else — no title, no image, and NO network request is made for it at all. That is the
+ * deliberate "no preview for random sites" policy, and also means we never fetch an
+ * attacker-controlled page.
+ *
+ * Trusted hosts resolve title/image through the `url-meta` Edge Function, because the client cannot
+ * read a cross-origin page (CORS) and the desktop CSP blocks the direct fetch — the function does it
+ * server-side. YouTube additionally yields an instant thumbnail with no round-trip. Never throws.
  */
 export async function fetchUrlMeta(url: string): Promise<UrlMeta | null> {
   if (!url.trim()) return null;
-  const normalized = url.startsWith("http") ? url : `https://${url}`;
+  const normalized = normalize(url);
   const domain = domainFrom(normalized);
-  const meta: UrlMeta = { domain, favicon: faviconFor(domain) };
+  const source = classifySource(normalized);
+  const meta: UrlMeta = { domain, favicon: faviconFor(domain), trusted: source !== null };
+
+  if (!source) return meta; // untrusted → domain/favicon only, no fetch
+  if (source.thumbnailUrl) meta.image = source.thumbnailUrl; // instant YouTube thumbnail
 
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    const res = await fetch(normalized, {
-      signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; NoxBot/1.0)" },
-    });
-    clearTimeout(timer);
-    const html = (await res.text()).slice(0, 60_000);
-    meta.title = (
-      ogContent(html, "og:title") ?? decode(html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1])
-    )?.slice(0, 500);
-    // Keep normal thumbnail URLs; drop absurd ones (e.g. inline data URIs) so a save can't be rejected.
-    const image = ogContent(html, "og:image");
-    meta.image = image && image.length <= 3000 ? image : undefined;
+    const { data } = await supabase.functions.invoke("url-meta", { body: { url: normalized } });
+    const d = data as { title?: string; image?: string } | null;
+    if (d?.title) meta.title = d.title;
+    if (d?.image && !meta.image) meta.image = d.image;
   } catch {
-    // best-effort — keep the derived domain/favicon
+    // best-effort — keep the domain/favicon (+ any deterministic thumbnail)
   }
   return meta;
 }

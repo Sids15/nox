@@ -10,8 +10,10 @@ import type { Resource, Tag } from "@nox/types";
 import { Bookmark, Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { classifySource } from "@nox/utils";
 import { openExternal } from "../../lib/open-external";
+import { VideoPlayer } from "../../components/resources/video-player";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
@@ -56,6 +58,7 @@ export default function ResourcesScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Resource | null>(null);
   const [menuFor, setMenuFor] = useState<Resource | null>(null);
+  const [playing, setPlaying] = useState<{ url: string; title: string } | null>(null);
   const [newTagOpen, setNewTagOpen] = useState(false);
   const [tagName, setTagName] = useState("");
   const [tagsOpen, setTagsOpen] = useState(true);
@@ -94,10 +97,18 @@ export default function ResourcesScreen() {
   }, [filtered, isDesktop]);
 
   const openResource = (r: Resource) => {
-    if (r.url && r.type !== "text") void openExternal(r.url);
-    else {
+    if (r.type === "text" || !r.url) {
       setEditing(r);
       setSheetOpen(true);
+      return;
+    }
+    // A trusted video plays inline (web/desktop only — native has no iframe yet). Everything else,
+    // and every untrusted video, opens in the browser.
+    const source = classifySource(r.url);
+    if (Platform.OS === "web" && source?.kind === "video" && source.embedUrl) {
+      setPlaying({ url: source.embedUrl, title: r.title ?? r.domain ?? "Video" });
+    } else {
+      void openExternal(r.url);
     }
   };
   const toggleTag = (id: string) =>
@@ -242,6 +253,8 @@ export default function ResourcesScreen() {
 
       {/* New / edit resource sheet */}
       <NewResourceSheet visible={sheetOpen} resource={editing} tags={tags} onClose={() => setSheetOpen(false)} />
+
+      <VideoPlayer embedUrl={playing?.url ?? null} title={playing?.title} onClose={() => setPlaying(null)} />
 
       {/* Long-press menu */}
       <Modal transparent visible={!!menuFor} animationType="fade" onRequestClose={() => setMenuFor(null)}>
