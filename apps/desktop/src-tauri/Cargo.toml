@@ -13,8 +13,11 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-deep-link = "2"
+# Local reminders fired by a background thread (Rust owns the schedule; a minimised WebView2 throttles
+# JS timers). tray-icon feature above powers the close-to-tray that keeps that thread alive.
+tauri-plugin-notification = "2"
 # Hands the OAuth consent URL to the user's real browser. Required, not cosmetic: Google refuses
 # OAuth inside embedded webviews (disallowed_useragent), and the consent page would otherwise render
 # inside the Nox window with no address bar for the user to verify.

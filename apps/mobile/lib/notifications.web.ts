@@ -1,24 +1,9 @@
-import type { Task } from "@nox/types";
-
 /**
- * Web no-op for the notification service. Local scheduling isn't available in the browser, so every
- * entry point is inert here — this keeps expo-notifications / expo-device out of the web bundle while
- * matching the native module's shape so callers don't change. `notification-plan.ts` (pure) is shared.
+ * Web face of the notification module (the `.web` sibling of `notifications.ts`). Settings imports
+ * `ensurePermission` from `./notifications`; on web that's the desktop/Tauri permission request. The
+ * scheduler itself lives in `desktop-notify.ts` and is driven by `use-notifications.web.ts`.
  */
-export type DailyKind = "morning" | "endOfDay";
+export { ensurePermission } from "./desktop-notify";
 
+/** Parity no-op with the native module's shape. */
 export async function configureNotifications(): Promise<void> {}
-
-export async function ensurePermission(): Promise<boolean> {
-  return false;
-}
-
-export async function reconcileTaskReminders(_tasks: Task[]): Promise<void> {}
-
-export async function setDailyNudge(_kind: DailyKind, _on: boolean): Promise<void> {}
-
-export async function cancelAllNotifications(): Promise<void> {}
-
-export function taskIdFromResponse(_response: unknown): string | null {
-  return null;
-}

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Task } from "@nox/types";
-import { diffTaskReminders, MAX_TASK_REMINDERS, planTaskReminders, taskReminderId } from "./notification-plan";
+import { diffTaskReminders, MAX_TASK_REMINDERS, planDailyNudges, planTaskReminders, taskReminderId } from "./notification-plan";
 
 const NOW = Date.parse("2026-07-05T12:00:00Z");
 const future = (mins: number) => new Date(NOW + mins * 60_000).toISOString();
@@ -86,5 +86,34 @@ describe("diffTaskReminders", () => {
     const { toCancel, toSchedule } = diffTaskReminders([], existing);
     expect(toCancel).toEqual([taskReminderId("a", future(10))]);
     expect(toSchedule).toEqual([]);
+  });
+});
+
+describe("planDailyNudges", () => {
+  // Local wall-clock times, so build `now` from local components (the planner uses setHours).
+  const at = (h: number, m: number) => new Date(2026, 6, 24, h, m, 0, 0).getTime();
+
+  test("before 8am → both nudges today", () => {
+    const out = planDailyNudges(at(6, 0), { morning: true, endOfDay: true });
+    expect(out.map((n) => n.id)).toEqual(["daily:morning:2026-07-24", "daily:endOfDay:2026-07-24"]);
+    expect(out[0]!.date.getHours()).toBe(8);
+    expect(out[1]!.date.getHours()).toBe(21);
+  });
+
+  test("after 8am but before 9pm → morning rolls to tomorrow, EOD still today", () => {
+    const out = planDailyNudges(at(12, 0), { morning: true, endOfDay: true });
+    expect(out.map((n) => n.id)).toEqual(["daily:morning:2026-07-25", "daily:endOfDay:2026-07-24"]);
+  });
+
+  test("after 9pm → both roll to tomorrow", () => {
+    const out = planDailyNudges(at(22, 0), { morning: true, endOfDay: true });
+    expect(out.map((n) => n.id)).toEqual(["daily:morning:2026-07-25", "daily:endOfDay:2026-07-25"]);
+  });
+
+  test("disabled kinds are omitted", () => {
+    expect(planDailyNudges(at(6, 0), { morning: false, endOfDay: true }).map((n) => n.id)).toEqual([
+      "daily:endOfDay:2026-07-24",
+    ]);
+    expect(planDailyNudges(at(6, 0), { morning: false, endOfDay: false })).toEqual([]);
   });
 });

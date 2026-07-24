@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "deep-link:default",
+    "notification:default",
     {
       "identifier": "opener:allow-open-url",
       "description": "Open http/https links in the OS browser: the OAuth consent URL, and the web links the user saves in Resources — opening those in a real, sandboxed browser tab is the whole point of the module. Scheme-restricted to http/https so a saved value can never launch a file:// path or an arbitrary protocol handler.",
