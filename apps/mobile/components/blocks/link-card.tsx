@@ -1,6 +1,7 @@
 import { useThemeColors } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { openExternal } from "../../lib/open-external";
 import { TAG_PALETTE } from "../../lib/tag-palette";
 
 type LinkBlock = Extract<ContentBlock, { type: "link" }>;
@@ -17,7 +18,7 @@ export function LinkCard({ block, onRemove }: { block: LinkBlock; onRemove: () =
   const color = hashColor(domain);
   return (
     <Pressable
-      onPress={() => Linking.openURL(block.url)}
+      onPress={() => void openExternal(block.url)}
       onLongPress={onRemove}
       className="border-line bg-surface rounded-card flex-row items-center gap-3 border p-3"
     >

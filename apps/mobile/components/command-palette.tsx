@@ -3,7 +3,8 @@ import { useRouter } from "expo-router";
 import { Bookmark, FileText, Lightbulb, Search, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useState } from "react";
-import { Linking, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { openExternal } from "../lib/open-external";
 import { noteMatches, noteTitle } from "./notes/note-utils";
 
 interface Hit {
@@ -71,8 +72,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
     onClose();
     // A resource with a link opens it (what tapping its card does); text resources fall back to the list.
     if (hit.type === "Resource" && hit.url) {
-      const href = hit.url.startsWith("http") ? hit.url : `https://${hit.url}`;
-      Linking.openURL(href);
+      void openExternal(hit.url);
       return;
     }
     router.push(hit.route as never);

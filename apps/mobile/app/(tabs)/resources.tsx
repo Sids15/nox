@@ -10,7 +10,8 @@ import type { Resource, Tag } from "@nox/types";
 import { Bookmark, Plus, Search, SlidersHorizontal } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
-import { Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { openExternal } from "../../lib/open-external";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
@@ -93,7 +94,7 @@ export default function ResourcesScreen() {
   }, [filtered, isDesktop]);
 
   const openResource = (r: Resource) => {
-    if (r.url && r.type !== "text") Linking.openURL(r.url.startsWith("http") ? r.url : `https://${r.url}`);
+    if (r.url && r.type !== "text") void openExternal(r.url);
     else {
       setEditing(r);
       setSheetOpen(true);
