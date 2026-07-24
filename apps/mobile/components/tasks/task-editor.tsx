@@ -40,6 +40,16 @@ const REPEAT_OPTS: { value: Task["repeat"]; label: string }[] = [
 ];
 const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"]; // dow 0–6
 
+/** Common due times (24h storage value + 12h label) offered before the custom picker. */
+const TIME_PRESETS: { label: string; value: string }[] = [
+  { label: "8:00 AM", value: "08:00" },
+  { label: "9:00 AM", value: "09:00" },
+  { label: "12:00 PM", value: "12:00" },
+  { label: "3:00 PM", value: "15:00" },
+  { label: "6:00 PM", value: "18:00" },
+  { label: "9:00 PM", value: "21:00" },
+];
+
 function dateFromKey(key: string): Date {
   const [y, m, d] = key.split("-").map(Number) as [number, number, number];
   return new Date(y, m - 1, d);
@@ -78,6 +88,7 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [temp, setTemp] = useState(new Date());
   const [menuOpen, setMenuOpen] = useState(false);
+  const [timeMenu, setTimeMenu] = useState(false);
 
   // Seed the editable fields when the task first resolves (keyed on id so edits aren't clobbered).
   useEffect(() => {
@@ -105,6 +116,17 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
   const openPicker = (state: PickerState, initial: Date) => {
     setTemp(initial);
     setPicker(state);
+  };
+  // Seed the custom time picker from the current due time (or 9am), anchored to the due day.
+  const dueTimeSeed = () => {
+    const base = task.due_date ? dateFromKey(task.due_date) : new Date();
+    if (task.due_time) {
+      const [h, m] = task.due_time.split(":").map(Number) as [number, number];
+      base.setHours(h, m, 0, 0);
+    } else {
+      base.setHours(9, 0, 0, 0);
+    }
+    return base;
   };
   // A reminder is a time on the task's due day (or today if undated). Anchoring to the due date is
   // what makes a reminder for a task due later actually schedule — planTaskReminders drops past times,
@@ -231,12 +253,17 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
                 </Text>
               </Pressable>
               {task.due_date && (
-                <Pressable
-                  onPress={() => openPicker({ mode: "time", target: "due" }, new Date())}
-                  className="bg-accent/[0.14] rounded-[8px] px-2.5 py-1.5"
-                >
-                  <Text className="text-accent text-[13px] font-semibold">{dueTime ?? "Add time"}</Text>
-                </Pressable>
+                <View className="bg-accent/[0.14] rounded-[8px] flex-row items-center px-2.5 py-1.5">
+                  <Pressable onPress={() => setTimeMenu(true)}>
+                    <Text className="text-accent text-[13px] font-semibold">{dueTime ?? "Add time"}</Text>
+                  </Pressable>
+                  {/* Clears only the time — the date stays, so "Add time" is available again instantly. */}
+                  {dueTime && (
+                    <Pressable onPress={() => patch({ due_time: null })} hitSlop={8} className="ml-1.5">
+                      <X size={13} color={c.accent} strokeWidth={2.4} />
+                    </Pressable>
+                  )}
+                </View>
               )}
               {task.due_date && (
                 <Pressable onPress={() => patch({ due_date: null, due_time: null })} hitSlop={6}>
@@ -378,6 +405,47 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
           },
         ]}
       />
+
+      {/* Quick-time menu: common presets, or Custom… for the exact picker. */}
+      {timeMenu && (
+        <>
+          <Pressable className="absolute inset-0" onPress={() => setTimeMenu(false)} />
+          <View className="border-line bg-sheet absolute inset-x-0 bottom-0 border-t pb-8 pt-1">
+            <View className="px-screen flex-row items-center justify-between py-2">
+              <Text className="text-ink text-[15px] font-semibold">Set time</Text>
+              <Pressable onPress={() => setTimeMenu(false)} hitSlop={8}>
+                <Text className="text-ink-2 text-[15px]">Cancel</Text>
+              </Pressable>
+            </View>
+            <View className="px-screen flex-row flex-wrap gap-2 pt-1">
+              {TIME_PRESETS.map((p) => {
+                const active = task.due_time === p.value;
+                return (
+                  <Pressable
+                    key={p.value}
+                    onPress={() => {
+                      patch({ due_time: p.value });
+                      setTimeMenu(false);
+                    }}
+                    className={`rounded-[10px] px-3.5 py-2.5 ${active ? "bg-accent" : "bg-chip"}`}
+                  >
+                    <Text className={`text-[14px] font-semibold ${active ? "text-on-accent" : "text-ink"}`}>{p.label}</Text>
+                  </Pressable>
+                );
+              })}
+              <Pressable
+                onPress={() => {
+                  setTimeMenu(false);
+                  openPicker({ mode: "time", target: "due" }, dueTimeSeed());
+                }}
+                className="border-accent/[0.5] rounded-[10px] flex-row items-center border border-dashed px-3.5 py-2.5"
+              >
+                <Text className="text-accent text-[14px] font-semibold">Custom…</Text>
+              </Pressable>
+            </View>
+          </View>
+        </>
+      )}
 
       {/* Date/time picker sheet */}
       {picker && (

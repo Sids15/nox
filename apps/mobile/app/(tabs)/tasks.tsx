@@ -244,13 +244,6 @@ export default function TasksScreen() {
             />
           ) : (
             <>
-              {overdue.length > 0 && (
-                <>
-                  <SectionLabel text="OVERDUE" count={overdue.length} tone="overdue" />
-                  <GroupCard rows={overdue} overdue onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
-                </>
-              )}
-
               {filters.status === "completed" ? (
                 <>
                   <SectionLabel text="COMPLETED" count={completedOnly.length} />
@@ -273,6 +266,13 @@ export default function TasksScreen() {
                     <Plus size={14} color={c.ink3} strokeWidth={2} />
                     <Text className="text-ink-3 text-[14px] font-medium">Add task</Text>
                   </Pressable>
+
+                  {overdue.length > 0 && (
+                    <View className="mt-2">
+                      <SectionLabel text="OVERDUE" count={overdue.length} tone="overdue" />
+                      <GroupCard rows={overdue} overdue onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
+                    </View>
+                  )}
 
                   {upcoming.length > 0 && (
                     <>
