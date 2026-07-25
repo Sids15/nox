@@ -25,7 +25,7 @@ interface PrefsState {
 
 /**
  * User preferences (theme, accent, notification toggles), persisted to AsyncStorage. Defaults match
- * the handoff Settings screen: dark + violet, morning/EOD summaries on, task reminders off. The
+ * the handoff Settings screen: dark + violet, morning/EOD summaries on, task reminders on. The
  * toggles drive local notification scheduling (apps/mobile/lib/use-notifications.ts); delivery is
  * verified in a dev build (Expo Go dropped notification support in SDK 53+).
  */
@@ -36,7 +36,7 @@ export const usePrefs = create<PrefsState>()(
       accent: "violet",
       morningSummary: true,
       endOfDayPrompt: true,
-      taskReminders: false,
+      taskReminders: true,
       lastCarryoverOn: null,
       hydrated: false,
       setTheme: (theme) => set({ theme }),
