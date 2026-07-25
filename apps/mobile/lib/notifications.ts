@@ -114,6 +114,20 @@ export async function cancelAllNotifications(): Promise<void> {
   }
 }
 
+/** Fire a notification immediately (Settings "Send test notification"). Also handy for confirming an
+ *  iOS dev build's notification setup without waiting for a scheduled reminder. */
+export async function sendTestNotification(): Promise<void> {
+  try {
+    if (!(await ensurePermission())) return;
+    await Notifications.scheduleNotificationAsync({
+      content: { title: "Nox", body: "Test notification — reminders can reach you." },
+      trigger: null,
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** The task id a notification tap should open, if any. */
 export function taskIdFromResponse(response: Notifications.NotificationResponse): string | null {
   const data = response.notification.request.content.data;

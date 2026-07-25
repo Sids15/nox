@@ -42,6 +42,7 @@ pub fn run() {
             secret_store::secret_delete,
             notify::set_notifications,
             notify::clear_notifications,
+            notify::notify_now,
         ])
         // Close-to-tray: the reminder scheduler must keep running after the window is closed, so a
         // close request hides the window instead of quitting. The tray "Quit" item is the real exit.

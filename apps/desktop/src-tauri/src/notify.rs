@@ -60,6 +60,14 @@ pub fn set_notifications(items: Vec<Scheduled>, state: State<'_, SchedulerState>
     s.items = items;
 }
 
+/// Fire a notification immediately, bypassing the schedule. Used by Settings' "Send test
+/// notification" so a user (or we) can confirm the OS toast plumbing works independently of the
+/// reminder scheduling.
+#[tauri::command]
+pub fn notify_now<R: Runtime>(app: AppHandle<R>, title: String, body: String) {
+    let _ = app.notification().builder().title(title).body(body).show();
+}
+
 /// Drop the whole schedule. Called on sign-out — one user's reminders carry their task titles and
 /// must never fire for the next user on a shared device.
 #[tauri::command]

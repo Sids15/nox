@@ -3,7 +3,7 @@
  * `ensurePermission` from `./notifications`; on web that's the desktop/Tauri permission request. The
  * scheduler itself lives in `desktop-notify.ts` and is driven by `use-notifications.web.ts`.
  */
-export { ensurePermission } from "./desktop-notify";
+export { ensurePermission, sendTestNotification } from "./desktop-notify";
 
 /** Parity no-op with the native module's shape. */
 export async function configureNotifications(): Promise<void> {}

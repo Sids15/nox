@@ -42,6 +42,18 @@ export async function pushSchedule(items: ScheduledItem[]): Promise<void> {
   }
 }
 
+/** Fire a notification right now, bypassing the schedule — the Settings "Send test notification" so
+ *  the OS toast plumbing can be verified independently of reminder scheduling. */
+export async function sendTestNotification(): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    await ensurePermission();
+    await invoke("notify_now", { title: "Nox", body: "Test notification — reminders can reach you." });
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** Drop the schedule — sign-out, so one user's task-titled reminders can't fire for the next. */
 export async function clearSchedule(): Promise<void> {
   if (!isTauri()) return;

@@ -2,13 +2,13 @@ import { useAuth, usePrefs, useThemeColors, type NotifKey } from "@nox/features"
 import { accents, type AccentName } from "@nox/ui";
 import { capitalize as cap, displayNameFrom, initialsFrom } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { BellRing, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
 import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { Alert } from "../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sidebar } from "../components/sidebar";
-import { ensurePermission } from "../lib/notifications";
+import { ensurePermission, sendTestNotification } from "../lib/notifications";
 import { useIsDesktop } from "../lib/use-responsive";
 
 const ACCENT_ORDER: AccentName[] = ["violet", "green", "coral", "blue"];
@@ -81,6 +81,14 @@ export default function SettingsScreen() {
 
   // Turning a notification on requires permission; if it's denied, keep the toggle off and point the
   // user to system settings. Turning off is always allowed.
+  const sendTest = async () => {
+    await sendTestNotification();
+    Alert.alert(
+      "Test sent",
+      "If no notification appears in a few seconds, check that notifications are enabled for Nox in your system settings (and that Focus Assist / Do Not Disturb is off).",
+    );
+  };
+
   const notif = async (key: NotifKey, value: boolean) => {
     if (value && !(await ensurePermission())) {
       Alert.alert(
@@ -189,10 +197,17 @@ export default function SettingsScreen() {
             </View>
             <Toggle value={endOfDayPrompt} onChange={(v) => notif("endOfDayPrompt", v)} />
           </View>
-          <View className="flex-row items-center px-[14px] py-3">
+          <View className="border-line flex-row items-center border-b px-[14px] py-3">
             <Text className="text-ink flex-1 text-[14.5px]">Task reminders</Text>
             <Toggle value={taskReminders} onChange={(v) => notif("taskReminders", v)} />
           </View>
+          <Pressable onPress={sendTest} className="flex-row items-center px-[14px] py-3">
+            <View className="flex-1">
+              <Text className="text-ink text-[14.5px]">Send test notification</Text>
+              <Text className="text-ink-3 mt-0.5 text-[11.5px]">Check that reminders can reach you</Text>
+            </View>
+            <BellRing size={16} color={c.accent} strokeWidth={1.9} />
+          </Pressable>
         </View>
 
         {/* Sync */}
