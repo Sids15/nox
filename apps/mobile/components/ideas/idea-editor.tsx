@@ -98,7 +98,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
   return (
     <View className="flex-1">
       {/* maxWidth is a no-op on phones (< 680pt) and keeps the editor a readable column on desktop */}
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 110, maxWidth: 680, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, paddingBottom: 110, maxWidth: 680, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {/* Nav */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
@@ -177,9 +177,11 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
           />
         </View>
 
-        {/* Writing canvas — the idea's free-flow body (controls above, document below) */}
+        {/* Writing canvas — the idea's free-flow body (controls above, document below). flex-1 lets it
+            absorb spare height (paired with the ScrollView's flexGrow) so the meta line below always
+            clears the floating toolbar instead of hiding under it when the idea is short. */}
         <View className="mx-screen border-line mt-7 border-t" />
-        <View className="px-screen mt-5" style={{ minHeight: 360 }}>
+        <View className="px-screen mt-5 flex-1" style={{ minHeight: 360 }}>
           <BlockList
             blocks={editor.blocks}
             setText={editor.setText}
