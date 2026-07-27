@@ -1,4 +1,5 @@
 import {
+  useArchiveResource,
   useCreateTag,
   useDeleteResource,
   useResources,
@@ -24,10 +25,11 @@ import { NewResourceSheet } from "../../components/resources/new-resource-sheet"
 import { nextTagColor } from "../../lib/tag-palette";
 import { useIsDesktop } from "../../lib/use-responsive";
 
-function matches(r: Resource, q: string): boolean {
+function matches(r: Resource, q: string, tagNames: string[]): boolean {
   const n = q.trim().toLowerCase();
   if (!n) return true;
-  return [r.title, r.url, r.body, r.domain].some((v) => v?.toLowerCase().includes(n));
+  if ([r.title, r.url, r.body, r.domain].some((v) => v?.toLowerCase().includes(n))) return true;
+  return tagNames.some((t) => t.toLowerCase().includes(n));
 }
 
 /** Rough rendered height of a card (incl. gap), used only to balance the two masonry columns. */
@@ -62,11 +64,13 @@ export default function ResourcesScreen() {
   const [newTagOpen, setNewTagOpen] = useState(false);
   const [tagName, setTagName] = useState("");
   const [tagsOpen, setTagsOpen] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
   const tagsActive = selected.length > 0;
 
   const { data: resources = [], isLoading, isError, refetch } = useResources();
   const { data: tags = [] } = useTags();
   const createTag = useCreateTag();
+  const archiveResource = useArchiveResource();
   const deleteResource = useDeleteResource();
 
   const tagsById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
@@ -76,11 +80,11 @@ export default function ResourcesScreen() {
     () =>
       resources.filter(
         (r) =>
-          !r.is_archived &&
-          matches(r, search) &&
+          r.is_archived === showArchived &&
+          matches(r, search, r.tag_ids.map((id) => tagsById.get(id)?.name ?? "")) &&
           (selected.length === 0 || r.tag_ids.some((id) => selected.includes(id))),
       ),
-    [resources, search, selected],
+    [resources, search, selected, showArchived, tagsById],
   );
   // Height-balanced masonry: place each card into whichever column is currently shorter (estimated),
   // instead of a strict alternation that leaves one column with a long trailing gap. 2 columns on
@@ -172,6 +176,22 @@ export default function ResourcesScreen() {
           </View>
         )}
 
+        {/* Saved / Used — used resources are archived, not deleted, so they stay recoverable here. */}
+        <View className="px-screen mt-3.5 flex-row items-center gap-1.5">
+          <Pressable
+            onPress={() => setShowArchived(false)}
+            className={`rounded-pill px-3 py-[7px] ${!showArchived ? "bg-accent-soft" : "bg-chip border-line border"}`}
+          >
+            <Text className={`text-[12px] font-semibold ${!showArchived ? "text-accent" : "text-ink-2"}`}>Saved</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowArchived(true)}
+            className={`rounded-pill px-3 py-[7px] ${showArchived ? "bg-accent-soft" : "bg-chip border-line border"}`}
+          >
+            <Text className={`text-[12px] font-semibold ${showArchived ? "text-accent" : "text-ink-2"}`}>Used</Text>
+          </Pressable>
+        </View>
+
         {/* Tag filter (always on desktop; collapsed behind the header toggle on mobile) */}
         {(isDesktop || tagsOpen) && (
           <View className="px-screen mt-3.5 flex-row flex-wrap gap-1.5">
@@ -210,6 +230,12 @@ export default function ResourcesScreen() {
           ) : filtered.length === 0 ? (
             search || selected.length ? (
               <EmptyState icon={Search} title="No resources match" subtitle="Try a different search or tag." />
+            ) : showArchived ? (
+              <EmptyState
+                icon={Bookmark}
+                title="No used resources"
+                subtitle="Resources you mark as used collect here — you can restore or delete them."
+              />
             ) : (
               <EmptyState
                 icon={Bookmark}
@@ -269,6 +295,17 @@ export default function ResourcesScreen() {
               className="border-line border-b px-4 py-3"
             >
               <Text className="text-ink text-[14.5px]">Edit</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (menuFor) archiveResource.mutate({ id: menuFor.id, isArchived: !menuFor.is_archived });
+                setMenuFor(null);
+              }}
+              className="border-line border-b px-4 py-3"
+            >
+              <Text className="text-ink text-[14.5px]">
+                {menuFor?.is_archived ? "Mark as unused" : "Mark as used"}
+              </Text>
             </Pressable>
             <Pressable
               onPress={() => {
