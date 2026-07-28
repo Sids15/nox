@@ -1,0 +1,87 @@
+name: Desktop installers
+
+# Builds the Windows Tauri installers (NSIS .exe + MSI). Runs the shared gates first, then the
+# packaged build. Trigger it by hand (Actions → Run workflow), on a version tag, or on pushes that
+# touch the desktop shell / shared packages.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
+    paths:
+      - "apps/desktop/**"
+      - "apps/mobile/**"
+      - "packages/**"
+      - "bun.lock"
+      - ".github/workflows/desktop.yml"
+  pull_request:
+    paths:
+      - "apps/desktop/**"
+      - "apps/mobile/**"
+      - "packages/**"
+      - ".github/workflows/desktop.yml"
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast gate — the same checks run before every local commit. Fail here before spending a Windows
+  # runner on the packaged build.
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Unit tests
+        run: bun test
+      - name: Secret scan
+        run: bash scripts/secret-scan
+
+  build-windows:
+    needs: checks
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install JS deps
+        run: bun install --frozen-lockfile
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Cache the Rust build so only our crate recompiles between runs. Keyed to the Cargo workspace
+      # under src-tauri.
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+
+      # `tauri build` runs the beforeBuildCommand (expo export -p web) itself, so these EXPO_PUBLIC_*
+      # values get inlined into the shipped bundle here. Set them as repo secrets or the installer's
+      # app can't reach Supabase. The anon key is safe to ship (RLS-protected); never put service_role.
+      - name: Build installers (NSIS + MSI)
+        run: bun run --cwd apps/desktop tauri build
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: nox-windows-installers
+          if-no-files-found: error
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
+            apps/desktop/src-tauri/target/release/bundle/msi/*.msi

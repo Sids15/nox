@@ -9,7 +9,7 @@ import {
   useThemeVars,
 } from "@nox/features";
 import type { Resource, Tag } from "@nox/types";
-import { Bookmark, Plus, Search, SlidersHorizontal } from "lucide-react-native";
+import { Bookmark, Plus, Search, SlidersHorizontal, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -50,6 +50,53 @@ function estimateCardHeight(r: Resource): number {
       return 64 + lines * 18 + tagsH;
     }
   }
+}
+
+/** A tag pill in the filter row. Tap toggles the filter; long-press (mobile) or the hover × (desktop,
+ *  where there's no long-press) asks to delete it. */
+function TagFilterPill({
+  tag,
+  selected,
+  isDesktop,
+  onToggle,
+  onRequestDelete,
+}: {
+  tag: Tag;
+  selected: boolean;
+  isDesktop: boolean;
+  onToggle: () => void;
+  onRequestDelete: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const showX = isDesktop && hover;
+  return (
+    <Pressable
+      onPress={onToggle}
+      onLongPress={onRequestDelete}
+      onHoverIn={() => setHover(true)}
+      onHoverOut={() => setHover(false)}
+      accessibilityHint="Hold to delete this tag"
+      style={{ backgroundColor: selected ? tag.color : `${tag.color}1f` }}
+      className={`rounded-pill flex-row items-center py-[7px] ${showX ? "pl-3 pr-1.5" : "px-3"}`}
+    >
+      <Text style={{ color: selected ? "#fff" : tag.color }} className="text-[12px] font-semibold">
+        {tag.name}
+      </Text>
+      {showX && (
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onRequestDelete();
+          }}
+          accessibilityLabel={`Delete ${tag.name} tag`}
+          hitSlop={6}
+          className="ml-1 rounded-full"
+        >
+          <X size={13} color={selected ? "#fff" : tag.color} strokeWidth={2.4} />
+        </Pressable>
+      )}
+    </Pressable>
+  );
 }
 
 export default function ResourcesScreen() {
@@ -213,21 +260,16 @@ export default function ResourcesScreen() {
             >
               <Text className={`text-[12px] font-semibold ${selected.length === 0 ? "text-on-accent" : "text-ink-2"}`}>All</Text>
             </Pressable>
-            {tags.map((t) => {
-              const on = selected.includes(t.id);
-              return (
-                <Pressable
-                  key={t.id}
-                  onPress={() => toggleTag(t.id)}
-                  onLongPress={() => setTagMenuFor(t)}
-                  accessibilityHint="Hold to delete this tag"
-                  style={{ backgroundColor: on ? t.color : `${t.color}1f` }}
-                  className="rounded-pill px-3 py-[7px]"
-                >
-                  <Text style={{ color: on ? "#fff" : t.color }} className="text-[12px] font-semibold">{t.name}</Text>
-                </Pressable>
-              );
-            })}
+            {tags.map((t) => (
+              <TagFilterPill
+                key={t.id}
+                tag={t}
+                selected={selected.includes(t.id)}
+                isDesktop={isDesktop}
+                onToggle={() => toggleTag(t.id)}
+                onRequestDelete={() => setTagMenuFor(t)}
+              />
+            ))}
             <Pressable onPress={() => setNewTagOpen(true)} className="border-line rounded-pill border border-dashed px-3 py-[6px]">
               <Text className="text-ink-3 text-[12px] font-semibold">+ new tag</Text>
             </Pressable>
