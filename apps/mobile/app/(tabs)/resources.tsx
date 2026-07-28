@@ -2,6 +2,7 @@ import {
   useArchiveResource,
   useCreateTag,
   useDeleteResource,
+  useDeleteTag,
   useResources,
   useTags,
   useThemeColors,
@@ -63,6 +64,7 @@ export default function ResourcesScreen() {
   const [playing, setPlaying] = useState<{ url: string; title: string } | null>(null);
   const [newTagOpen, setNewTagOpen] = useState(false);
   const [tagName, setTagName] = useState("");
+  const [tagMenuFor, setTagMenuFor] = useState<Tag | null>(null);
   const [tagsOpen, setTagsOpen] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const tagsActive = selected.length > 0;
@@ -72,6 +74,7 @@ export default function ResourcesScreen() {
   const createTag = useCreateTag();
   const archiveResource = useArchiveResource();
   const deleteResource = useDeleteResource();
+  const deleteTag = useDeleteTag();
 
   const tagsById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
   const resolveTags = (r: Resource): Tag[] => r.tag_ids.map((id) => tagsById.get(id)).filter(Boolean) as Tag[];
@@ -123,6 +126,15 @@ export default function ResourcesScreen() {
     setTagName("");
     setNewTagOpen(false);
   };
+  // Soft-deleting a tag just drops it from `useTags`, so its pill and any resolved chips vanish;
+  // the dangling id left on a resource's tag_ids resolves to nothing and is harmless. Clear it from
+  // the active filter too, or the filter would keep hiding everything by an id that no longer lists.
+  const removeTag = (t: Tag) => {
+    deleteTag.mutate(t.id);
+    setSelected((s) => s.filter((x) => x !== t.id));
+    setTagMenuFor(null);
+  };
+  const tagUsage = tagMenuFor ? resources.filter((r) => r.tag_ids.includes(tagMenuFor.id)).length : 0;
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
@@ -204,7 +216,14 @@ export default function ResourcesScreen() {
             {tags.map((t) => {
               const on = selected.includes(t.id);
               return (
-                <Pressable key={t.id} onPress={() => toggleTag(t.id)} style={{ backgroundColor: on ? t.color : `${t.color}1f` }} className="rounded-pill px-3 py-[7px]">
+                <Pressable
+                  key={t.id}
+                  onPress={() => toggleTag(t.id)}
+                  onLongPress={() => setTagMenuFor(t)}
+                  accessibilityHint="Hold to delete this tag"
+                  style={{ backgroundColor: on ? t.color : `${t.color}1f` }}
+                  className="rounded-pill px-3 py-[7px]"
+                >
                   <Text style={{ color: on ? "#fff" : t.color }} className="text-[12px] font-semibold">{t.name}</Text>
                 </Pressable>
               );
@@ -317,6 +336,30 @@ export default function ResourcesScreen() {
               <Text className="text-high text-[14.5px]">Delete</Text>
             </Pressable>
           </View>
+        </Pressable>
+      </Modal>
+
+      {/* Delete tag confirmation (long-press a tag pill) */}
+      <Modal transparent visible={!!tagMenuFor} animationType="fade" onRequestClose={() => setTagMenuFor(null)}>
+        <Pressable onPress={() => setTagMenuFor(null)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-8">
+          <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full max-w-[380px] border p-4">
+            <Text className="text-ink mb-1.5 text-[15px] font-semibold">
+              Delete “{tagMenuFor?.name}”?
+            </Text>
+            <Text className="text-ink-2 mb-4 text-[13px] leading-[19px]">
+              {tagUsage > 0
+                ? `This tag is on ${tagUsage} resource${tagUsage === 1 ? "" : "s"}. They stay — only the tag is removed.`
+                : "This tag isn't on any resources."}
+            </Text>
+            <View className="flex-row justify-end gap-2">
+              <Pressable onPress={() => setTagMenuFor(null)} className="px-4 py-2">
+                <Text className="text-ink-2 text-[14px]">Cancel</Text>
+              </Pressable>
+              <Pressable onPress={() => tagMenuFor && removeTag(tagMenuFor)} className="bg-high-soft rounded-input px-4 py-2">
+                <Text className="text-high text-[14px] font-semibold">Delete tag</Text>
+              </Pressable>
+            </View>
+          </Pressable>
         </Pressable>
       </Modal>
 
