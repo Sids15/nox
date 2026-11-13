@@ -8,7 +8,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { usePrefs } from "../prefs/prefs-store";
 import { carryoverTaskIds } from "./carryover";
 import { groupTasks, type GroupedTasks } from "./group-tasks";
@@ -195,16 +195,21 @@ export function useRunCarryover() {
   const qc = useQueryClient();
   const lastCarryoverOn = usePrefs((s) => s.lastCarryoverOn);
   const setLastCarryover = usePrefs((s) => s.setLastCarryover);
+  // The Tasks screen re-triggers this whenever the list length changes; one run at a time.
+  const running = useRef(false);
   return useCallback(async () => {
     const today = todayKey();
-    if (lastCarryoverOn === today) return;
+    if (lastCarryoverOn === today || running.current) return;
     if (qc.getQueryState(taskKeys.all)?.status !== "success") return; // tasks not loaded yet
 
     const tasks = qc.getQueryData<Task[]>(taskKeys.all) ?? [];
     const ids = carryoverTaskIds(tasks, today);
-    setLastCarryover(today);
-    if (ids.length === 0) return;
+    if (ids.length === 0) {
+      setLastCarryover(today);
+      return;
+    }
 
+    running.current = true;
     const idSet = new Set(ids);
     qc.setQueryData<Task[]>(
       taskKeys.all,
@@ -212,7 +217,17 @@ export function useRunCarryover() {
         idSet.has(t.id) ? { ...t, status: "carried_over", due_date: today } : t,
       ),
     );
-    await TaskRepository.carryOver(ids, today).catch(() => {});
-    qc.invalidateQueries({ queryKey: taskKeys.all });
+    try {
+      await TaskRepository.carryOver(ids, today);
+      // Only now is the day done. Marking it before the write (as this used to) meant a failed
+      // write — offline at launch, an expired token — was never retried: the refetch below put the
+      // tasks back as overdue and the gate stayed shut until tomorrow.
+      setLastCarryover(today);
+    } catch (e) {
+      console.warn("[tasks] carryover failed; it will retry on the next load:", e);
+    } finally {
+      running.current = false;
+      void qc.invalidateQueries({ queryKey: taskKeys.all });
+    }
   }, [qc, lastCarryoverOn, setLastCarryover]);
 }
