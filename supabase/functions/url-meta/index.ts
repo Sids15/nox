@@ -19,6 +19,7 @@ const ALLOW = [...VIDEO_HOSTS, ...LINK_HOSTS];
 
 const MAX_BYTES = 512 * 1024; // parse at most the first 512 KB of HTML
 const FETCH_TIMEOUT_MS = 6000;
+const MAX_REDIRECTS = 5;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +45,39 @@ function hostOf(url: string): string {
 /** Registrable-domain or subdomain match — never a suffix collision (`github.com.evil.com`). */
 function allowed(host: string): boolean {
   return ALLOW.some((d) => host === d || host.endsWith(`.${d}`));
+}
+
+/**
+ * Fetch `start`, following redirects by hand so EVERY hop is checked against the allow-list before
+ * it is requested. `redirect: "follow"` only lets us inspect the final URL after the fact — by then
+ * the request to wherever a trusted host bounced us (an internal address, the metadata endpoint) has
+ * already been made, which is the SSRF this function exists to prevent. Returns null when a hop
+ * leaves https or the allow-list, or the chain is too long.
+ */
+async function fetchOnAllowList(start: URL, signal: AbortSignal): Promise<Response | null> {
+  let current = start;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const res = await fetch(current.href, {
+      signal,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NoxBot/1.0; +https://nox.app)" },
+      redirect: "manual",
+    });
+    if (res.status < 300 || res.status >= 400) return res;
+
+    const location = res.headers.get("location");
+    await res.body?.cancel();
+    if (!location) return null;
+
+    let next: URL;
+    try {
+      next = new URL(location, current); // Location may be relative
+    } catch {
+      return null;
+    }
+    if (next.protocol !== "https:" || !allowed(hostOf(next.href))) return null;
+    current = next;
+  }
+  return null;
 }
 
 function decode(s: string): string {
@@ -83,18 +117,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const host = hostOf(target.href);
   if (!allowed(host)) return json(403, { error: "host not allowed" });
 
+  // One deadline for the whole exchange — every redirect hop AND the body read. Clearing it once the
+  // headers arrived (as this used to) left a slow-dripping body free to hold the function open.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    const res = await fetch(target.href, {
-      signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; NoxBot/1.0; +https://nox.app)" },
-      redirect: "follow",
-    });
-    clearTimeout(timer);
-
-    // A redirect must not carry us off the allow-list (a trusted host bouncing somewhere internal).
-    if (!allowed(hostOf(res.url))) return json(403, { error: "redirected off allow-list" });
+    const res = await fetchOnAllowList(target, controller.signal);
+    if (!res) return json(403, { error: "redirected off allow-list" });
 
     const reader = res.body?.getReader();
     let html = "";
@@ -124,5 +153,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.error("url-meta fetch failed", host, e);
     // A preview is best-effort — a fetch failure is a 200 with nothing, not an error the UI must handle.
     return json(200, { domain: host });
+  } finally {
+    clearTimeout(timer);
   }
 });
