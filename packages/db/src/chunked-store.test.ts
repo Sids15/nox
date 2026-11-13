@@ -75,6 +75,15 @@ describe("createChunkedStore", () => {
     expect(raw.map.size).toBe(0);
   });
 
+  test("reads a corrupt chunk count as absent, not as an empty value", async () => {
+    const raw = memoryStore();
+    const store = createChunkedStore(raw, 4);
+    await store.setItem("k", "abcdefgh");
+    raw.map.set("k.__chunks", "garbage");
+
+    expect(await store.getItem("k")).toBeNull();
+  });
+
   test("keys do not collide across values", async () => {
     const raw = memoryStore();
     const store = createChunkedStore(raw, 4);

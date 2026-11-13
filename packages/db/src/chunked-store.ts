@@ -33,6 +33,9 @@ export function createChunkedStore(raw: RawStore, chunkSize: number): RawStore {
       const countRaw = await raw.getItem(countKey(key));
       if (!countRaw) return null;
       const count = Number.parseInt(countRaw, 10);
+      // A count that isn't a whole number is corruption. Without this, NaN skips the loop and the
+      // join below returns "" — a present-but-empty session that supabase-js then fails to parse.
+      if (!Number.isInteger(count) || count < 0) return null;
       const parts: string[] = [];
       for (let i = 0; i < count; i++) {
         const part = await raw.getItem(chunkKey(key, i));
