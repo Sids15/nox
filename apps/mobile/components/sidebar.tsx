@@ -63,7 +63,9 @@ export function Sidebar() {
         return;
       }
       if (e.altKey && !e.metaKey && !e.ctrlKey) {
-        const n = Number.parseInt(e.key, 10);
+        // `code`, not `key`: on macOS Option+digit types a symbol (⌥1 → "¡"), so `key` is never a
+        // digit there and the shortcut the status bar advertises silently did nothing.
+        const n = /^Digit[1-9]$/.test(e.code) ? Number(e.code.slice(5)) : 0;
         if (n >= 1 && n <= NAV_PATHS.length) {
           e.preventDefault();
           router.navigate(NAV_PATHS[n - 1]!);
