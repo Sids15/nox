@@ -80,6 +80,12 @@ describe("parseQuickAdd — the whole line, and what it leaves alone", () => {
     expect(r.matched.map((m) => m.field)).toEqual(["date", "time", "priority"]);
   });
 
+  test("reports where each phrase sits, for in-place highlighting", () => {
+    const input = "Call mum tomorrow at 6pm !high";
+    const r = p(input);
+    expect(r.matched.map((m) => input.slice(m.start, m.end))).toEqual(["tomorrow", "at 6pm", "!high"]);
+  });
+
   test("plain titles pass through untouched", () => {
     expect(p("Buy milk")).toEqual({ title: "Buy milk", matched: [] });
   });

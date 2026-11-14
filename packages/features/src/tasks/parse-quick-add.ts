@@ -30,8 +30,9 @@ export interface QuickAddResult {
   repeat?: { kind: Exclude<Task["repeat"], "none">; weekdays?: number[] };
   /** Internal: "tonight" was typed — resolved to 20:00 unless a time was typed too. */
   tonight?: boolean;
-  /** The phrases that were recognised, in the order they appear — for the "recognised" preview. */
-  matched: { field: QuickAddField; text: string }[];
+  /** The phrases that were recognised, in the order they appear, with their [start, end) offsets in
+   *  the input — so the UI can highlight them in place. */
+  matched: { field: QuickAddField; text: string; start: number; end: number }[];
 }
 
 const WEEKDAYS: Record<string, number> = {
@@ -239,6 +240,14 @@ export function parseQuickAdd(input: string, today: string): QuickAddResult {
   }
 
   out.title = title;
-  out.matched = spans.sort((a, b) => a.start - b.start).map(({ field, text }) => ({ field, text }));
+  out.matched = spans
+    .sort((a, b) => a.start - b.start)
+    .map(({ field, start, end }) => {
+      // Trim the claimed span to the phrase itself (rules may have eaten surrounding whitespace).
+      const raw = input.slice(start, end);
+      const lead = raw.length - raw.trimStart().length;
+      const text = raw.trim();
+      return { field, text, start: start + lead, end: start + lead + text.length };
+    });
   return out;
 }
