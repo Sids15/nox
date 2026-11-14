@@ -4,6 +4,7 @@ import { vars } from "nativewind";
 import { useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
 import { Alert } from "../../lib/alert";
+import { useIsDesktop } from "../../lib/use-responsive";
 import { useVoiceRecorder, type Recording } from "../../lib/audio";
 
 const fmt = (ms: number) => {
@@ -34,6 +35,7 @@ export function BlockToolbar({
   const [linkOpen, setLinkOpen] = useState(false);
   const [url, setUrl] = useState("");
   const rec = useVoiceRecorder();
+  const isDesktop = useIsDesktop();
 
   const submitLink = () => {
     if (url.trim()) onAddLink(url.trim());
@@ -54,9 +56,21 @@ export function BlockToolbar({
 
   return (
     <>
+      {/* Full-width pill on a phone; on desktop a compact pill centred under the text column — a
+          bar spanning the whole pane read as a footer, not a tool, and sat on top of the content. */}
+      <View pointerEvents="box-none" className="absolute inset-x-0 items-center" style={{ bottom: isDesktop ? 20 : 24 }}>
       <View
-        className="border-line bg-tabbar absolute h-[56px] flex-row items-center rounded-[28px] border px-2"
-        style={{ left: 20, right: 20, bottom: 24, shadowColor: "rgb(6,6,14)", shadowOpacity: 0.25, shadowRadius: 22, shadowOffset: { width: 0, height: 18 }, elevation: 12 }}
+        className="border-line bg-tabbar h-[56px] flex-row items-center rounded-[28px] border px-2"
+        style={{
+          width: isDesktop ? 340 : undefined,
+          alignSelf: isDesktop ? "center" : "stretch",
+          marginHorizontal: isDesktop ? 0 : 20,
+          shadowColor: "rgb(6,6,14)",
+          shadowOpacity: 0.25,
+          shadowRadius: 22,
+          shadowOffset: { width: 0, height: 18 },
+          elevation: 12,
+        }}
       >
         {rec.isRecording ? (
           <View className="flex-1 flex-row items-center justify-between px-3">
@@ -72,23 +86,24 @@ export function BlockToolbar({
           </View>
         ) : (
           <View className="flex-1 flex-row items-center justify-around">
-            <Pressable onPress={onAddHeading} hitSlop={6} className="px-2">
+            <Pressable onPress={onAddHeading} hitSlop={6} accessibilityLabel="Add heading" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
               <Heading size={19} color={c.ink2} strokeWidth={1.9} />
             </Pressable>
-            <Pressable onPress={onAddParagraph} hitSlop={6} className="px-2">
+            <Pressable onPress={onAddParagraph} hitSlop={6} accessibilityLabel="Add paragraph" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
               <Pilcrow size={19} color={c.ink2} strokeWidth={1.9} />
             </Pressable>
-            <Pressable onPress={() => setLinkOpen(true)} hitSlop={6} className="px-2">
+            <Pressable onPress={() => setLinkOpen(true)} hitSlop={6} accessibilityLabel="Add link" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
               <Link2 size={19} color={c.ink2} strokeWidth={1.9} />
             </Pressable>
-            <Pressable onPress={onAddImage} disabled={!onAddImage} hitSlop={6} className="px-2">
+            <Pressable onPress={onAddImage} disabled={!onAddImage} hitSlop={6} accessibilityLabel="Add image" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
               <ImageIcon size={19} color={onAddImage ? c.ink2 : c.ink3} strokeWidth={1.9} />
             </Pressable>
-            <Pressable onPress={() => void startRec()} disabled={!onRecordComplete} hitSlop={6} className="px-2">
+            <Pressable onPress={() => void startRec()} disabled={!onRecordComplete} hitSlop={6} accessibilityLabel="Record voice note" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
               <Mic size={19} color={onRecordComplete ? c.ink2 : c.ink3} strokeWidth={1.9} />
             </Pressable>
           </View>
         )}
+      </View>
       </View>
 
       <Modal transparent visible={linkOpen} animationType="fade" onRequestClose={() => setLinkOpen(false)}>

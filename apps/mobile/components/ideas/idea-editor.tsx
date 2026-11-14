@@ -159,6 +159,12 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
               </Pressable>
             )}
           </View>
+
+          {/* Meta sits up here (as in the note editor) rather than at the end of the document, where
+              the floating toolbar covered it until you scrolled. */}
+          <Text className="text-ink-3 mt-3 font-mono text-[10.5px]">
+            created {shortDate(idea.created_at).toLowerCase()} · updated {relativeFromNow(idea.updated_at)}
+          </Text>
         </View>
 
         {/* Status */}
@@ -189,11 +195,6 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             firstPlaceholder="Write freely — add headings, links, photos, or a voice note from the bar below."
           />
         </View>
-
-        {/* Meta */}
-        <Text className="text-ink-3 mt-[18px] text-center font-mono text-[10.5px] leading-[17px]">
-          created {shortDate(idea.created_at).toLowerCase()} · updated {relativeFromNow(idea.updated_at)}
-        </Text>
       </ScrollView>
 
       <BlockToolbar
