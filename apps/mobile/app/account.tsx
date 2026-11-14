@@ -1,11 +1,11 @@
-import { useAuth, useThemeColors, useThemeVars } from "@nox/features";
+import { useAuth, useFolders, useIdeas, useNotes, useResources, useTags, useTasks, useThemeColors, useThemeVars } from "@nox/features";
 import { credentials } from "@nox/types";
 import { monthShort, toDateKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { AlertCircle, Check, ChevronLeft, ChevronRight, Eye, EyeOff, Lock, Mail, Trash2, X } from "lucide-react-native";
+import { AlertCircle, CalendarHeart, Check, ChevronLeft, ChevronRight, Download, Eye, EyeOff, Lock, LogOut, Mail, Pencil, Trash2, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useState, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Alert } from "../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sidebar } from "../components/sidebar";
@@ -28,7 +28,7 @@ export default function AccountScreen() {
   const c = useThemeColors();
   const themeVars = useThemeVars();
   const isDesktop = useIsDesktop();
-  const { session, updatePassword, updateEmail, signOut, deleteAccount } = useAuth();
+  const { session, updatePassword, updateEmail, signOut, deleteAccount, updateProfile } = useAuth();
 
   // Mirrors reset-password.tsx: end the session and send the user back to sign in with the new
   // credential. `finally` so a failed sign-out still leaves them on the login screen rather than
@@ -54,142 +54,205 @@ export default function AccountScreen() {
     router.replace("/(auth)/login");
   };
 
-  const back = (
-    <Pressable
-      onPress={() => goBack("/settings")}
-      hitSlop={8}
-      accessibilityLabel="Go back"
-      className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
-    >
-      <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
-    </Pressable>
-  );
+  // Name, edited in place; saved to the account so every device shows it.
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [nameBusy, setNameBusy] = useState(false);
+  const currentName = (session?.user?.user_metadata?.display_name as string | undefined) ?? "";
+  const saveName = async () => {
+    const next = (nameDraft ?? "").trim().slice(0, 60);
+    setNameDraft(null);
+    if (!next || next === currentName) return;
+    setNameBusy(true);
+    try {
+      await updateProfile({ display_name: next });
+    } catch {
+      Alert.alert("Couldn't save your name", "Check your connection and try again.");
+    } finally {
+      setNameBusy(false);
+    }
+  };
 
-  // ————— Desktop: the handoff's Account window — sidebar + centered 620px column, accent-toned.
-  const desktopBody = (
-    <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 34, maxWidth: 620, width: "100%", alignSelf: "center", paddingHorizontal: 20 }} showsVerticalScrollIndicator={false}>
-      {/* Header: back circle + SETTINGS context over the title */}
-      <View className="flex-row items-center gap-3.5">
-        {back}
-        <View>
-          <Text className="text-ink mt-0.5 font-serif text-[22px] font-bold tracking-[-0.01em]">Account</Text>
-        </View>
-      </View>
+  // What's in the account, for "Your data" and the export.
+  const { data: notes = [] } = useNotes();
+  const { data: ideas = [] } = useIdeas();
+  const { data: tasks = [] } = useTasks();
+  const { data: resources = [] } = useResources();
+  const { data: folders = [] } = useFolders();
+  const { data: tags = [] } = useTags();
+  const canExport = Platform.OS === "web" && typeof document !== "undefined";
+  const exportAll = () => {
+    if (!canExport) return;
+    const data = { exported_at: new Date().toISOString(), app: "nox", notes, folders, ideas, tasks, resources, tags };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `nox-export-${toDateKey(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
-      {/* Horizontal profile card */}
-      <View className="border-line bg-surface rounded-card mt-6 flex-row items-center gap-4 border p-4">
-        <View className="bg-accent/[0.18] h-14 w-14 items-center justify-center rounded-full">
-          <Text className="text-accent text-[18px] font-bold">{initials}</Text>
+  const row = (opts: { icon: ReactNode; title: string; detail?: string; right?: ReactNode; onPress?: () => void; last?: boolean; danger?: boolean }) => {
+    const inner = (
+      <>
+        {opts.icon}
+        <View className="min-w-0 flex-1">
+          <Text style={opts.danger ? { color: c.high } : undefined} className={`text-[14.5px] font-medium ${opts.danger ? "" : "text-ink"}`}>
+            {opts.title}
+          </Text>
+          {opts.detail ? (
+            <Text numberOfLines={2} className="text-ink-3 mt-0.5 text-[12.5px]">
+              {opts.detail}
+            </Text>
+          ) : null}
         </View>
-        <View className="flex-1">
-          <Text className="text-ink text-[17px] font-bold tracking-[-0.01em]">{name}</Text>
-          <Text className="text-ink-3 mt-0.5 text-[13px]">{email || "not signed in"}</Text>
-        </View>
-        {joined ? (
-          <View className="bg-chip rounded-pill px-3 py-1.5">
-            <Text className="text-ink-3 text-[12px] font-medium">Member since {joined}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Security */}
-      <SectionHeading className="mt-7">Security</SectionHeading>
-      <View className="border-line bg-surface rounded-card overflow-hidden border">
-        <View className="border-line flex-row items-center gap-3 border-b px-4 py-[15px]">
-          <Lock size={16} color={c.ink3} strokeWidth={1.8} />
-          <View className="flex-1">
-            <Text className="text-ink text-[14.5px] font-medium">Password</Text>
-            <Text className="text-ink-3 mt-1 text-[12px]">Set</Text>
-          </View>
-          <Pressable onPress={() => setPwOpen(true)} className="bg-chip border-line rounded-[9px] border px-3 py-[7px]">
-            <Text className="text-ink-2 text-[12.5px] font-semibold">Change…</Text>
-          </Pressable>
-        </View>
-        <View className="flex-row items-center gap-3 px-4 py-[15px]">
-          <Mail size={16} color={c.ink3} strokeWidth={1.8} />
-          <View className="flex-1">
-            <Text className="text-ink text-[14.5px] font-medium">Email</Text>
-            <Text className="text-ink-3 mt-1 text-[11px]">{email || "—"}</Text>
-          </View>
-          <Pressable onPress={() => setEmailOpen(true)} className="bg-chip border-line rounded-[9px] border px-3 py-[7px]">
-            <Text className="text-ink-2 text-[12.5px] font-semibold">Change…</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <SectionHeading className="mt-7">Danger zone</SectionHeading>
-      <View className="rounded-card overflow-hidden border" style={{ borderColor: `${c.high}30` }}>
-        <View className="flex-row items-center gap-3 px-4 py-[15px]">
-          <Trash2 size={16} color={c.high} strokeWidth={1.8} />
-          <View className="flex-1">
-            <Text className="text-ink text-[14.5px] font-medium">Delete account</Text>
-            <Text className="text-ink-3 mt-1 text-[12px]">Erases everything, everywhere. No undo.</Text>
-          </View>
-          <Pressable
-            onPress={() => setDeleteOpen(true)}
-            className="rounded-[9px] border px-3 py-[7px]"
-            style={{ borderColor: `${c.high}55`, backgroundColor: `${c.high}12` }}
-          >
-            <Text style={{ color: c.high }} className="text-[12.5px] font-semibold">Delete…</Text>
-          </Pressable>
-        </View>
-      </View>
-    </ScrollView>
-  );
-
-  // ————— Mobile: the approved coral treatment (centered profile, tappable rows).
-  const mobileBody = (
-    <ScrollView contentContainerStyle={{ paddingBottom: 40, maxWidth: 680, width: "100%", alignSelf: "center" }} showsVerticalScrollIndicator={false}>
-      <View className="px-screen flex-row items-center gap-3 pt-2">
-        {back}
-        <Text className="text-ink font-serif text-2xl font-bold tracking-[-0.01em]">Account</Text>
-      </View>
-
-      <View className="mt-6 items-center">
-        <View className="bg-accent/[0.14] h-[76px] w-[76px] items-center justify-center rounded-full">
-          <Text className="text-accent font-serif text-[26px] font-bold">{initials}</Text>
-        </View>
-        <Text className="text-ink mt-3 text-[19px] font-bold tracking-[-0.01em]">{name}</Text>
-        <Text className="text-ink-3 mt-0.5 text-[13px]">{email || "not signed in"}</Text>
-        {joined ? (
-          <View className="bg-chip rounded-pill mt-2.5 px-3 py-1.5">
-            <Text className="text-ink-3 text-[12px] font-medium">Member since {joined}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* pl-[22px] not pl-0.5: px-screen's 20px is overridden by the pl-* that follows it, and the
-          card below is mx-[20px] — matches the SCHEDULE/PRIORITY labels in task-editor. */}
-      <SectionHeading className="mt-7 pl-[22px]">Security</SectionHeading>
-      <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
-        <Pressable onPress={() => setPwOpen(true)} className="border-line flex-row items-center gap-3 border-b px-[14px] py-[14px]">
-          <Lock size={17} color={c.ink3} strokeWidth={1.8} />
-          <Text className="text-ink flex-1 text-[14.5px]">Change password</Text>
-          <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
-        </Pressable>
-        <Pressable onPress={() => setEmailOpen(true)} className="flex-row items-center gap-3 px-[14px] py-[14px]">
-          <Mail size={17} color={c.ink3} strokeWidth={1.8} />
-          <View className="flex-1">
-            <Text className="text-ink text-[14.5px]">Change email</Text>
-            {email ? <Text className="text-ink-3 mt-0.5 text-[12px]">{email}</Text> : null}
-          </View>
-          <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
-        </Pressable>
-      </View>
-
-      <SectionHeading className="mt-7 pl-[22px]">Danger zone</SectionHeading>
-      <Pressable
-        onPress={() => setDeleteOpen(true)}
-        className="rounded-card mx-[20px] flex-row items-center gap-3 border px-[14px] py-[14px]"
-        style={{ borderColor: `${c.high}30`, backgroundColor: `${c.high}0D` }}
-      >
-        <Trash2 size={17} color={c.high} strokeWidth={1.8} />
-        <View className="flex-1">
-          <Text style={{ color: c.high }} className="text-[14.5px] font-medium">Delete account</Text>
-          <Text className="text-ink-3 mt-0.5 text-[12px]">Erases everything, everywhere. No undo.</Text>
-        </View>
-        <ChevronRight size={16} color={c.high} strokeWidth={2} />
+        {opts.right ?? (opts.onPress ? <ChevronRight size={16} color={opts.danger ? c.high : c.ink3} strokeWidth={2} /> : null)}
+      </>
+    );
+    const cls = `min-h-[58px] flex-row items-center gap-3.5 px-4 py-3 ${opts.last ? "" : "border-line border-b"}`;
+    return opts.onPress ? (
+      <Pressable onPress={opts.onPress} accessibilityRole="button" className={`${cls} hover:bg-chip`}>
+        {inner}
       </Pressable>
+    ) : (
+      <View className={cls}>{inner}</View>
+    );
+  };
+  const group = (children: ReactNode, danger = false) => (
+    <View className="bg-surface overflow-hidden rounded-[14px] border" style={{ borderColor: danger ? `${c.high}33` : c.line }}>
+      {children}
+    </View>
+  );
+  const section = (title: string, intro: string, body: ReactNode) => (
+    <View className="mt-8">
+      <Text className="text-ink font-serif text-[19px] font-bold">{title}</Text>
+      <Text className="text-ink-3 mb-3 mt-0.5 text-[13px]">{intro}</Text>
+      {body}
+    </View>
+  );
+  const stat = (n: number, label: string) => (
+    <View key={label} className="min-w-[70px] flex-1 px-3.5 py-3">
+      <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink font-serif text-[24px] font-bold">
+        {n}
+      </Text>
+      <Text className="text-ink-3 text-[12.5px]">{label}</Text>
+    </View>
+  );
+
+  const body = (
+    <ScrollView
+      contentContainerStyle={{ paddingBottom: 60, paddingTop: isDesktop ? 30 : 8, maxWidth: 640, width: "100%", alignSelf: "center", paddingHorizontal: 20 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View className="flex-row items-center gap-2">
+        <Pressable onPress={() => goBack("/settings")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Back to settings" className="hover:bg-chip -ml-2 h-9 flex-row items-center rounded-[10px] pl-1 pr-2.5">
+          <ChevronLeft size={19} color={c.ink2} strokeWidth={2.2} />
+          <Text className="text-ink-2 text-[14px] font-semibold">Settings</Text>
+        </Pressable>
+      </View>
+      <Text className="text-ink mt-2 font-serif text-[28px] font-bold">Account</Text>
+
+      {/* Profile */}
+      <View className="border-line bg-surface mt-5 rounded-[16px] border p-5">
+        <View className="flex-row items-center gap-4">
+          <View className="bg-accent/[0.14] h-16 w-16 items-center justify-center rounded-full">
+            <Text className="text-accent font-serif text-[22px] font-bold">{initials}</Text>
+          </View>
+          <View className="min-w-0 flex-1">
+            {nameDraft !== null ? (
+              <TextInput
+                autoFocus
+                value={nameDraft}
+                onChangeText={setNameDraft}
+                onSubmitEditing={() => void saveName()}
+                onBlur={() => void saveName()}
+                maxLength={60}
+                placeholder="Your name"
+                placeholderTextColor={c.ink3}
+                accessibilityLabel="Your name"
+                className="text-ink border-accent rounded-[9px] border px-2 text-[18px] font-semibold"
+                style={{ height: 36, outlineWidth: 0 } as object}
+              />
+            ) : (
+              <Pressable onPress={() => setNameDraft(currentName || name)} accessibilityRole="button" accessibilityLabel={`Name: ${name}. Edit`} className="group -ml-2 flex-row items-center gap-2 self-start rounded-[9px] px-2 py-1 hover:bg-chip">
+                <Text numberOfLines={1} className="text-ink text-[19px] font-semibold">
+                  {name}
+                </Text>
+                <Pencil size={13} color={c.ink3} strokeWidth={2} />
+              </Pressable>
+            )}
+            <Text numberOfLines={1} className="text-ink-3 mt-0.5 text-[13.5px]">
+              {email || "Not signed in"}
+              {nameBusy ? " · saving…" : ""}
+            </Text>
+          </View>
+        </View>
+        {joined ? (
+          <View className="border-line mt-4 flex-row items-center gap-2 border-t pt-3.5">
+            <CalendarHeart size={14} color={c.ink3} strokeWidth={2} />
+            <Text className="text-ink-3 text-[13px]">Member since {joined}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {section(
+        "Your data",
+        "Everything in your notebook, synced across your devices.",
+        <>
+          {group(
+            <View className="flex-row flex-wrap">
+              {stat(notes.filter((n) => !n.deleted).length, "notes")}
+              {stat(ideas.filter((i) => !i.deleted).length, "ideas")}
+              {stat(tasks.filter((t) => !t.deleted).length, "tasks")}
+              {stat(resources.filter((r) => !r.deleted).length, "resources")}
+            </View>,
+          )}
+          <View className="mt-3">
+            {group(
+              row({
+                icon: <Download size={17} color={c.ink2} strokeWidth={2} />,
+                title: "Export everything",
+                detail: canExport
+                  ? "Download your notes, ideas, tasks, resources, folders and tags as one JSON file."
+                  : "Open Nox in a browser or on your computer to download a copy of your data.",
+                onPress: canExport ? exportAll : undefined,
+                last: true,
+              }),
+            )}
+          </View>
+        </>,
+      )}
+
+      {section(
+        "Sign-in & security",
+        "How you get into your account.",
+        group(
+          <>
+            {row({ icon: <Mail size={17} color={c.ink2} strokeWidth={2} />, title: "Email", detail: email || "—", onPress: () => setEmailOpen(true), right: <Text className="text-accent text-[13.5px] font-semibold">Change</Text> })}
+            {row({ icon: <Lock size={17} color={c.ink2} strokeWidth={2} />, title: "Password", detail: "You'll sign in again after changing it.", onPress: () => setPwOpen(true), right: <Text className="text-accent text-[13.5px] font-semibold">Change</Text> })}
+            {row({ icon: <LogOut size={17} color={c.ink2} strokeWidth={2} />, title: "Sign out of this device", detail: "Your notebook stays in your account.", onPress: () => void signOut(), last: true })}
+          </>,
+        ),
+      )}
+
+      {section(
+        "Delete account",
+        "Permanently removes your account and everything in it, on every device.",
+        group(
+          row({
+            icon: <Trash2 size={17} color={c.high} strokeWidth={2} />,
+            title: "Delete my account",
+            detail: canExport ? "No undo. Export your data first if you want a copy." : "No undo.",
+            onPress: () => setDeleteOpen(true),
+            danger: true,
+            last: true,
+          }),
+          true,
+        ),
+      )}
     </ScrollView>
   );
 
@@ -197,7 +260,7 @@ export default function AccountScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <View className="flex-1 flex-row">
         {isDesktop && <Sidebar />}
-        <View className="flex-1">{isDesktop ? desktopBody : mobileBody}</View>
+        <View className="flex-1">{body}</View>
       </View>
 
       <ChangePasswordModal visible={pwOpen} desktop={isDesktop} onClose={() => setPwOpen(false)} onSubmit={updatePassword} onChanged={() => void afterPasswordChange()} themeVars={themeVars} />
