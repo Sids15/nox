@@ -1,5 +1,6 @@
 import { useAuth, usePrefs, useThemeColors, type NotifKey } from "@nox/features";
-import { accents, type AccentName } from "@nox/ui";
+import { accents, type AccentName, type ThemeName } from "@nox/ui";
+import Constants from "expo-constants";
 import { capitalize as cap, displayNameFrom, initialsFrom } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { BellRing, ChevronLeft, ChevronRight } from "lucide-react-native";
@@ -8,10 +9,15 @@ import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { Alert } from "../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sidebar } from "../components/sidebar";
+import { SegmentedControl } from "../components/tasks/segmented-control";
+import { useSyncLabel } from "../lib/use-sync-label";
 import { ensurePermission, sendTestNotification } from "../lib/notifications";
 import { useIsDesktop } from "../lib/use-responsive";
 
 const ACCENT_ORDER: AccentName[] = ["violet", "green", "coral", "blue"];
+const THEMES: ThemeName[] = ["dark", "light"];
+/** From app.json rather than a hard-coded string that drifted from the real release. */
+const APP_VERSION = Constants.expoConfig?.version ?? "dev";
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -58,9 +64,10 @@ export default function SettingsScreen() {
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
   const { session, signOut } = useAuth();
-  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, toggleTheme, setAccent, setNotif } =
+  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif } =
     usePrefs();
 
+  const sync = useSyncLabel();
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -144,14 +151,18 @@ export default function SettingsScreen() {
           <SectionLabel>APPEARANCE</SectionLabel>
         </View>
         <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
-          <Pressable
-            onPress={toggleTheme}
-            className="border-line flex-row items-center border-b px-[14px] py-[13px]"
-          >
+          {/* Both choices visible at once. This used to be a row reading "Dark ›" that flipped the
+              theme on tap — the chevron promised a screen that never opened. */}
+          <View className="border-line flex-row items-center border-b px-[14px] py-[9px]">
             <Text className="text-ink flex-1 text-[14.5px]">Theme</Text>
-            <Text className="text-ink-2 mr-2 text-[14px] font-semibold">{cap(theme)}</Text>
-            <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
-          </Pressable>
+            <View style={{ width: 176 }}>
+              <SegmentedControl
+                value={theme}
+                onChange={setTheme}
+                options={THEMES.map((t) => ({ value: t, label: cap(t) }))}
+              />
+            </View>
+          </View>
           <View className="flex-row items-center px-[14px] py-[13px]">
             <Text className="text-ink flex-1 text-[14.5px]">Accent</Text>
             <View className="flex-row items-center gap-[9px]">
@@ -215,14 +226,10 @@ export default function SettingsScreen() {
           <SectionLabel>SYNC</SectionLabel>
         </View>
         <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
-          <View className="border-line flex-row items-center gap-[10px] border-b px-[14px] py-3">
-            <View className="bg-success h-[7px] w-[7px] rounded-full" />
-            <Text className="text-ink flex-1 text-[14.5px] font-medium">Synced</Text>
-            <Text className="text-ink-3 font-mono text-[10.5px]">supabase</Text>
-          </View>
-          <View className="flex-row items-center px-[14px] py-3">
-            <Text className="text-ink-2 flex-1 text-[14px]">This device</Text>
-            <Text className="text-ink-3 font-mono text-[10.5px]">active now</Text>
+          <View className="flex-row items-center gap-[10px] px-[14px] py-3">
+            <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: sync.color }} />
+            <Text className="text-ink flex-1 text-[14.5px] font-medium">{sync.title}</Text>
+            <Text className="text-ink-3 font-mono text-[10.5px]">{sync.detail ?? "all changes saved"}</Text>
           </View>
         </View>
 
@@ -238,7 +245,7 @@ export default function SettingsScreen() {
           {error ? <Text className="text-high mt-2 text-center text-[13px]">{error}</Text> : null}
         </View>
 
-        <Text className="text-ink-3 mt-3 text-center font-mono text-[10px]">nox 1.0.0</Text>
+        <Text className="text-ink-3 mt-3 text-center font-mono text-[10px]">nox {APP_VERSION}</Text>
       </ScrollView>
       </View>
       </View>
