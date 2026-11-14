@@ -161,7 +161,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
 
         {/* Blocks */}
         <View className="px-[22px] pt-4">
-          <BlockList blocks={editor.blocks} setText={editor.setText} removeBlock={editor.removeBlock} />
+          <BlockList editor={editor} minHeight={320} />
         </View>
       </ScrollView>
 
@@ -171,6 +171,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
         onAddLink={editor.addLink}
         onAddImage={media.addImage}
         onRecordComplete={media.addAudio}
+        onDictate={editor.insertText}
       />
 
     </View>

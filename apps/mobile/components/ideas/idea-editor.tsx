@@ -144,17 +144,9 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
           />
         </View>
 
-        {/* Writing canvas — the idea's free-flow body (controls above, document below). flex-1 lets it
-            absorb spare height (paired with the ScrollView's flexGrow) so the meta line below always
-            clears the floating toolbar instead of hiding under it when the idea is short. */}
         <View className="mx-screen border-line mt-4 border-t" />
-        <View className="px-screen mt-5 flex-1" style={{ minHeight: 280 }}>
-          <BlockList
-            blocks={editor.blocks}
-            setText={editor.setText}
-            removeBlock={editor.removeBlock}
-            firstPlaceholder="Write it out: what is it, why it matters, what you'd try first…"
-          />
+        <View className="px-screen mt-5 flex-1">
+          <BlockList editor={editor} minHeight={280} firstPlaceholder="Write it out: what is it, why it matters, what you'd try first…" />
         </View>
       </ScrollView>
 
@@ -164,6 +156,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
         onAddLink={editor.addLink}
         onAddImage={media.addImage}
         onRecordComplete={media.addAudio}
+        onDictate={editor.insertText}
       />
 
     </View>

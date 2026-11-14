@@ -1,64 +1,136 @@
 import { useThemeColors } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
-import { View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Platform, Pressable, TextInput, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from "react-native";
 import { AudioBlock } from "./audio-block";
 import { AutoGrowInput } from "./auto-grow-input";
 import { ImageBlock } from "./image-block";
 import { LinkCard } from "./link-card";
+import type { BlockEditor } from "./use-block-editor";
 
-/** Renders an editable block document. Text blocks are inline TextInputs; media/link blocks render
- *  their cards (long-press to remove). Placed inside the screen's ScrollView. */
+type KeyEvent = NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean; preventDefault?: () => void }>;
+
+/**
+ * Renders an editable block document inside the screen's ScrollView.
+ *
+ * Text blocks are inline inputs: Enter in a heading starts a paragraph below it; Backspace in an
+ * empty block removes it and moves the caret to the end of the block above. Paragraphs keep Enter as
+ * a new line (they are multi-line by design). Media and link cards sit between them with a visible
+ * remove button. Tapping the space under the document puts the caret at the end.
+ */
 export function BlockList({
-  blocks,
-  setText,
-  removeBlock,
+  editor,
   firstPlaceholder = "Start writing…",
+  minHeight = 240,
 }: {
-  blocks: ContentBlock[];
-  setText: (i: number, text: string) => void;
-  removeBlock: (i: number) => void;
+  editor: BlockEditor;
   firstPlaceholder?: string;
+  /** Height of the tappable writing area (the space under the text focuses the end). */
+  minHeight?: number;
 }) {
   const c = useThemeColors();
+  const inputs = useRef(new Map<string, TextInput | null>());
+  const { blocks, keys, focusTarget } = editor;
+
+  // Move the caret where the editor asked (after an insert, a split or a delete).
+  useEffect(() => {
+    if (!focusTarget) return;
+    const key = keys[focusTarget.index];
+    const el = key ? inputs.current.get(key) : null;
+    if (!el) return;
+    const raf = requestAnimationFrame(() => {
+      el.focus();
+      const b = blocks[focusTarget.index];
+      const len = b && "text" in b ? b.text.length : 0;
+      const pos = focusTarget.at === "start" ? 0 : len;
+      try {
+        el.setSelection?.(pos, pos);
+      } catch {
+        // not all platforms support it before layout; focus alone is fine
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [focusTarget?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onKey = (i: number, b: ContentBlock) => (e: KeyEvent) => {
+    const k = e.nativeEvent.key;
+    if (k === "Backspace" && "text" in b && b.text === "" && blocks.length > 1) {
+      e.preventDefault?.();
+      editor.backspaceEmpty(i);
+    } else if (Platform.OS === "web" && k === "Enter" && b.type === "heading" && !e.nativeEvent.shiftKey) {
+      // Web only: on phones the heading's submit key does this through onSubmitEditing.
+      e.preventDefault?.();
+      editor.splitAfter(i);
+    }
+  };
+
+  const textCount = blocks.filter((b) => b.type === "paragraph" || b.type === "heading").length;
+
   return (
-    <View className="gap-3">
-      {blocks.map((block, i) => {
-        switch (block.type) {
-          case "heading":
-            return (
-              <AutoGrowInput
-                key={i}
-                value={block.text}
-                onChangeText={(t) => setText(i, t)}
-                placeholder="Heading"
-                placeholderTextColor={c.ink3}
-                minHeight={24}
-                className="text-ink text-[18px] font-bold leading-[24px] tracking-[-0.01em]"
-              />
-            );
-          case "paragraph":
-            return (
-              <AutoGrowInput
-                key={i}
-                value={block.text}
-                onChangeText={(t) => setText(i, t)}
-                placeholder={i === 0 ? firstPlaceholder : ""}
-                placeholderTextColor={c.ink3}
-                minHeight={26}
-                className="text-ink text-[16px] leading-[26px]"
-                style={{ textAlignVertical: "top" }}
-              />
-            );
-          case "link":
-            return <LinkCard key={i} block={block} onRemove={() => removeBlock(i)} />;
-          case "image":
-            return <ImageBlock key={i} block={block} onRemove={() => removeBlock(i)} />;
-          case "audio":
-            return <AudioBlock key={i} block={block} onRemove={() => removeBlock(i)} />;
-          default:
-            return null; // sketch — dev-build only
-        }
-      })}
+    <View style={{ minHeight }}>
+      <View className="gap-2.5">
+        {blocks.map((block, i) => {
+          const key = keys[i] ?? String(i);
+          const register = (el: TextInput | null) => {
+            if (el) inputs.current.set(key, el);
+            else inputs.current.delete(key);
+          };
+          switch (block.type) {
+            case "heading":
+              return (
+                <AutoGrowInput
+                  key={key}
+                  ref={register}
+                  value={block.text}
+                  onChangeText={(t) => editor.setText(i, t.replace(/\n/g, ""))}
+                  onFocus={() => editor.setFocused(i)}
+                  onKeyPress={onKey(i, block)}
+                  submitBehavior={Platform.OS === "web" ? undefined : "submit"}
+                  onSubmitEditing={Platform.OS === "web" ? undefined : () => editor.splitAfter(i)}
+                  placeholder="Heading"
+                  placeholderTextColor={c.ink3}
+                  minHeight={30}
+                  accessibilityLabel="Heading"
+                  className="text-ink mt-2 font-serif text-[21px] font-bold leading-[28px]"
+                />
+              );
+            case "paragraph":
+              return (
+                <AutoGrowInput
+                  key={key}
+                  ref={register}
+                  value={block.text}
+                  onChangeText={(t) => editor.setText(i, t)}
+                  onFocus={() => editor.setFocused(i)}
+                  onKeyPress={onKey(i, block)}
+                  // The first block carries the prompt; a lone empty paragraph anywhere else reads
+                  // as a place to type, not as nothing.
+                  placeholder={i === 0 && textCount === 1 ? firstPlaceholder : block.text === "" ? "Type here…" : ""}
+                  placeholderTextColor={c.ink3}
+                  minHeight={26}
+                  accessibilityLabel="Text"
+                  className="text-ink text-[16px] leading-[26px]"
+                  style={{ textAlignVertical: "top" }}
+                />
+              );
+            case "link":
+              return <LinkCard key={key} block={block} onRemove={() => editor.removeBlock(i)} />;
+            case "image":
+              return <ImageBlock key={key} block={block} onRemove={() => editor.removeBlock(i)} />;
+            case "audio":
+              return <AudioBlock key={key} block={block} onRemove={() => editor.removeBlock(i)} />;
+            default:
+              return null; // sketch — dev-build only
+          }
+        })}
+      </View>
+      {/* The page below the text: tap to keep writing at the end. */}
+      <Pressable
+        onPress={editor.focusEnd}
+        accessibilityLabel="Continue writing"
+        className="flex-1"
+        style={{ minHeight: 80, cursor: "text" } as object}
+      />
     </View>
   );
 }

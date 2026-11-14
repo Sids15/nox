@@ -17,6 +17,7 @@ const IMAGE_MIME_EXT: Record<string, string> = {
 type EditorMediaApi = {
   insertMedia: (b: ContentBlock) => void;
   patchMedia: (match: (b: ContentBlock) => boolean, patch: Partial<ContentBlock>) => void;
+  dropMedia: (match: (b: ContentBlock) => boolean) => void;
 };
 
 /**
@@ -51,7 +52,13 @@ export function useMediaBlocks(parentId: string, editor: EditorMediaApi) {
       height: picked.height,
     });
     const path = await uploadToBucket("images", `${userId}/${parentId}/${newId()}.${ext}`, localUri, picked.mimeType);
-    if (path) editor.patchMedia((b) => b.type === "image" && b.localUri === localUri, { storagePath: path });
+    const mine = (b: ContentBlock) => b.type === "image" && b.localUri === localUri;
+    if (path) editor.patchMedia(mine, { storagePath: path });
+    else {
+      // Never leave a picture that only exists on this device: it would vanish on reload.
+      editor.dropMedia(mine);
+      Alert.alert("Couldn't add the picture", "The upload failed. Check your connection and try again.");
+    }
   };
 
   // The container isn't fixed: native records AAC/m4a, the browser may only offer WebM/Opus. Upload
@@ -59,9 +66,15 @@ export function useMediaBlocks(parentId: string, editor: EditorMediaApi) {
   // allowed_mime_types, and the failure looks like a silently vanishing voice note.
   const addAudio = async ({ uri: localUri, durationMs, mimeType, ext }: Recording) => {
     if (!userId) return;
+    if (durationMs < 500) return; // a tap on Stop right after Record — nothing worth keeping
     editor.insertMedia({ type: "audio", localUri, storagePath: null, durationMs });
     const path = await uploadToBucket("audio", `${userId}/${parentId}/${newId()}.${ext}`, localUri, mimeType);
-    if (path) editor.patchMedia((b) => b.type === "audio" && b.localUri === localUri, { storagePath: path });
+    const mine = (b: ContentBlock) => b.type === "audio" && b.localUri === localUri;
+    if (path) editor.patchMedia(mine, { storagePath: path });
+    else {
+      editor.dropMedia(mine);
+      Alert.alert("Couldn't save the voice note", "The upload failed. Check your connection and record it again.");
+    }
   };
 
   return { addImage, addAudio };
