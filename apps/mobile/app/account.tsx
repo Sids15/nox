@@ -10,17 +10,17 @@ import { Alert } from "../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sidebar } from "../components/sidebar";
 import { authErrorMessage } from "../lib/auth-errors";
-import { CORAL, CORAL_BORDER, CORAL_SOFT } from "../lib/auth-theme";
 import { useIdentity } from "../lib/use-identity";
 import { useIsDesktop } from "../lib/use-responsive";
 import { goBack } from "../lib/go-back";
+import { SectionHeading, sentenceCase } from "../components/section-heading";
 
 function memberSince(iso?: string): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const m = monthShort(toDateKey(d));
-  return `${m[0]!.toUpperCase()}${m.slice(1)} ${d.getDate()}, ${d.getFullYear()}`;
+  return `${m[0]}${m.slice(1).toLowerCase()} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
 export default function AccountScreen() {
@@ -72,7 +72,6 @@ export default function AccountScreen() {
       <View className="flex-row items-center gap-3.5">
         {back}
         <View>
-          <Text className="text-ink-3 text-[10px] font-semibold tracking-[0.16em]">SETTINGS</Text>
           <Text className="text-ink mt-0.5 font-serif text-[22px] font-bold tracking-[-0.01em]">Account</Text>
         </View>
       </View>
@@ -88,19 +87,19 @@ export default function AccountScreen() {
         </View>
         {joined ? (
           <View className="bg-chip rounded-pill px-3 py-1.5">
-            <Text className="text-ink-3 text-[9.5px] font-semibold tracking-[0.12em]">MEMBER SINCE {joined.toUpperCase()}</Text>
+            <Text className="text-ink-3 text-[12px] font-medium">Member since {joined}</Text>
           </View>
         ) : null}
       </View>
 
       {/* Security */}
-      <Text className="text-ink-3 mb-2 mt-7 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
+      <SectionHeading className="mt-7">Security</SectionHeading>
       <View className="border-line bg-surface rounded-card overflow-hidden border">
         <View className="border-line flex-row items-center gap-3 border-b px-4 py-[15px]">
           <Lock size={16} color={c.ink3} strokeWidth={1.8} />
           <View className="flex-1">
             <Text className="text-ink text-[14.5px] font-medium">Password</Text>
-            <Text className="text-ink-3 mt-1 text-[11px] tracking-[0.14em]">••••••••••</Text>
+            <Text className="text-ink-3 mt-1 text-[12px]">Set</Text>
           </View>
           <Pressable onPress={() => setPwOpen(true)} className="bg-chip border-line rounded-[9px] border px-3 py-[7px]">
             <Text className="text-ink-2 text-[12.5px] font-semibold">Change…</Text>
@@ -118,7 +117,7 @@ export default function AccountScreen() {
         </View>
       </View>
 
-      <Text className="text-ink-3 mb-2 mt-7 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
+      <SectionHeading className="mt-7">Danger zone</SectionHeading>
       <View className="rounded-card overflow-hidden border" style={{ borderColor: `${c.high}30` }}>
         <View className="flex-row items-center gap-3 px-4 py-[15px]">
           <Trash2 size={16} color={c.high} strokeWidth={1.8} />
@@ -147,21 +146,21 @@ export default function AccountScreen() {
       </View>
 
       <View className="mt-6 items-center">
-        <View className="h-[76px] w-[76px] items-center justify-center rounded-full" style={{ backgroundColor: CORAL_SOFT }}>
-          <Text style={{ color: CORAL }} className="text-[24px] font-bold">{initials}</Text>
+        <View className="bg-accent/[0.14] h-[76px] w-[76px] items-center justify-center rounded-full">
+          <Text className="text-accent font-serif text-[26px] font-bold">{initials}</Text>
         </View>
         <Text className="text-ink mt-3 text-[19px] font-bold tracking-[-0.01em]">{name}</Text>
         <Text className="text-ink-3 mt-0.5 text-[13px]">{email || "not signed in"}</Text>
         {joined ? (
           <View className="bg-chip rounded-pill mt-2.5 px-3 py-1.5">
-            <Text className="text-ink-3 text-[9.5px] font-semibold tracking-[0.12em]">MEMBER SINCE {joined.toUpperCase()}</Text>
+            <Text className="text-ink-3 text-[12px] font-medium">Member since {joined}</Text>
           </View>
         ) : null}
       </View>
 
       {/* pl-[22px] not pl-0.5: px-screen's 20px is overridden by the pl-* that follows it, and the
           card below is mx-[20px] — matches the SCHEDULE/PRIORITY labels in task-editor. */}
-      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
+      <SectionHeading className="mt-7 pl-[22px]">Security</SectionHeading>
       <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
         <Pressable onPress={() => setPwOpen(true)} className="border-line flex-row items-center gap-3 border-b px-[14px] py-[14px]">
           <Lock size={17} color={c.ink3} strokeWidth={1.8} />
@@ -178,7 +177,7 @@ export default function AccountScreen() {
         </Pressable>
       </View>
 
-      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
+      <SectionHeading className="mt-7 pl-[22px]">Danger zone</SectionHeading>
       <Pressable
         onPress={() => setDeleteOpen(true)}
         className="rounded-card mx-[20px] flex-row items-center gap-3 border px-[14px] py-[14px]"
@@ -234,7 +233,7 @@ function ModalCard({
         style={
           desktop
             ? { width: 400, maxWidth: "100%", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 60, shadowOffset: { width: 0, height: 24 }, elevation: 20 }
-            : { borderColor: "rgba(232,103,76,0.32)", shadowColor: CORAL, shadowOpacity: 0.28, shadowRadius: 34, shadowOffset: { width: 0, height: 14 }, elevation: 16 }
+            : { borderColor: c.line, shadowColor: "#1B2131", shadowOpacity: 0.18, shadowRadius: 30, shadowOffset: { width: 0, height: 14 }, elevation: 16 }
         }
       >
         <View className="mb-4 flex-row items-center justify-between">
@@ -251,15 +250,8 @@ function ModalCard({
   );
 }
 
-function FieldLabel({ children, desktop }: { children: string; desktop: boolean }) {
-  return (
-    <Text
-      style={desktop ? undefined : { color: CORAL }}
-      className={`mb-1.5 text-[10px] font-semibold tracking-[0.16em] ${desktop ? "text-ink-3" : ""}`}
-    >
-      {children}
-    </Text>
-  );
+function FieldLabel({ children }: { children: string; desktop?: boolean }) {
+  return <Text className="text-ink-2 mb-1.5 text-[13px] font-semibold">{sentenceCase(children)}</Text>;
 }
 
 /** Dialog text field: accent focus ring on desktop, coral on mobile; coral always signals errors. */
@@ -284,7 +276,7 @@ function ModalField({
   accentColor: string;
 } & Omit<React.ComponentProps<typeof TextInput>, "style">) {
   const [focused, setFocused] = useState(false);
-  const border = error ? "#D2604A" : desktop ? (focused ? accentColor : lineColor) : CORAL_BORDER;
+  const border = error ? "#C2362B" : focused ? accentColor : lineColor;
   return (
     <View
       className="bg-chip rounded-[11px] h-[46px] flex-row items-center gap-2.5 px-3.5"
@@ -324,7 +316,7 @@ function ModalButtons({
   /** Overrides the accent/coral fill — used by destructive confirms, which must not look routine. */
   confirmColor?: string;
 }) {
-  const bg = confirmColor ?? (desktop ? accentColor : CORAL);
+  const bg = confirmColor ?? accentColor;
   return (
     <View className="mt-5 flex-row gap-3">
       <Pressable onPress={onCancel} className="bg-chip border-line flex-1 items-center rounded-[13px] border py-[13px]">
@@ -600,14 +592,14 @@ function ChangeEmailModal({
   };
 
   // Hex + alpha so the tint follows the user's switchable accent (8% bg / 22% border per handoff).
-  const noteBg = desktop ? `${c.accent}14` : CORAL_SOFT;
+  const noteBg = `${c.accent}14`;
   const noteBorder = desktop ? `${c.accent}38` : "transparent";
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={close}>
       <ModalCard desktop={desktop} themeVars={themeVars} onClose={close} title="Change email">
         <View className="bg-chip mb-3.5 h-[42px] flex-row items-center gap-2.5 rounded-[11px] px-3.5">
-          <Text className="text-ink-3 text-[10px] font-semibold tracking-[0.16em]">CURRENT</Text>
+          <Text className="text-ink-3 text-[12px] font-semibold">Current</Text>
           <Text className="text-ink-2 text-[12.5px]">{currentEmail || "—"}</Text>
         </View>
 
@@ -630,7 +622,7 @@ function ChangeEmailModal({
         {error ? <Text style={{ color: "#D2604A" }} className="mt-2 text-[12px] font-semibold">{error}</Text> : null}
 
         <View className="mt-3.5 flex-row items-start gap-2.5 rounded-[12px] p-3" style={{ backgroundColor: noteBg, borderWidth: 1, borderColor: noteBorder }}>
-          <AlertCircle size={15} color={desktop ? c.accent : CORAL} strokeWidth={2} style={{ marginTop: 1 }} />
+          <AlertCircle size={15} color={c.accent} strokeWidth={2} style={{ marginTop: 1 }} />
           <Text className="text-ink-2 flex-1 text-[12px] leading-[17px]">
             We'll send a confirmation link to the new address. Your email updates once you tap it.
           </Text>

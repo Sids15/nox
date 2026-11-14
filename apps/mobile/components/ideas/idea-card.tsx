@@ -1,15 +1,16 @@
 import { useThemeColors } from "@nox/features";
 import type { Idea } from "@nox/types";
 import { relativeAge } from "@nox/utils";
+import { Flag } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { TagChip } from "../tag-chip";
 import { StatusPill } from "./status-pill";
 
 const PRIORITY_LABEL: Record<Idea["priority"], string> = {
-  low: "LOW",
-  medium: "MEDIUM",
-  high: "HIGH",
-  critical: "CRITICAL",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
 };
 
 /** An idea list card: priority label + status pill · title · optional description · tags + age. */
@@ -26,11 +27,8 @@ export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPr
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-1.5">
-          <View style={{ width: 6, height: 6, borderRadius: 99, backgroundColor: priorityColor }} />
-          <Text
-            style={{ color: priorityColor }}
-            className="text-[10px] font-semibold tracking-[0.1em]"
-          >
+          <Flag size={12} color={priorityColor} strokeWidth={2.2} fill={idea.priority === "low" ? "transparent" : priorityColor} />
+          <Text style={{ color: priorityColor }} className="text-[12px] font-semibold">
             {PRIORITY_LABEL[idea.priority]}
           </Text>
         </View>
@@ -38,8 +36,8 @@ export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPr
       </View>
 
       <Text
-        className="text-ink text-[15.5px] font-semibold tracking-[-0.01em]"
-        style={{ lineHeight: 20 }}
+        className="text-ink font-serif text-[17px] font-bold"
+        style={{ lineHeight: 22 }}
       >
         {idea.title}
       </Text>
