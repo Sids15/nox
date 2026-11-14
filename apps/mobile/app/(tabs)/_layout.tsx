@@ -1,4 +1,4 @@
-import { useAuth } from "@nox/features";
+import { useAuth, usePrefs } from "@nox/features";
 import { Redirect, Tabs } from "expo-router";
 import { View } from "react-native";
 import { Sidebar } from "../../components/sidebar";
@@ -9,10 +9,13 @@ import { useIsDesktop } from "../../lib/use-responsive";
 export const unstable_settings = { initialRouteName: "tasks" };
 
 export default function TabsLayout() {
-  const { isAuthenticated, recovery } = useAuth();
+  const { isAuthenticated, recovery, session } = useAuth();
+  const onboardedHere = usePrefs((s) => s.onboarded);
   const isDesktop = useIsDesktop();
   if (recovery) return <Redirect href="/(auth)/reset-password" />;
   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+  // First run: onboarding, unless it was finished here or on another device (recorded on the account).
+  if (!onboardedHere && !session?.user.user_metadata?.onboarded_at) return <Redirect href="/onboarding" />;
 
   // Ideas · Notes · Tasks · Resources — no Settings tab (avatar/profile opens Settings). Tasks first.
   // Desktop: a left Sidebar with the scene beside it. Mobile: the floating pill tab bar.
