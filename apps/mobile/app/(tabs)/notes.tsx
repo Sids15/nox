@@ -11,7 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react-native";
 import type { Note } from "@nox/types";
 import { useRouter } from "expo-router";
-import { ChevronRight, Folder, FolderPlus, MoreHorizontal, NotebookPen, Plus, Search } from "lucide-react-native";
+import { ChevronRight, Folder, FolderPlus, Hash, MoreHorizontal, NotebookPen, Plus, Search } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -25,7 +25,10 @@ import { useIsDesktop } from "../../lib/use-responsive";
 import { NoteEditor } from "../../components/notes/note-editor";
 import { NoteRow } from "../../components/notes/note-row";
 import { PinnedNoteCard } from "../../components/notes/pinned-note-card";
-import { noteMatches } from "../../components/notes/note-utils";
+import { groupNotesByDate, noteMatches } from "../../components/notes/note-utils";
+import { TagChip } from "../../components/tag-chip";
+import { tagCounts } from "../../components/tag-editor";
+import { tagColor } from "../../lib/tag-palette";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { SectionHeading } from "../../components/section-heading";
 import { pressScale } from "../../components/menu";
@@ -37,6 +40,48 @@ function SectionLabel({ children }: { children: string }) {
 /** A group of rows on the page — flat with a hairline above, like the Tasks list, not a boxed card. */
 function Card({ children }: { children: ReactNode }) {
   return <View className="border-line border-t">{children}</View>;
+}
+
+/**
+ * Notes as a list: pinned first, then grouped by when they were last edited (Today, Yesterday,
+ * Previous 7 days…). `folderNameOf` adds each note's folder when the list spans folders.
+ */
+function NoteList({
+  notes,
+  selectedId,
+  onOpen,
+  folderNameOf,
+  showPinned = true,
+}: {
+  notes: Note[];
+  selectedId?: string | null;
+  onOpen: (n: Note) => void;
+  folderNameOf?: (n: Note) => string | undefined;
+  showPinned?: boolean;
+}) {
+  const pinned = showPinned ? notes.filter((n) => n.is_pinned) : [];
+  const groups = groupNotesByDate(showPinned ? notes.filter((n) => !n.is_pinned) : notes);
+  const all = [...(pinned.length ? [{ label: "Pinned", notes: pinned }] : []), ...groups];
+  return (
+    <View>
+      {all.map((g) => (
+        <View key={g.label}>
+          <SectionLabel>{g.label}</SectionLabel>
+          <View className="gap-0.5">
+            {g.notes.map((n) => (
+              <NoteRow
+                key={n.id}
+                note={n}
+                selected={n.id === selectedId}
+                onPress={() => onOpen(n)}
+                folderName={folderNameOf?.(n)}
+              />
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 }
 
 /** A folder-pane nav row (desktop): icon · name · count. Folder actions live in the note-list header. */
@@ -102,7 +147,16 @@ export default function NotesScreen() {
     const first = active.find((n) => n.is_pinned) ?? active[0];
     if (first) setSelectedNoteId(first.id);
   }, [isDesktop, isLoading, active, selectedNoteId]);
-  const filtered = useMemo(() => active.filter((n) => noteMatches(n, search)), [active, search]);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const tags = useMemo(() => tagCounts(active), [active]);
+  useEffect(() => {
+    if (selectedTag && !tags.some((t) => t.tag === selectedTag)) setSelectedTag(null);
+  }, [tags, selectedTag]);
+  const filtered = useMemo(
+    () => active.filter((n) => noteMatches(n, search) && (!selectedTag || n.tags.includes(selectedTag))),
+    [active, search, selectedTag],
+  );
+  const folderNameOf = (n: Note) => (n.folder_id ? folders.find((f) => f.id === n.folder_id)?.name : undefined);
   const pinned = filtered.filter((n) => n.is_pinned);
   const recent = filtered.filter((n) => !n.is_pinned);
   const noteCount = (folderId: string) => active.filter((n) => n.folder_id === folderId).length;
@@ -154,8 +208,6 @@ export default function NotesScreen() {
   // ── Desktop: folders · note list · editor ─────────────────────────────────────────────────────
   if (isDesktop) {
     const scoped = filtered.filter((n) => selectedFolderId === null || n.folder_id === selectedFolderId);
-    const scopedPinned = scoped.filter((n) => n.is_pinned);
-    const scopedRecent = scoped.filter((n) => !n.is_pinned);
     const selectedNote = selectedNoteId ? notes.find((n) => n.id === selectedNoteId) : undefined;
     const selectedFolder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : undefined;
     const scopeLabel = selectedFolder ? selectedFolder.name : "All notes";
@@ -198,6 +250,31 @@ export default function NotesScreen() {
                   />
                 ))}
               </View>
+              {tags.length > 0 && (
+                <View className="mt-5">
+                  <Text className="text-ink-2 mb-1.5 px-[11px] text-[13px] font-semibold">Tags</Text>
+                  <View className="gap-0.5">
+                    {tags.map(({ tag, count }) => {
+                      const on = selectedTag === tag;
+                      return (
+                        <Pressable
+                          key={tag}
+                          onPress={() => setSelectedTag(on ? null : tag)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: on }}
+                          className={`flex-row items-center gap-2.5 rounded-[10px] px-[11px] py-[7px] ${on ? "bg-accent/[0.12]" : "hover:bg-chip"}`}
+                        >
+                          <Hash size={14} color={tagColor(tag)} strokeWidth={2.4} />
+                          <Text numberOfLines={1} className={`flex-1 text-[14px] ${on ? "text-accent font-semibold" : "text-ink-2 font-medium"}`}>
+                            {tag}
+                          </Text>
+                          <Text className="text-ink-3 text-[12px]">{count}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
             </ScrollView>
           </View>
 
@@ -206,9 +283,16 @@ export default function NotesScreen() {
             <View className="px-3">
               {/* Scope header — folder name + rename/delete (act on the selected folder) */}
               <View className="mb-3 flex-row items-center justify-between">
-                <Text numberOfLines={1} className="text-ink font-serif flex-1 text-[20px] font-bold">
-                  {scopeLabel}
-                </Text>
+                <View className="flex-1">
+                  <Text numberOfLines={1} className="text-ink font-serif text-[20px] font-bold">
+                    {scopeLabel}
+                  </Text>
+                  {selectedTag && (
+                    <Pressable onPress={() => setSelectedTag(null)} accessibilityRole="button" accessibilityLabel={`Clear tag ${selectedTag}`} className="mt-1 flex-row items-center gap-1 self-start">
+                      <TagChip tag={selectedTag} size="sm" onRemove={() => setSelectedTag(null)} />
+                    </Pressable>
+                  )}
+                </View>
                 {selectedFolder && (
                   <Pressable
                     onPress={() => setFolderMenuOpen((v) => !v)}
@@ -258,39 +342,17 @@ export default function NotesScreen() {
                   </View>
                 ) : scoped.length === 0 ? (
                   <EmptyState
-                    icon={search ? Search : NotebookPen}
-                    title={search ? "No notes match" : "No notes here"}
-                    subtitle={search ? "Try a different search." : "Create one to fill this folder."}
+                    icon={search || selectedTag ? Search : NotebookPen}
+                    title={search || selectedTag ? "No notes match" : "No notes here"}
+                    subtitle={search || selectedTag ? "Try a different search or tag." : "Create one to fill this folder."}
                   />
                 ) : (
-                  <>
-                    {scopedPinned.length > 0 && (
-                      <>
-                        <SectionLabel>PINNED</SectionLabel>
-                        <Card>
-                          {scopedPinned.map((n, i) => (
-                            <View key={n.id}>
-                              {i > 0 && <View className="bg-line ml-[56px] h-px" />}
-                              <NoteRow note={n} selected={n.id === selectedNoteId} onPress={() => openNote(n)} />
-                            </View>
-                          ))}
-                        </Card>
-                      </>
-                    )}
-                    {scopedRecent.length > 0 && (
-                      <>
-                        <SectionLabel>NOTES</SectionLabel>
-                        <Card>
-                          {scopedRecent.map((n, i) => (
-                            <View key={n.id}>
-                              {i > 0 && <View className="bg-line ml-[56px] h-px" />}
-                              <NoteRow note={n} selected={n.id === selectedNoteId} onPress={() => openNote(n)} />
-                            </View>
-                          ))}
-                        </Card>
-                      </>
-                    )}
-                  </>
+                  <NoteList
+                    notes={scoped}
+                    selectedId={selectedNoteId}
+                    onOpen={openNote}
+                    folderNameOf={selectedFolderId === null ? folderNameOf : undefined}
+                  />
                 )}
               </View>
             </ScrollView>
@@ -415,6 +477,28 @@ export default function NotesScreen() {
           </View>
         </View>
 
+        {tags.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}>
+            {tags.map(({ tag }) => {
+              const on = selectedTag === tag;
+              return (
+                <Pressable
+                  key={tag}
+                  onPress={() => setSelectedTag(on ? null : tag)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  className="rounded-pill px-3 py-[6px]"
+                  style={{ backgroundColor: on ? tagColor(tag) : `${tagColor(tag)}1f` }}
+                >
+                  <Text style={{ color: on ? "#fff" : tagColor(tag) }} className="text-[12.5px] font-semibold">
+                    #{tag}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        )}
+
         <View className="px-screen">
           {isError && notes.length === 0 ? (
             <EmptyState
@@ -454,7 +538,7 @@ export default function NotesScreen() {
                 </>
               )}
 
-              {folders.length > 0 && (
+              {folders.length > 0 && !selectedTag && !search && (
                 <>
                   <SectionLabel>FOLDERS</SectionLabel>
                   <Card>
@@ -477,18 +561,8 @@ export default function NotesScreen() {
               )}
 
               {recent.length > 0 ? (
-                <>
-                  <SectionLabel>RECENT</SectionLabel>
-                  <Card>
-                    {recent.map((n, i) => (
-                      <View key={n.id}>
-                        {i > 0 && <View className="bg-line ml-[56px] h-px" />}
-                        <NoteRow note={n} onPress={() => openNote(n)} />
-                      </View>
-                    ))}
-                  </Card>
-                </>
-              ) : search ? (
+                <NoteList notes={recent} onOpen={openNote} folderNameOf={folderNameOf} showPinned={false} />
+              ) : search || selectedTag ? (
                 <Text className="text-ink-3 mt-6 text-center text-[14px]">No notes match.</Text>
               ) : null}
             </>

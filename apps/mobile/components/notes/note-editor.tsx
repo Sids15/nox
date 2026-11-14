@@ -8,7 +8,7 @@ import {
 } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
-import { ChevronLeft, Folder, FolderInput, Inbox, Pin, PinOff, Trash2 } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, Folder, FolderInput, Inbox, Pin, PinOff, Trash2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
@@ -18,6 +18,8 @@ import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { EditorTopBar } from "../editor-top-bar";
 import { MenuLabel, MenuRow } from "../menu";
+import { Popover } from "../popover";
+import { TagEditor, useKnownTags } from "../tag-editor";
 import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { noteTitle } from "./note-utils";
@@ -42,6 +44,9 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
 
   const [title, setTitle] = useState("");
   const [moving, setMoving] = useState(false);
+  const [folderOpen, setFolderOpen] = useState(false);
+  const folderRef = useRef<View>(null);
+  const knownTags = useKnownTags();
   const closeMenu = useRef<(() => void) | null>(null);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -157,9 +162,55 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
             className="text-ink font-serif text-[24px] font-bold leading-[30px] tracking-[-0.01em]"
           />
           <Text className="text-ink-3 mt-1.5 text-[12px]">Saved · edited {relativeFromNow(note.updated_at)}</Text>
+
+          {/* Properties: where it lives and how it's tagged */}
+          <View className="mt-3.5">
+            <View className="min-h-[34px] flex-row items-center">
+              <Text className="text-ink-3 w-[72px] text-[13.5px]">Folder</Text>
+              <View ref={folderRef} collapsable={false}>
+                <Pressable
+                  onPress={() => setFolderOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Folder: ${folderName ?? "None"}`}
+                  className={`-ml-2 h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2 ${folderOpen ? "bg-chip" : "hover:bg-chip"}`}
+                >
+                  {note.folder_id ? <Folder size={14} color={c.ink2} strokeWidth={2} /> : <Inbox size={14} color={c.ink3} strokeWidth={2} />}
+                  <Text className={`text-[14px] ${note.folder_id ? "text-ink font-medium" : "text-ink-3"}`}>{folderName ?? "No folder"}</Text>
+                  <ChevronDown size={13} color={c.ink3} strokeWidth={2.2} />
+                </Pressable>
+              </View>
+            </View>
+            <View className="flex-row py-1">
+              <Text className="text-ink-3 w-[72px] pt-1 text-[13.5px]">Tags</Text>
+              <View className="min-w-0 flex-1">
+                <TagEditor
+                  tags={note.tags}
+                  onChange={(tags) => updateNote.mutate({ id: note.id, patch: { tags } })}
+                  known={knownTags}
+                />
+              </View>
+            </View>
+          </View>
+          <Popover anchorRef={folderRef} open={folderOpen} onClose={() => setFolderOpen(false)} width={230} accessibilityLabel="Folder">
+            <View className="p-1.5">
+              {[{ id: null as string | null, name: "No folder" }, ...folders].map((row) => (
+                <MenuRow
+                  key={row.id ?? "none"}
+                  label={row.name}
+                  selected={note.folder_id === row.id}
+                  icon={row.id === null ? <Inbox size={15} color={c.ink2} strokeWidth={2} /> : <Folder size={15} color={c.ink2} strokeWidth={2} />}
+                  onPress={() => {
+                    setFolderOpen(false);
+                    if (note.folder_id !== row.id) updateNote.mutate({ id: note.id, patch: { folder_id: row.id } });
+                  }}
+                />
+              ))}
+            </View>
+          </Popover>
         </View>
 
         {/* Blocks */}
+        <View className="border-line mx-[22px] mt-3 border-t" />
         <View className="px-[22px] pt-4">
           <BlockList editor={editor} minHeight={320} />
         </View>
