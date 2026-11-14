@@ -24,7 +24,8 @@ type Rect = { x: number; y: number; w: number; h: number };
  * options — instead of an inline box that grows the surrounding layout. Rendered in a Modal portal so
  * it escapes clipping parents (overflow-hidden dialogs, scroll views).
  *
- * Placement: below the trigger, left-aligned to it; flipped above when there isn't room underneath;
+ * Placement: below the trigger, aligned to its left edge (its right edge when it sits in the right half
+ * of the window); flipped above when there isn't room underneath;
  * kept `EDGE` px inside the window. Content taller than the space available scrolls.
  *
  * Motion: scales in from the trigger side (0.96 → 1, with opacity) over 160 ms on a strong ease-out;
@@ -79,7 +80,10 @@ export function Popover({
   if (!open) return null;
 
   const w = Math.min(width, win.width - EDGE * 2);
-  const left = anchor ? Math.max(EDGE, Math.min(anchor.x, win.width - w - EDGE)) : EDGE;
+  // Left-aligned to the trigger, or right-aligned when the trigger sits in the right half of the window.
+  const rightSide = anchor ? anchor.x + anchor.w / 2 > win.width / 2 : false;
+  const preferred = anchor ? (rightSide ? anchor.x + anchor.w - w : anchor.x) : EDGE;
+  const left = Math.max(EDGE, Math.min(preferred, win.width - w - EDGE));
   const below = anchor ? win.height - (anchor.y + anchor.h + GAP) - EDGE : 0;
   const above = anchor ? anchor.y - GAP - EDGE : 0;
   const h = height ?? 0;
@@ -112,7 +116,7 @@ export function Popover({
             maxHeight: room,
             opacity: ready ? progress : 0,
             transform: [{ translateY: shift }, { scale }],
-            transformOrigin: placeAbove ? "bottom left" : "top left",
+            transformOrigin: `${placeAbove ? "bottom" : "top"} ${rightSide ? "right" : "left"}`,
             shadowColor: "#000",
             shadowOpacity: 0.45,
             shadowRadius: 28,
