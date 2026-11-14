@@ -21,7 +21,7 @@ import { useIsDesktop } from "../../lib/use-responsive";
 import { useTaskDelete } from "../../lib/use-task-delete";
 import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
-import { TaskComposer } from "../../components/tasks/task-composer";
+import { NewTaskDialog } from "../../components/tasks/new-task-dialog";
 import { TaskEditor } from "../../components/tasks/task-editor";
 import { TaskRow } from "../../components/tasks/task-row";
 import { WeekStrip } from "../../components/tasks/week-strip";
@@ -202,29 +202,23 @@ export default function TasksScreen() {
   const onOpen = (t: Task) => {
     if (isDesktop) {
       setSelectedId(t.id);
-      setComposing(false);
     } else {
       router.push(`/task/${t.id}`);
     }
   };
 
   // Create a draft task on the focused day and open its editor to configure it.
-  // Compose a new task on the focused day. Nothing is created until the composer's Add — see
-  // TaskComposer. Desktop composes in the right-hand pane; phones get the /task/new screen.
-  const createAndOpen = () => {
-    if (isDesktop) {
-      setComposing(true);
-      setSelectedId(null);
-    } else {
-      router.push(`/task/new?date=${focus}`);
-    }
-  };
+  // New tasks are composed in a dialog over the list (a bottom sheet on phones) — see NewTaskDialog.
+  const createAndOpen = () => setComposing(true);
+  const newTaskDialog = (
+    <NewTaskDialog visible={composing} initialDate={focus} onClose={() => setComposing(false)} />
+  );
 
   const title = focus === today ? "Today" : capitalize(relativeDayLabel(focus, today));
   const selectedTask = selectedId ? tasks.find((t) => t.id === selectedId) : undefined;
   // Desktop splits only while a task is open; otherwise the list gets a centred, readable column
   // instead of a 400px strip beside an empty "No task selected" pane.
-  const detailOpen = isDesktop && (!!selectedTask || composing);
+  const detailOpen = isDesktop && !!selectedTask;
 
   const list = (
       <ScrollView
@@ -382,13 +376,10 @@ export default function TasksScreen() {
         <View className="flex-1 flex-row">
           <View className="border-line w-[400px] border-r">{list}</View>
           <View className="flex-1">
-            {composing ? (
-              <TaskComposer key={focus} initialDate={focus} onDone={() => setComposing(false)} />
-            ) : (
-              <TaskEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
-            )}
+            <TaskEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
           </View>
         </View>
+        {newTaskDialog}
       </SafeAreaView>
     );
   }
@@ -398,6 +389,7 @@ export default function TasksScreen() {
     return (
       <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
         {list}
+        {newTaskDialog}
       </SafeAreaView>
     );
   }
@@ -409,6 +401,7 @@ export default function TasksScreen() {
 
       {/* FAB */}
       <Fab onPress={createAndOpen} label="Add task" bottom={112} visible={fab.visible} />
+      {newTaskDialog}
     </SafeAreaView>
   );
 }
