@@ -9,7 +9,7 @@ import {
   useThemeVars,
 } from "@nox/features";
 import type { Resource, Tag } from "@nox/types";
-import { Bookmark, Search, SlidersHorizontal, X } from "lucide-react-native";
+import { Bookmark, Plus, Search, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -18,7 +18,7 @@ import { openExternal } from "../../lib/open-external";
 import { VideoPlayer } from "../../components/resources/video-player";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fab, useHideOnScroll } from "../../components/fab";
-import { DesktopHeader } from "../../components/desktop-header";
+import { pressScale } from "../../components/menu";
 import { EmptyState } from "../../components/empty-state";
 import { MasonrySkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
@@ -79,9 +79,9 @@ function TagFilterPill({
       onHoverOut={() => setHover(false)}
       accessibilityHint="Hold to delete this tag"
       style={{ backgroundColor: selected ? tag.color : `${tag.color}1f` }}
-      className={`rounded-pill flex-row items-center py-[7px] ${showX ? "pl-3 pr-1.5" : "px-3"}`}
+      className={`rounded-pill flex-row items-center py-[6px] ${showX ? "pl-3 pr-1.5" : "px-3"}`}
     >
-      <Text style={{ color: selected ? "#fff" : tag.color }} className="text-[12px] font-semibold">
+      <Text style={{ color: selected ? "#fff" : tag.color }} className="text-[12.5px] font-semibold">
         {tag.name}
       </Text>
       {showX && (
@@ -115,11 +115,11 @@ export default function ResourcesScreen() {
   const [newTagOpen, setNewTagOpen] = useState(false);
   const [tagName, setTagName] = useState("");
   const [tagMenuFor, setTagMenuFor] = useState<Tag | null>(null);
-  const [tagsOpen, setTagsOpen] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
-  const tagsActive = selected.length > 0;
 
   const { data: resources = [], isLoading, isError, refetch } = useResources();
+  const savedCount = resources.filter((r) => !r.is_archived).length;
+  const usedCount = resources.length - savedCount;
   const { data: tags = [] } = useTags();
   const createTag = useCreateTag();
   const archiveResource = useArchiveResource();
@@ -192,88 +192,92 @@ export default function ResourcesScreen() {
         onScroll={fab.onScroll}
         scrollEventThrottle={16}
         className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 28, maxWidth: 1020, width: "100%", alignSelf: "center" } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
-        {/* Header — desktop: 26px title + "New resource" pill; mobile: 30px title + tag toggle */}
-        {isDesktop ? (
-          <DesktopHeader
-            eyebrow={`${resources.filter((r) => !r.is_archived).length} saved · ${plural(tags.length, "tag")}`}
-            title="Resources"
-            actionLabel="New resource"
-            onAction={() => {
-              setEditing(null);
-              setSheetOpen(true);
-            }}
-          />
-        ) : (
-          <View className="px-screen flex-row items-start justify-between pt-2">
-            <View>
-              <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Resources</Text>
-              <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
-                {resources.filter((r) => !r.is_archived).length} saved · {plural(tags.length, "tag")}
-              </Text>
-            </View>
-            <View className="flex-row items-center gap-2">
-              <Pressable
-                onPress={() => setTagsOpen((v) => !v)}
-                accessibilityLabel="Toggle tag filters"
-                className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${tagsOpen || tagsActive ? "bg-accent-soft" : "bg-chip"}`}
-              >
-                <SlidersHorizontal size={16} color={tagsOpen || tagsActive ? c.accent : c.ink2} strokeWidth={1.8} />
-              </Pressable>
+        {/* Header — one shape on every size: serif title + counts, then New (desktop) or avatar (phone). */}
+        <View className="px-screen flex-row items-start justify-between pt-2">
+          <View className="flex-1 pr-3">
+            <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Resources</Text>
+            <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+              {savedCount} saved · {plural(tags.length, "tag")}
+            </Text>
+          </View>
+          {isDesktop ? (
+            <Pressable
+              onPress={() => {
+                setEditing(null);
+                setSheetOpen(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="New resource"
+              style={pressScale}
+              className="bg-accent hover:opacity-90 mt-1 h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-3.5"
+            >
+              <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
+              <Text className="text-on-accent text-[13.5px] font-semibold">New resource</Text>
+            </Pressable>
+          ) : (
+            <View className="pt-1">
               <ProfileAvatar />
             </View>
-          </View>
-        )}
-
-        {/* Search (mobile — desktop uses the sidebar's ⌘K) */}
-        {!isDesktop && (
-          <View className="px-screen mt-5">
-            <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
-              <Search size={15} color={c.ink3} strokeWidth={1.8} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search links, media, snippets…"
-                placeholderTextColor={c.ink3}
-                className="text-ink flex-1 text-[14.5px]"
-                style={{ paddingVertical: 0 }}
-              />
-            </View>
-          </View>
-        )}
-
-        {/* Saved / Used — used resources are archived, not deleted, so they stay recoverable here. */}
-        <View className="px-screen mt-3.5 flex-row items-center gap-1.5">
-          <Pressable
-            onPress={() => setShowArchived(false)}
-            className={`rounded-pill px-3 py-[7px] ${!showArchived ? "bg-accent-soft" : "bg-chip border-line border"}`}
-          >
-            <Text className={`text-[12px] font-semibold ${!showArchived ? "text-accent" : "text-ink-2"}`}>Saved</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowArchived(true)}
-            className={`rounded-pill px-3 py-[7px] ${showArchived ? "bg-accent-soft" : "bg-chip border-line border"}`}
-          >
-            <Text className={`text-[12px] font-semibold ${showArchived ? "text-accent" : "text-ink-2"}`}>Used</Text>
-          </Pressable>
+          )}
         </View>
 
-        {/* Tag filter (always on desktop; collapsed behind the header toggle on mobile) */}
-        {/* Desktop wraps; a phone scrolls the row sideways so a handful of tags doesn't strand
-            "+ new tag" alone on a second line. */}
-        {(isDesktop || tagsOpen) && (
-          <ScrollView
-            horizontal={!isDesktop}
-            scrollEnabled={!isDesktop}
-            showsHorizontalScrollIndicator={false}
-            className="mt-3.5"
-            contentContainerStyle={isDesktop ? undefined : { paddingHorizontal: 20 }}
-          >
-          <View className={`flex-row gap-1.5 ${isDesktop ? "px-screen flex-1 flex-wrap" : ""}`}>
+        {/* Saved / Used as tabs — used resources are archived, not deleted, so they stay recoverable. */}
+        <View className="mx-screen border-line mt-4 flex-row gap-5 border-b" accessibilityRole="tablist">
+          {([
+            { label: "Saved", count: savedCount, on: !showArchived, press: () => setShowArchived(false) },
+            { label: "Used", count: usedCount, on: showArchived, press: () => setShowArchived(true) },
+          ] as const).map((t) => (
+            <Pressable
+              key={t.label}
+              onPress={t.press}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: t.on }}
+              className="-mb-px flex-row items-center gap-1.5 pb-2.5 pt-1"
+              style={{ borderBottomWidth: 2, borderBottomColor: t.on ? c.accent : "transparent" }}
+            >
+              <Text className={`text-[14px] font-semibold ${t.on ? "text-ink" : "text-ink-3"}`}>{t.label}</Text>
+              <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[12.5px] font-semibold">
+                {t.count}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Search + tags. Desktop wraps the tags; a phone scrolls them sideways. */}
+        <View className="px-screen mt-4">
+          <View className="bg-surface border-line h-[42px] flex-row items-center gap-2.5 rounded-[11px] border px-3">
+            <Search size={15} color={c.ink3} strokeWidth={2} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search links, media, snippets…"
+              placeholderTextColor={c.ink3}
+              accessibilityLabel="Search resources"
+              className="text-ink flex-1 text-[14.5px]"
+              style={{ paddingVertical: 0, outlineWidth: 0 } as object}
+            />
+            {search ? (
+              <Pressable onPress={() => setSearch("")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear search">
+                <X size={15} color={c.ink3} strokeWidth={2.2} />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+        <ScrollView
+          horizontal={!isDesktop}
+          scrollEnabled={!isDesktop}
+          showsHorizontalScrollIndicator={false}
+          className="mt-3"
+          contentContainerStyle={isDesktop ? undefined : { paddingHorizontal: 20 }}
+        >
+          <View className={`flex-row items-center gap-1.5 ${isDesktop ? "px-screen flex-1 flex-wrap" : ""}`}>
             <Pressable
               onPress={() => setSelected([])}
-              className={`rounded-pill px-3 py-[7px] ${selected.length === 0 ? "bg-accent" : "bg-chip border-line border"}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selected.length === 0 }}
+              className={`rounded-pill px-3 py-[6px] ${selected.length === 0 ? "bg-ink" : "hover:bg-chip"}`}
             >
-              <Text className={`text-[12px] font-semibold ${selected.length === 0 ? "text-on-accent" : "text-ink-2"}`}>All</Text>
+              <Text className={`text-[12.5px] font-semibold ${selected.length === 0 ? "text-bg" : "text-ink-2"}`}>All</Text>
             </Pressable>
             {tags.map((t) => (
               <TagFilterPill
@@ -285,12 +289,17 @@ export default function ResourcesScreen() {
                 onRequestDelete={() => setTagMenuFor(t)}
               />
             ))}
-            <Pressable onPress={() => setNewTagOpen(true)} className="border-line rounded-pill border border-dashed px-3 py-[6px]">
-              <Text className="text-ink-3 text-[12px] font-semibold">+ new tag</Text>
+            <Pressable
+              onPress={() => setNewTagOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="New tag"
+              className="hover:bg-chip rounded-pill flex-row items-center gap-1 px-2.5 py-[6px]"
+            >
+              <Plus size={13} color={c.ink3} strokeWidth={2.2} />
+              <Text className="text-ink-3 text-[12.5px] font-semibold">Tag</Text>
             </Pressable>
           </View>
-          </ScrollView>
-        )}
+        </ScrollView>
 
         {/* Masonry */}
         <View className="px-screen mt-4">
