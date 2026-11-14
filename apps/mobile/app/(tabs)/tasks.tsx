@@ -228,11 +228,22 @@ export default function TasksScreen() {
   };
 
   const title = focus === today ? "Today" : capitalize(relativeDayLabel(focus, today));
+  const selectedTask = selectedId ? tasks.find((t) => t.id === selectedId) : undefined;
+  // Desktop splits only while a task is open; otherwise the list gets a centred, readable column
+  // instead of a 400px strip beside an empty "No task selected" pane.
+  const detailOpen = isDesktop && !!selectedTask;
 
   const list = (
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 12, paddingTop: 24 } : null) }}
+        contentContainerStyle={{
+          paddingBottom: 150,
+          ...(isDesktop
+            ? detailOpen
+              ? { paddingHorizontal: 12, paddingTop: 24 }
+              : { paddingHorizontal: 10, paddingTop: 28, maxWidth: 760, width: "100%", alignSelf: "center" }
+            : null),
+        }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
@@ -368,34 +379,25 @@ export default function TasksScreen() {
       </ScrollView>
   );
 
-  // Desktop: master-detail — the list on the left, the editor pane (or a placeholder) on the right.
-  if (isDesktop) {
-    const selectedTask = selectedId ? tasks.find((t) => t.id === selectedId) : undefined;
+  // Desktop: master-detail while a task is open — the list on the left, the editor on the right.
+  if (detailOpen) {
     return (
       <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
         <View className="flex-1 flex-row">
           <View className="border-line w-[400px] border-r">{list}</View>
           <View className="flex-1">
-            {selectedTask ? (
-              <TaskEditor
-                key={selectedId}
-                id={selectedId!}
-                isNew={selectedIsNew}
-                onClose={() => setSelectedId(null)}
-              />
-            ) : (
-              <View className="flex-1 items-center justify-center">
-                <EmptyState
-                  icon={ListChecks}
-                  title="No task selected"
-                  subtitle="Pick a task to see its details, or start a new one."
-                  actionLabel="New task"
-                  onAction={createAndOpen}
-                />
-              </View>
-            )}
+            <TaskEditor key={selectedId} id={selectedId!} isNew={selectedIsNew} onClose={() => setSelectedId(null)} />
           </View>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Desktop with nothing open: the list alone, full width.
+  if (isDesktop) {
+    return (
+      <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+        {list}
       </SafeAreaView>
     );
   }
