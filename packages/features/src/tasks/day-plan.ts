@@ -12,14 +12,18 @@ const isTemplate = (t: Task) => t.repeat !== "none" && t.origin_task_id === null
 /**
  * Everything on `day`: tasks dated that day, undated tasks when `day` is today, and repeating tasks
  * whose rule includes the day but whose occurrence isn't materialized yet (future days in a calendar
- * or a preview). Completed tasks are included; callers decide how to show them. Sorted by time
+ * or a preview) — unless it was deleted (`skipped`, from useSkippedOccurrences). Completed tasks are included; callers decide how to show them. Sorted by time
  * (untimed last), then by sort order.
  */
-export function tasksOnDay(tasks: Task[], day: string, today: string): PlannedTask[] {
+export function tasksOnDay(tasks: Task[], day: string, today: string, skipped?: Set<string>): PlannedTask[] {
   const out: PlannedTask[] = [];
   const materialized = new Set<string>();
   for (const t of tasks) {
-    if (t.deleted) continue;
+    // A deleted occurrence still claims its day: the user removed that one, so don't project it back.
+    if (t.deleted) {
+      if (t.origin_task_id && t.due_date === day) materialized.add(t.origin_task_id);
+      continue;
+    }
     if (t.due_date === day || (t.due_date === null && day === today)) {
       out.push({ task: t, projected: false });
       if (t.origin_task_id) materialized.add(t.origin_task_id);
@@ -27,6 +31,7 @@ export function tasksOnDay(tasks: Task[], day: string, today: string): PlannedTa
   }
   for (const t of tasks) {
     if (t.deleted || !isTemplate(t) || t.due_date === day || materialized.has(t.id)) continue;
+    if (skipped?.has(`${t.id}:${day}`)) continue; // that day's occurrence was deleted
     if (day >= today && occursOn(t, day)) out.push({ task: t, projected: true });
   }
   return out.sort(

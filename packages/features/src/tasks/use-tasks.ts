@@ -1,7 +1,7 @@
 import { TaskRepository, type ToggleableStatus } from "@nox/api";
 import { newId } from "@nox/db";
 import type { Task, TaskInput } from "@nox/types";
-import { todayKey } from "@nox/utils";
+import { addDays as addDaysKey, todayKey } from "@nox/utils";
 import {
   useMutation,
   useQuery,
@@ -23,6 +23,18 @@ function snapshot(qc: QueryClient): Task[] {
 /** All live tasks for the current user (persisted + offline-tolerant via the shared queryClient). */
 export function useTasks() {
   return useQuery({ queryKey: taskKeys.all, queryFn: TaskRepository.list });
+}
+
+/**
+ * Repeating-task occurrences the user deleted, from yesterday on ("originId:YYYY-MM-DD"). Keyed under
+ * the tasks key, so it refreshes whenever the task list does (e.g. after a delete).
+ */
+export function useSkippedOccurrences() {
+  return useQuery({
+    queryKey: [...taskKeys.all, "skipped"],
+    queryFn: () => TaskRepository.skippedOccurrences(addDaysKey(todayKey(), -1)),
+    select: (keys) => new Set(keys),
+  });
 }
 
 /** Tasks split into the sections the Tasks screen renders. Grouping runs in `select` so it only

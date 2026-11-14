@@ -10,6 +10,7 @@ export {
   useDeleteTaskSeries,
   useEnsureOccurrences,
   useRunCarryover,
+  useSkippedOccurrences,
 } from "./tasks/use-tasks";
 export { groupTasks, type GroupedTasks } from "./tasks/group-tasks";
 export { nextOccurrenceDate, occursOn, shiftReminders, templatesNeedingOccurrence } from "./tasks/recurrence";

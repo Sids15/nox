@@ -53,6 +53,17 @@ describe("tasksOnDay", () => {
     expect(ids(tasksOnDay([mk({ id: "r", repeat: "daily", due_date: "2026-07-01" })], MON, TUE))).toEqual([]);
   });
 
+  test("a deleted occurrence keeps its repeat from being projected back", () => {
+    const daily = mk({ id: "r", repeat: "daily" });
+    const gone = mk({ id: "o", due_date: TUE, origin_task_id: "r", deleted: true });
+    expect(ids(tasksOnDay([daily, gone], TUE, MON))).toEqual([]);
+  });
+
+  test("a skipped (deleted, not in the list) occurrence isn't projected", () => {
+    const daily = mk({ id: "r", repeat: "daily" });
+    expect(ids(tasksOnDay([daily], TUE, MON, new Set([`r:${TUE}`])))).toEqual([]);
+  });
+
   test("skips deleted tasks", () => {
     expect(ids(tasksOnDay([mk({ id: "x", deleted: true })], MON, MON))).toEqual([]);
   });

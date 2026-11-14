@@ -26,6 +26,24 @@ export const TaskRepository = {
   },
 
   /**
+   * Occurrences of repeating tasks that were deleted on or after `fromDate`, as "originId:YYYY-MM-DD"
+   * keys. `list` leaves deleted rows out, but a calendar projecting repeats onto future days needs to
+   * know which ones the user removed, or it would draw them again.
+   */
+  async skippedOccurrences(fromDate: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("origin_task_id,due_date")
+      .eq("deleted", true)
+      .not("origin_task_id", "is", null)
+      .gte("due_date", fromDate);
+    if (error) throw error;
+    return (data ?? [])
+      .filter((r): r is { origin_task_id: string; due_date: string } => !!r.origin_task_id && !!r.due_date)
+      .map((r) => `${r.origin_task_id}:${r.due_date}`);
+  },
+
+  /**
    * Insert a task. The caller supplies the id (a client `newId()`) so the optimistic cache row and
    * the persisted row share an identity. `user_id` comes from the session, not the input.
    */

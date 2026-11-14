@@ -1,4 +1,4 @@
-import { tasksOnDay, timeToMinutes, useTasks, useThemeColors } from "@nox/features";
+import { tasksOnDay, timeToMinutes, useSkippedOccurrences, useTasks, useThemeColors } from "@nox/features";
 import { formatTime12, relativeDayLabel } from "@nox/utils";
 import { useEffect, useMemo, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
@@ -27,7 +27,11 @@ export function DayPreview({
   const c = useThemeColors();
   const { data: tasks = [] } = useTasks();
   const scroller = useRef<ScrollView>(null);
-  const plan = useMemo(() => (date ? tasksOnDay(tasks, date, today).filter((p) => p.task.status !== "complete") : []), [tasks, date, today]);
+  const { data: skipped } = useSkippedOccurrences();
+  const plan = useMemo(
+    () => (date ? tasksOnDay(tasks, date, today, skipped).filter((p) => p.task.status !== "complete") : []),
+    [tasks, date, today, skipped],
+  );
 
   // Keep the new task in view as its time changes.
   const firstHour = useRef(0);
