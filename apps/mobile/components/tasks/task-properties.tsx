@@ -11,16 +11,31 @@ import {
   toDateKey,
   weekdayShort,
 } from "@nox/utils";
-import { Bell, BellPlus, Calendar, Check, Clock, Flag, Plus, Repeat, Sparkles, X, type LucideIcon } from "lucide-react-native";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import {
+  Bell,
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Flag,
+  Plus,
+  Repeat,
+  Sparkles,
+  X,
+  type LucideIcon,
+} from "lucide-react-native";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Platform, Pressable, Text, View, type TextStyle } from "react-native";
+import { Popover } from "../popover";
 import { MiniCalendar } from "./mini-calendar";
 import { TimePicker } from "./time-picker";
 
 /**
  * The task property bar — Date · Time · Remind · Repeat · Priority — shared by the new-task dialog and
  * the task editor so both look and behave the same. Each property is a compact button showing its
- * value; tapping one opens its options panel underneath. Purely controlled: it reports a patch through
+ * value; tapping one opens its options in a menu anchored to the button (Linear / Todoist), floating
+ * over the surface instead of growing it. Purely controlled: it reports a patch through
  * `onChange` and the caller decides what to do with it (hold it as a draft, or save it).
  */
 
@@ -139,12 +154,23 @@ function reminderPresets(date: string | null, time: string | null): { label: str
 
 /* ─────────────────────────────── primitives ─────────────────────────────── */
 
+/** Numbers in hints and times line up in columns without switching to a monospace costume. */
+const TABULAR: TextStyle = { fontVariant: ["tabular-nums"] };
+const WEB = Platform.OS === "web";
+/** Press feedback (Emil Kowalski): a 0.97 squeeze so the control visibly hears the tap. */
+const pressScale = ({ pressed }: { pressed: boolean }) => ({
+  transform: [{ scale: pressed ? 0.97 : 1 }],
+  ...(WEB ? ({ transitionProperty: "transform, background-color", transitionDuration: "140ms" } as object) : null),
+});
+
 /**
- * A property button. Unset properties are quiet — no box, just icon + name, a chip fill on hover — so
- * the bar reads as a few set values rather than a row of empty outlines. Set ones get a tinted fill;
- * `auto` adds a sparkle when the value was read from the typed title rather than picked.
+ * A property button. Unset properties are quiet — icon and name, a fill only on hover — so the bar
+ * reads as the few values that are set. Set ones carry a tinted fill; `auto` adds a sparkle when the
+ * value came from the typed title. The clear × is its own 32px target beside the button, not nested
+ * inside it.
  */
 function PropButton({
+  anchorRef,
   icon: Icon,
   label,
   set,
@@ -154,6 +180,7 @@ function PropButton({
   onPress,
   onClear,
 }: {
+  anchorRef: RefObject<View | null>;
   icon: LucideIcon;
   label: string;
   set: boolean;
@@ -164,168 +191,226 @@ function PropButton({
   onClear?: () => void;
 }) {
   const c = useThemeColors();
-  const tint = color ?? (set ? c.accent : c.ink2);
+  const tint = color ?? c.accent;
+  const active = set || open;
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ expanded: open }}
-      className={`h-[32px] flex-row items-center gap-1.5 rounded-[9px] border px-2.5 ${
-        open
-          ? "border-accent/[0.6] bg-accent/[0.14]"
-          : set
-            ? "border-accent/[0.22] bg-accent/[0.08] hover:bg-accent/[0.14]"
-            : "hover:bg-chip border-transparent"
+    <View
+      ref={anchorRef}
+      collapsable={false}
+      className={`h-[32px] flex-row items-center rounded-[9px] ${
+        open ? "bg-accent/[0.16]" : set ? "bg-accent/[0.09]" : ""
       }`}
+      style={color && set ? { backgroundColor: `${color}1a` } : undefined}
     >
-      <Icon size={14} color={set || open ? tint : c.ink3} strokeWidth={2} />
-      <Text style={{ color: set || open ? tint : c.ink2 }} className="text-[13px] font-semibold">
-        {label}
-      </Text>
-      {auto && <Sparkles size={11} color={tint} strokeWidth={2.2} />}
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ expanded: open }}
+        style={pressScale}
+        className={`h-full flex-row items-center gap-1.5 rounded-[9px] pl-2.5 ${set && onClear ? "pr-1" : "pr-2.5"} ${
+          active ? "" : "hover:bg-chip"
+        }`}
+      >
+        <Icon size={14} color={active ? tint : c.ink3} strokeWidth={2} />
+        <Text style={{ color: active ? tint : c.ink2 }} className="text-[13px] font-semibold">
+          {label}
+        </Text>
+        {auto && <Sparkles size={11} color={tint} strokeWidth={2.2} />}
+      </Pressable>
       {set && onClear && (
         <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            onClear();
-          }}
-          hitSlop={8}
+          onPress={onClear}
+          hitSlop={6}
+          accessibilityRole="button"
           accessibilityLabel={`Clear ${label}`}
-          className="-mr-0.5 ml-0.5"
+          style={pressScale}
+          className="h-full w-[26px] items-center justify-center rounded-[9px] hover:bg-black/10"
         >
           <X size={12} color={tint} strokeWidth={2.4} />
         </Pressable>
       )}
-    </Pressable>
+    </View>
   );
 }
 
-function OptionRow({
+/** A row in a menu: optional leading icon, label, right-aligned hint, check when selected. */
+function MenuRow({
   label,
   hint,
-  selected,
+  selected = false,
+  disabled = false,
   onPress,
   icon,
+  trailing,
 }: {
   label: string;
   hint?: string;
-  selected: boolean;
+  selected?: boolean;
+  disabled?: boolean;
   onPress: () => void;
   icon?: ReactNode;
+  trailing?: ReactNode;
 }) {
   const c = useThemeColors();
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      className={`flex-row items-center gap-2.5 rounded-[9px] px-2.5 py-[9px] ${selected ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
+      disabled={disabled}
+      accessibilityRole="menuitem"
+      accessibilityState={{ selected, disabled }}
+      className={`min-h-[36px] flex-row items-center gap-2.5 rounded-[8px] px-2.5 ${selected ? "bg-accent/[0.1]" : "hover:bg-chip"} ${
+        disabled ? "opacity-40" : ""
+      }`}
     >
       {icon}
-      <Text className={`flex-1 text-[13.5px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>{label}</Text>
-      {hint ? <Text className="text-ink-3 font-mono text-[11px]">{hint}</Text> : null}
-      {selected ? <Check size={14} color={c.accent} strokeWidth={2.6} /> : null}
+      <Text numberOfLines={1} className={`flex-1 text-[13.5px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>
+        {label}
+      </Text>
+      {hint ? (
+        <Text style={TABULAR} className={`text-[12px] ${selected ? "text-accent" : "text-ink-3"}`}>
+          {hint}
+        </Text>
+      ) : null}
+      {trailing ?? (selected ? <Check size={14} color={c.accent} strokeWidth={2.6} /> : <View style={{ width: 14 }} />)}
     </Pressable>
   );
 }
 
-function PanelTitle({ children }: { children: string }) {
-  return (
-    <Text className="text-ink-3 mb-1.5 mt-1 px-1 font-mono text-[10px] font-semibold tracking-[0.14em]">{children}</Text>
-  );
+function MenuLabel({ children }: { children: string }) {
+  return <Text className="text-ink-3 px-2.5 pb-1 pt-2 text-[11.5px] font-semibold">{children}</Text>;
 }
 
-/** A two-line selectable card (time presets, reminder presets). */
-function PresetCard({
-  title,
-  sub,
-  selected,
-  disabled,
-  onPress,
-}: {
-  title: string;
-  sub: string;
-  selected: boolean;
-  disabled?: boolean;
-  onPress: () => void;
-}) {
+const MenuDivider = () => <View className="bg-line mx-1 my-1.5 h-px" />;
+
+/** A square check for multi-select rows (reminders), distinct from the single-select tick. */
+function CheckBox({ on }: { on: boolean }) {
+  const c = useThemeColors();
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityState={{ selected, disabled }}
-      className={`min-w-[132px] flex-1 rounded-[10px] border px-3 py-2 ${
-        selected ? "border-accent bg-accent/[0.12]" : "border-line hover:bg-chip"
-      } ${disabled ? "opacity-35" : ""}`}
+    <View
+      className={`h-[16px] w-[16px] items-center justify-center rounded-[4px] ${on ? "bg-accent" : "border-ink-3 border-[1.5px]"}`}
     >
-      <Text className={`text-[12px] font-semibold ${selected ? "text-accent" : "text-ink-3"}`}>{title}</Text>
-      <Text className={`mt-0.5 text-[13.5px] font-bold ${selected ? "text-accent" : "text-ink"}`}>{sub}</Text>
-    </Pressable>
+      {on && <Check size={11} color={c.onAccent} strokeWidth={3} />}
+    </View>
   );
 }
 
-/* ─────────────────────────────── remind panel ─────────────────────────────── */
+/* ─────────────────────────────── remind menu ─────────────────────────────── */
 
 /**
- * Reminders: what's set (each removable), a grid of presets for this task's date/time (several
- * reminders allowed), and an exact date + time for anything else — which also works on a task with
- * no date. Presets already in the past are shown but disabled, since they could never fire.
+ * Reminders, as a menu: presets for this task's date and time as checkable rows (any number of them;
+ * past ones disabled since they could never fire), any custom reminders already set with a remove
+ * button, and "Custom date & time…" which swaps the menu to a calendar + time view. A task with no
+ * date goes straight to the custom view.
  */
-function RemindPanel({
+function RemindMenu({
   date,
   time,
   reminders,
   today,
-  compact,
   onChange,
 }: {
   date: string | null;
   time: string | null;
   reminders: string[];
   today: string;
-  compact: boolean;
   onChange: (next: string[]) => void;
 }) {
   const c = useThemeColors();
   const now = Date.now();
-  const anchor = anchorOf(date, time);
   const presets = reminderPresets(date, time);
-  const sorted = [...reminders].sort();
-
   const [custom, setCustom] = useState(presets.length === 0);
   const [cDate, setCDate] = useState<string>(date ?? today);
   const [cTime, setCTime] = useState<string>(time ?? "09:00");
-  const customAt = localDate(cDate, cTime);
-  const customPast = customAt.getTime() <= now;
-  const customDup = reminders.some((r) => sameMinute(r, customAt.toISOString()));
 
+  const isPreset = (iso: string) => presets.some((p) => sameMinute(p.at.toISOString(), iso));
+  const others = [...reminders].filter((r) => !isPreset(r)).sort();
   const toggle = (at: Date) => {
     const iso = at.toISOString();
     onChange(reminders.some((r) => sameMinute(r, iso)) ? reminders.filter((r) => !sameMinute(r, iso)) : [...reminders, iso]);
   };
 
+  if (custom) {
+    const at = localDate(cDate, cTime);
+    const past = at.getTime() <= now;
+    const dup = reminders.some((r) => sameMinute(r, at.toISOString()));
+    const blocked = past || dup;
+    return (
+      <View className="p-1.5">
+        <View className="flex-row items-center gap-1 pb-1">
+          {presets.length > 0 && (
+            <Pressable
+              onPress={() => setCustom(false)}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Back to reminders"
+              className="hover:bg-chip h-7 w-7 items-center justify-center rounded-full"
+            >
+              <ChevronLeft size={16} color={c.ink2} strokeWidth={2.2} />
+            </Pressable>
+          )}
+          <Text className="text-ink px-1 text-[13.5px] font-semibold">Remind me at…</Text>
+        </View>
+        <View className="px-1.5 pt-1">
+          <MiniCalendar selected={cDate} today={today} onSelect={setCDate} />
+        </View>
+        <MenuDivider />
+        <View className="px-1.5">
+          <TimePicker value={cTime} onChange={(t) => t && setCTime(t)} compact allowNone={false} />
+        </View>
+        <View className="px-1.5 pb-1 pt-3">
+          <Pressable
+            onPress={() => {
+              onChange([...reminders, at.toISOString()]);
+              if (presets.length > 0) setCustom(false);
+            }}
+            disabled={blocked}
+            accessibilityRole="button"
+            style={pressScale}
+            className={`h-[38px] flex-row items-center justify-center gap-1.5 rounded-[9px] ${blocked ? "bg-chip" : "bg-accent hover:opacity-90"}`}
+          >
+            <Plus size={14} color={blocked ? c.ink3 : c.onAccent} strokeWidth={2.4} />
+            <Text className={`text-[13.5px] font-semibold ${blocked ? "text-ink-3" : "text-on-accent"}`}>
+              {past ? "That time has passed" : dup ? "Already set" : `Remind ${reminderText(at.toISOString(), today)}`}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View>
-      {/* What's set */}
-      <PanelTitle>{sorted.length ? `REMINDERS · ${sorted.length}` : "NO REMINDERS YET"}</PanelTitle>
-      {sorted.length > 0 && (
-        <View className="border-line bg-surface mb-2 overflow-hidden rounded-[10px] border">
-          {sorted.map((iso, i) => {
+    <View className="p-1.5">
+      <MenuLabel>{time ? `Before ${formatTime12(time)}` : "On an all-day task"}</MenuLabel>
+      {presets.map((p) => {
+        const on = reminders.some((r) => sameMinute(r, p.at.toISOString()));
+        const sub =
+          toDateKey(p.at) === date ? formatTime12(hhmm(p.at))! : `${WEEKDAY_SHORT[p.at.getDay()]} ${formatTime12(hhmm(p.at))}`;
+        return (
+          <MenuRow
+            key={p.label}
+            label={p.label}
+            hint={sub}
+            selected={on}
+            disabled={!on && p.at.getTime() <= now}
+            icon={<CheckBox on={on} />}
+            trailing={<View />}
+            onPress={() => toggle(p.at)}
+          />
+        );
+      })}
+      {others.length > 0 && (
+        <>
+          <MenuDivider />
+          <MenuLabel>Custom</MenuLabel>
+          {others.map((iso) => {
             const past = new Date(iso).getTime() <= now;
-            const rel = describeOffset(iso, anchor);
             return (
-              <View key={iso} className={`flex-row items-center gap-2.5 px-3 py-2 ${i > 0 ? "border-line border-t" : ""}`}>
-                <Bell size={13} color={past ? c.ink3 : c.accent} strokeWidth={2} />
-                <View className="flex-1">
-                  <Text className={`text-[13px] font-semibold ${past ? "text-ink-3 line-through" : "text-ink"}`}>
-                    {reminderText(iso, today)}
-                  </Text>
-                  {rel || past ? (
-                    <Text className="text-ink-3 mt-px text-[11px]">{past ? "already passed — won't fire" : rel}</Text>
-                  ) : null}
-                </View>
+              <View key={iso} className="min-h-[36px] flex-row items-center gap-2.5 rounded-[8px] px-2.5">
+                <Bell size={14} color={past ? c.ink3 : c.accent} strokeWidth={2} />
+                <Text style={TABULAR} className={`flex-1 text-[13.5px] ${past ? "text-ink-3 line-through" : "text-ink"}`}>
+                  {reminderText(iso, today)}
+                </Text>
                 <Pressable
                   onPress={() => onChange(reminders.filter((r) => r !== iso))}
                   hitSlop={8}
@@ -333,90 +418,34 @@ function RemindPanel({
                   accessibilityLabel={`Remove reminder ${reminderText(iso, today)}`}
                   className="hover:bg-chip h-7 w-7 items-center justify-center rounded-full"
                 >
-                  <X size={14} color={c.ink3} strokeWidth={2.2} />
+                  <X size={13} color={c.ink3} strokeWidth={2.2} />
                 </Pressable>
               </View>
             );
           })}
-        </View>
-      )}
-
-      {/* Presets */}
-      {presets.length > 0 && (
-        <>
-          <PanelTitle>{time ? `RELATIVE TO ${formatTime12(time)!.toUpperCase()}` : "FOR AN ALL-DAY TASK"}</PanelTitle>
-          <View className="flex-row flex-wrap gap-1.5">
-            {presets.map((p) => (
-              <PresetCard
-                key={p.label}
-                title={p.label}
-                sub={
-                  // Just the time on the task's own day; weekday + time otherwise ("Sun 11:30 AM").
-                  toDateKey(p.at) === date
-                    ? formatTime12(hhmm(p.at))!
-                    : `${WEEKDAY_SHORT[p.at.getDay()]} ${formatTime12(hhmm(p.at))}`
-                }
-                selected={reminders.some((r) => sameMinute(r, p.at.toISOString()))}
-                disabled={p.at.getTime() <= now}
-                onPress={() => toggle(p.at)}
-              />
-            ))}
-          </View>
         </>
       )}
-
-      {/* Exact date + time */}
-      <View className="mt-2">
-        <OptionRow
-          label={presets.length ? "Pick an exact date & time…" : "Remind me at…"}
-          icon={<BellPlus size={14} color={custom ? c.accent : c.ink2} strokeWidth={2} />}
-          selected={custom}
-          onPress={() => setCustom((v) => !v)}
-        />
-        {custom && (
-          <View className={`mt-2 ${compact ? "gap-3" : "flex-row gap-4"}`}>
-            <View style={compact ? undefined : { width: 260 }}>
-              <MiniCalendar selected={cDate} today={today} onSelect={setCDate} />
-            </View>
-            <View className="flex-1 justify-between gap-3">
-              <TimePicker value={cTime} onChange={(t) => t && setCTime(t)} compact allowNone={false} />
-              <View>
-                <Pressable
-                  onPress={() => onChange([...reminders, customAt.toISOString()])}
-                  disabled={customPast || customDup}
-                  accessibilityRole="button"
-                  className={`flex-row items-center justify-center gap-1.5 rounded-[10px] py-2.5 ${
-                    customPast || customDup ? "bg-chip" : "bg-accent hover:opacity-90"
-                  }`}
-                >
-                  <Plus size={14} color={customPast || customDup ? c.ink3 : c.onAccent} strokeWidth={2.4} />
-                  <Text className={`text-[13.5px] font-bold ${customPast || customDup ? "text-ink-3" : "text-on-accent"}`}>
-                    Add {reminderText(customAt.toISOString(), today)}
-                  </Text>
-                </Pressable>
-                {customPast ? (
-                  <Text className="text-high mt-1.5 text-center text-[11.5px]">That time has already passed.</Text>
-                ) : customDup ? (
-                  <Text className="text-ink-3 mt-1.5 text-center text-[11.5px]">Already set.</Text>
-                ) : null}
-              </View>
-            </View>
-          </View>
-        )}
-      </View>
+      <MenuDivider />
+      <MenuRow
+        label="Custom date & time…"
+        icon={<Plus size={14} color={c.ink2} strokeWidth={2.2} />}
+        trailing={<ChevronRight size={14} color={c.ink3} strokeWidth={2} />}
+        onPress={() => setCustom(true)}
+      />
     </View>
   );
 }
 
 /* ─────────────────────────────── the bar ─────────────────────────────── */
 
+const MENU_WIDTH: Record<Panel, number> = { date: 500, time: 470, remind: 340, repeat: 280, priority: 220 };
 
 export function PropertyBar({
   value,
   onChange,
   today,
   compact,
-  /** Horizontal inset for the bar and panels, to line up with the surrounding content. */
+  /** Horizontal inset for the bar, to line up with the surrounding content. */
   inset = 20,
   autoFields,
   trailing,
@@ -434,17 +463,24 @@ export function PropertyBar({
   const c = useThemeColors();
   const [panel, setPanel] = useState<Panel | null>(null);
   const { date, time, reminders, repeat, priority } = value;
+  const refs = {
+    date: useRef<View>(null),
+    time: useRef<View>(null),
+    remind: useRef<View>(null),
+    repeat: useRef<View>(null),
+    priority: useRef<View>(null),
+  };
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? null : p));
+  const close = () => setPanel(null);
 
-  // Esc closes an open panel before anything else hears it, so in the dialog the first Esc folds the
-  // panel and only the second closes the dialog. Both halves of the key need catching: our dialog
-  // listens for keydown, but react-native-web's Modal closes itself on keyup. Window capture runs
-  // before any listener on document.
+  // Esc closes an open menu before anything else hears it, so in the dialog the first Esc folds the
+  // menu and only the second closes the dialog. Both halves of the key are caught: the dialog listens
+  // for keydown, but react-native-web's Modal closes on keyup. Window capture runs first.
   const swallowEscUp = useRef(false);
   const panelOpen = useRef(false);
   panelOpen.current = panel !== null;
   useEffect(() => {
-    if (Platform.OS !== "web") return;
+    if (!WEB) return;
     const onDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || !panelOpen.current) return;
       e.preventDefault();
@@ -479,199 +515,203 @@ export function PropertyBar({
     { key: addDays(today, ((8 - dow) % 7) || 7), label: "Next week", hint: "Mon" },
     { key: null, label: "No date", hint: "" },
   ];
+  const narrow = compact;
 
-  const datePanel = (
-    <View className={compact ? "gap-3" : "flex-row gap-4"}>
-      <View style={compact ? undefined : { width: 210 }}>
+  const dateMenu = (
+    <View className={`p-1.5 ${narrow ? "" : "flex-row"}`}>
+      <View style={narrow ? undefined : { width: 196 }}>
         {quickDates.map((q) => (
-          <OptionRow
+          <MenuRow
             key={q.label}
             label={q.label}
             hint={q.hint}
             selected={date === q.key}
             onPress={() => {
               setDate(q.key);
-              setPanel(null);
+              close();
             }}
           />
         ))}
       </View>
-      <View className={compact ? "" : "border-line flex-1 border-l pl-4"}>
+      {narrow ? <MenuDivider /> : <View className="bg-line mx-1.5 w-px" />}
+      <View className="flex-1 px-2 py-1">
         <MiniCalendar
           selected={date}
           today={today}
           onSelect={(k) => {
             setDate(k);
-            setPanel(null);
+            close();
           }}
         />
       </View>
     </View>
   );
 
-  const timePanel = (
-    <TimePicker
-      value={time}
-      compact={compact}
-      onChange={(t) => {
-        onChange({ time: t });
-        setPanel(null);
-      }}
-    />
+  const timeMenu = (
+    <View className="p-2.5">
+      <TimePicker
+        value={time}
+        compact={narrow}
+        onChange={(t) => {
+          onChange({ time: t });
+          close();
+        }}
+      />
+    </View>
   );
 
   const anchorDow = dayOfWeek(date ?? today);
-  const repeatPanel = (
-    <View>
+  const repeatMenu = (
+    <View className="p-1.5">
       {(
         [
           ["none", "Never"],
           ["daily", "Every day"],
           ["weekdays", "Every weekday", "Mon–Fri"],
           ["weekly", "Every week", `on ${WEEKDAY_SHORT[anchorDow]}`],
-          ["custom", "Custom days…"],
+          ["custom", "On certain days…"],
         ] as [RepeatKind, string, string?][]
       ).map(([kind, label, hint]) => (
-        <OptionRow
+        <MenuRow
           key={kind}
           label={label}
           hint={hint}
           selected={repeat.kind === kind}
           onPress={() => {
             setRepeat({ kind, weekdays: kind === "custom" ? (repeat.weekdays.length ? repeat.weekdays : [anchorDow]) : [] });
-            if (kind !== "custom") setPanel(null);
+            if (kind !== "custom") close();
           }}
         />
       ))}
       {repeat.kind === "custom" && (
-        <View className="mt-2 flex-row justify-between px-1.5">
-          {WEEKDAY_LETTERS.map((letter, d) => {
-            const on = repeat.weekdays.includes(d);
-            return (
-              <Pressable
-                key={d}
-                onPress={() =>
-                  setRepeat({
-                    kind: "custom",
-                    weekdays: on ? repeat.weekdays.filter((x) => x !== d) : [...repeat.weekdays, d].sort((a, b) => a - b),
-                  })
-                }
-                accessibilityRole="button"
-                accessibilityLabel={WEEKDAY_SHORT[d]}
-                accessibilityState={{ selected: on }}
-                className={`h-9 w-9 items-center justify-center rounded-full ${on ? "bg-accent" : "bg-chip hover:bg-elev"}`}
-              >
-                <Text className={`text-[13px] font-semibold ${on ? "text-on-accent" : "text-ink-2"}`}>{letter}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-      {repeat.kind === "custom" && repeat.weekdays.length === 0 && (
-        <Text className="text-high mt-2 px-2.5 text-[11.5px]">Pick at least one day.</Text>
+        <>
+          <MenuDivider />
+          <View className="flex-row justify-between px-1.5 pb-1 pt-0.5">
+            {WEEKDAY_LETTERS.map((letter, d) => {
+              const on = repeat.weekdays.includes(d);
+              return (
+                <Pressable
+                  key={d}
+                  onPress={() =>
+                    setRepeat({
+                      kind: "custom",
+                      weekdays: on ? repeat.weekdays.filter((x) => x !== d) : [...repeat.weekdays, d].sort((a, b) => a - b),
+                    })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={WEEKDAY_SHORT[d]}
+                  accessibilityState={{ selected: on }}
+                  style={pressScale}
+                  className={`h-8 w-8 items-center justify-center rounded-full ${on ? "bg-accent" : "hover:bg-chip"}`}
+                >
+                  <Text className={`text-[12.5px] font-semibold ${on ? "text-on-accent" : "text-ink-2"}`}>{letter}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {repeat.weekdays.length === 0 && <Text className="text-high px-2.5 pb-1.5 text-[11.5px]">Pick at least one day.</Text>}
+        </>
       )}
     </View>
   );
 
-  const priorityPanel = (
-    <View>
+  const priorityMenu = (
+    <View className="p-1.5">
       {(["high", "medium", "low"] as const).map((p) => (
-        <OptionRow
+        <MenuRow
           key={p}
           label={cap(p)}
           selected={priority === p}
           icon={<Flag size={14} color={priorityColors[p]} strokeWidth={2} fill={priority === p ? priorityColors[p] : "transparent"} />}
           onPress={() => {
             onChange({ priority: p });
-            setPanel(null);
+            close();
           }}
         />
       ))}
     </View>
   );
 
-  const remindLabel = reminders.length === 0 ? "Remind" : reminders.length === 1 ? "1 reminder" : `${reminders.length} reminders`;
-
-  const buttons = (
-    <>
-      <PropButton
-        icon={Calendar}
-        label={date ? dateLabel(date, today) : "Date"}
-        set={date !== null}
-        auto={autoFields?.has("date")}
-        open={panel === "date"}
-        onPress={() => toggle("date")}
-        onClear={() => setDate(null)}
-      />
-      {date !== null && (
-        <PropButton
-          icon={Clock}
-          label={time ? formatTime12(time)! : "Time"}
-          set={time !== null}
-          auto={autoFields?.has("time")}
-          open={panel === "time"}
-          onPress={() => toggle("time")}
-          onClear={() => onChange({ time: null })}
-        />
-      )}
-      <PropButton
-        icon={Bell}
-        label={remindLabel}
-        set={reminders.length > 0}
-        open={panel === "remind"}
-        onPress={() => toggle("remind")}
-        onClear={() => onChange({ reminders: [] })}
-      />
-      <PropButton
-        icon={Repeat}
-        label={repeatLabel(repeat, date)}
-        set={repeat.kind !== "none"}
-        auto={autoFields?.has("repeat")}
-        open={panel === "repeat"}
-        onPress={() => toggle("repeat")}
-        onClear={() => setRepeat({ kind: "none", weekdays: [] })}
-      />
-      <PropButton
-        icon={Flag}
-        label={priority === "medium" ? "Priority" : cap(priority)}
-        set={priority !== "medium"}
-        auto={autoFields?.has("priority")}
-        color={priority === "medium" ? undefined : priorityColors[priority]}
-        open={panel === "priority"}
-        onPress={() => toggle("priority")}
-      />
-    </>
-  );
-
-  const panels: Record<Panel, ReactNode> = {
-    date: datePanel,
-    time: timePanel,
+  const menus: Record<Panel, ReactNode> = {
+    date: dateMenu,
+    time: timeMenu,
     remind: (
-      <RemindPanel
-        date={date}
-        time={time}
-        reminders={reminders}
-        today={today}
-        compact={compact}
-        onChange={(next) => onChange({ reminders: next })}
-      />
+      <RemindMenu date={date} time={time} reminders={reminders} today={today} onChange={(next) => onChange({ reminders: next })} />
     ),
-    repeat: repeatPanel,
-    priority: priorityPanel,
+    repeat: repeatMenu,
+    priority: priorityMenu,
   };
+  const menuNames: Record<Panel, string> = { date: "Date", time: "Time", remind: "Reminders", repeat: "Repeat", priority: "Priority" };
+
+  const remindLabel = reminders.length === 0 ? "Remind" : reminders.length === 1 ? "1 reminder" : `${reminders.length} reminders`;
 
   return (
     <View>
-      {/* Wraps rather than scrolling sideways: a sideways row hid Repeat and Priority off the edge
-          on phones, with nothing to say they were there. */}
       <View className="flex-row flex-wrap items-center gap-1" style={{ paddingHorizontal: inset - 6 }}>
-        {buttons}
+        <PropButton
+          anchorRef={refs.date}
+          icon={Calendar}
+          label={date ? dateLabel(date, today) : "Date"}
+          set={date !== null}
+          auto={autoFields?.has("date")}
+          open={panel === "date"}
+          onPress={() => toggle("date")}
+          onClear={() => setDate(null)}
+        />
+        {date !== null && (
+          <PropButton
+            anchorRef={refs.time}
+            icon={Clock}
+            label={time ? formatTime12(time)! : "Time"}
+            set={time !== null}
+            auto={autoFields?.has("time")}
+            open={panel === "time"}
+            onPress={() => toggle("time")}
+            onClear={() => onChange({ time: null })}
+          />
+        )}
+        <PropButton
+          anchorRef={refs.remind}
+          icon={Bell}
+          label={remindLabel}
+          set={reminders.length > 0}
+          open={panel === "remind"}
+          onPress={() => toggle("remind")}
+          onClear={() => onChange({ reminders: [] })}
+        />
+        <PropButton
+          anchorRef={refs.repeat}
+          icon={Repeat}
+          label={repeatLabel(repeat, date)}
+          set={repeat.kind !== "none"}
+          auto={autoFields?.has("repeat")}
+          open={panel === "repeat"}
+          onPress={() => toggle("repeat")}
+          onClear={() => setRepeat({ kind: "none", weekdays: [] })}
+        />
+        <PropButton
+          anchorRef={refs.priority}
+          icon={Flag}
+          label={priority === "medium" ? "Priority" : cap(priority)}
+          set={priority !== "medium"}
+          auto={autoFields?.has("priority")}
+          color={priority === "medium" ? undefined : priorityColors[priority]}
+          open={panel === "priority"}
+          onPress={() => toggle("priority")}
+        />
         {trailing}
       </View>
+
       {panel && (
-        <View className="border-line bg-bg/40 mt-3 rounded-[12px] border p-2.5" style={{ marginHorizontal: inset - 8 }}>
-          {panels[panel]}
-        </View>
+        <Popover
+          anchorRef={refs[panel]}
+          open
+          onClose={close}
+          width={narrow && (panel === "date" || panel === "time") ? 360 : MENU_WIDTH[panel]}
+          accessibilityLabel={menuNames[panel]}
+        >
+          {menus[panel]}
+        </Popover>
       )}
     </View>
   );

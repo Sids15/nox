@@ -2,7 +2,9 @@ import { useThemeColors } from "@nox/features";
 import { formatTime12, parseTypedTime } from "@nox/utils";
 import { Check, Clock } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View, type TextStyle } from "react-native";
+
+const TABULAR: TextStyle = { fontVariant: ["tabular-nums"] };
 
 const QUICK: { label: string; value: string }[] = [
   { label: "Morning", value: "09:00" },
@@ -64,7 +66,7 @@ export function TimePicker({
   };
 
   const quick = (
-    <View style={compact ? undefined : { width: 196 }} className={compact ? "flex-row flex-wrap gap-1.5" : ""}>
+    <View style={compact ? undefined : { width: 180 }} className={compact ? "flex-row flex-wrap gap-1.5" : ""}>
       {allowNone &&
         (compact ? (
           <QuickPill label={noneLabel} selected={value === null} onPress={() => onChange(null)} />
@@ -115,7 +117,7 @@ export function TimePicker({
       {/* Every quarter hour */}
       <ScrollView
         ref={listRef}
-        className="border-line mt-2 rounded-[9px] border"
+        className="mt-2 rounded-[9px]"
         style={{ height: compact ? SLOT_H * 4.5 : SLOT_H * 5.5 }}
         showsVerticalScrollIndicator
         nestedScrollEnabled
@@ -132,7 +134,10 @@ export function TimePicker({
               style={{ height: SLOT_H }}
               className={`flex-row items-center justify-between px-3 ${on ? "bg-accent/[0.14]" : "hover:bg-chip"}`}
             >
-              <Text className={`font-mono text-[12.5px] ${on ? "text-accent font-bold" : s.endsWith(":00") ? "text-ink" : "text-ink-2"}`}>
+              <Text
+                style={TABULAR}
+                className={`text-[13px] ${on ? "text-accent font-semibold" : s.endsWith(":00") ? "text-ink font-medium" : "text-ink-3"}`}
+              >
                 {formatTime12(s)}
               </Text>
               {on && <Check size={13} color={c.accent} strokeWidth={2.6} />}
@@ -149,9 +154,10 @@ export function TimePicker({
       {list}
     </View>
   ) : (
-    <View className="flex-row gap-4">
+    <View className="flex-row gap-3">
       {quick}
-      <View className="border-line flex-1 border-l pl-4">{list}</View>
+      <View className="bg-line w-px" />
+      <View className="flex-1">{list}</View>
     </View>
   );
 }
@@ -163,10 +169,14 @@ function QuickRow({ label, hint, selected, onPress }: { label: string; hint: str
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      className={`flex-row items-center gap-2 rounded-[9px] px-2.5 py-[9px] ${selected ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
+      className={`min-h-[36px] flex-row items-center gap-2 rounded-[8px] px-2.5 ${selected ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
     >
       <Text className={`flex-1 text-[13.5px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>{label}</Text>
-      {hint ? <Text className="text-ink-3 font-mono text-[11px]">{hint}</Text> : null}
+      {hint ? (
+        <Text style={TABULAR} className={`text-[12px] ${selected ? "text-accent" : "text-ink-3"}`}>
+          {hint}
+        </Text>
+      ) : null}
       {selected ? <Check size={14} color={c.accent} strokeWidth={2.6} /> : null}
     </Pressable>
   );

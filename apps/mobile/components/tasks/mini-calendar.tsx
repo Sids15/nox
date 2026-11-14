@@ -75,7 +75,7 @@ export function MiniCalendar({
 
       <View className="flex-row">
         {DOW.map((d, i) => (
-          <Text key={i} className="text-ink-3 flex-1 text-center font-mono text-[9.5px] font-semibold">
+          <Text key={i} className="text-ink-3 flex-1 text-center text-[10.5px] font-semibold">
             {d}
           </Text>
         ))}
