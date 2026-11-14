@@ -40,16 +40,17 @@ function estimateCardHeight(r: Resource): number {
   const tagsH = r.tag_ids.length > 0 ? 26 : 0;
   switch (r.type) {
     case "image":
-      return 210 + tagsH;
+      return 230 + (r.title ? 40 : 0) + tagsH;
     case "video":
-      return 180 + tagsH;
+      return 200 + tagsH;
     case "text": {
-      const lines = Math.min(6, Math.ceil(((r.body ?? r.title ?? "").length || 20) / 26));
-      return 52 + lines * 20 + tagsH;
+      const lines = Math.min(8, Math.ceil(((r.body ?? r.title ?? "").length || 20) / 30));
+      return 60 + lines * 23 + (r.title && r.body ? 20 : 0) + tagsH;
     }
     default: {
-      const lines = Math.min(3, Math.ceil(((r.title ?? r.url ?? "").length || 10) / 24));
-      return 64 + lines * 18 + tagsH;
+      const lines = Math.min(4, Math.ceil(((r.title ?? r.url ?? "").length || 10) / 26));
+      const thumb = r.thumbnail_url && /^https?:/.test(r.thumbnail_url) ? 150 : 0;
+      return 80 + lines * 20 + thumb + tagsH;
     }
   }
 }
@@ -110,7 +111,6 @@ export default function ResourcesScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Resource | null>(null);
-  const [menuFor, setMenuFor] = useState<Resource | null>(null);
   const [playing, setPlaying] = useState<{ url: string; title: string } | null>(null);
   const [newTagOpen, setNewTagOpen] = useState(false);
   const [tagName, setTagName] = useState("");
@@ -335,11 +335,31 @@ export default function ResourcesScreen() {
               />
             )
           ) : (
-            <View className="flex-row gap-[11px]">
+            <View className="flex-row gap-3">
               {columns.map((col, ci) => (
                 <View key={ci} className="flex-1">
                   {col.map((r) => (
-                    <ResourceCard key={r.id} resource={r} tags={resolveTags(r)} onPress={() => openResource(r)} onLongPress={() => setMenuFor(r)} />
+                    <ResourceCard
+                      key={r.id}
+                      resource={r}
+                      tags={resolveTags(r)}
+                      actions={{
+                        onOpen: () => openResource(r),
+                        onEdit: () => {
+                          setEditing(r);
+                          setSheetOpen(true);
+                        },
+                        onToggleUsed: () => archiveResource.mutate({ id: r.id, isArchived: !r.is_archived }),
+                        onDelete: () =>
+                          confirmDelete({
+                            title: "Delete resource?",
+                            message: `“${r.title ?? r.url ?? "This resource"}” will be deleted on all your devices.${
+                              r.is_archived ? "" : " Mark as used keeps it instead."
+                            }`,
+                            onConfirm: () => deleteResource.mutate(r.id),
+                          }),
+                      }}
+                    />
                   ))}
                 </View>
               ))}
@@ -360,52 +380,6 @@ export default function ResourcesScreen() {
       <NewResourceSheet visible={sheetOpen} resource={editing} tags={tags} onClose={() => setSheetOpen(false)} />
 
       <VideoPlayer embedUrl={playing?.url ?? null} title={playing?.title} onClose={() => setPlaying(null)} />
-
-      {/* Long-press menu */}
-      <Modal transparent visible={!!menuFor} animationType="fade" onRequestClose={() => setMenuFor(null)}>
-        <Pressable onPress={() => setMenuFor(null)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-10">
-          <View className="border-line bg-elev rounded-card w-full max-w-[280px] overflow-hidden border">
-            <Pressable
-              onPress={() => {
-                setEditing(menuFor);
-                setMenuFor(null);
-                setSheetOpen(true);
-              }}
-              className="border-line border-b px-4 py-3"
-            >
-              <Text className="text-ink text-[14.5px]">Edit</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                if (menuFor) archiveResource.mutate({ id: menuFor.id, isArchived: !menuFor.is_archived });
-                setMenuFor(null);
-              }}
-              className="border-line border-b px-4 py-3"
-            >
-              <Text className="text-ink text-[14.5px]">
-                {menuFor?.is_archived ? "Mark as unused" : "Mark as used"}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                const target = menuFor;
-                setMenuFor(null);
-                if (!target) return;
-                confirmDelete({
-                  title: "Delete resource?",
-                  message: `“${target.title ?? target.url ?? "This resource"}” will be deleted on all your devices.${
-                    target.is_archived ? "" : " Mark as used keeps it instead."
-                  }`,
-                  onConfirm: () => deleteResource.mutate(target.id),
-                });
-              }}
-              className="px-4 py-3"
-            >
-              <Text className="text-high text-[14.5px]">Delete</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
 
       {/* Delete tag confirmation (long-press a tag pill) */}
       <Modal transparent visible={!!tagMenuFor} animationType="fade" onRequestClose={() => setTagMenuFor(null)}>
