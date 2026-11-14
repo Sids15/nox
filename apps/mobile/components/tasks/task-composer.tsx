@@ -148,11 +148,14 @@ function TitleField({
  */
 export function TaskComposer({
   initialDate,
+  initialTime = null,
   onClose,
   compact,
 }: {
   /** Day the task starts on — the day focused in the Tasks week strip. */
   initialDate: string;
+  /** Time to start with (a calendar slot that was clicked). */
+  initialTime?: string | null;
   onClose: () => void;
   /** Phone layout: stacked panels, send button. */
   compact: boolean;
@@ -187,7 +190,7 @@ export function TaskComposer({
     manRepeat ?? (parsed.repeat ? { kind: parsed.repeat.kind, weekdays: parsed.repeat.weekdays ?? [] } : { kind: "none", weekdays: [] });
   let date: string | null = manDate !== undefined ? manDate : (parsed.date ?? initialDate);
   if (repeat.kind !== "none" && date === null) date = today;
-  const time = date === null ? null : manTime !== undefined ? manTime : (parsed.time ?? null);
+  const time = date === null ? null : manTime !== undefined ? manTime : (parsed.time ?? initialTime);
   const priority = manPriority ?? parsed.priority ?? "medium";
   const props: TaskProps = { date, time, reminders, repeat, priority };
 

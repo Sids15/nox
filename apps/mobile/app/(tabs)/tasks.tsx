@@ -1,5 +1,6 @@
 import {
   useEnsureOccurrences,
+  usePrefs,
   useRunCarryover,
   useTasks,
   useThemeColors,
@@ -9,7 +10,7 @@ import {
 import type { Task } from "@nox/types";
 import { addDays, capitalize, dayOfWeek, relativeDayLabel, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronRight, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
+import { CalendarDays, ChevronDown, ChevronRight, List, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +21,7 @@ import { Popover } from "../../components/popover";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { ListSkeleton } from "../../components/skeleton";
 import { NewTaskDialog } from "../../components/tasks/new-task-dialog";
+import { TaskCalendar } from "../../components/tasks/task-calendar";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
 import { dateLabel } from "../../components/tasks/task-properties";
 import { TaskEditor } from "../../components/tasks/task-editor";
@@ -189,6 +191,12 @@ export default function TasksScreen() {
   const [doneOpen, setDoneOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
+  const [composeTime, setComposeTime] = useState<string | null>(null);
+  const calendarView = usePrefs((s) => s.calendar.view);
+  const setCalendar = usePrefs((s) => s.setCalendar);
+  const lastCalendar = useRef<"day" | "week">(calendarView === "week" ? "week" : "day");
+  if (calendarView !== "list") lastCalendar.current = calendarView;
+  const inCalendar = calendarView !== "list";
   const filtersActive = filters.status !== "all" || filters.priority !== "all" || filters.time !== "all";
 
   const { data: tasks = [], isLoading, isError, refetch } = useTasks();
@@ -279,8 +287,18 @@ export default function TasksScreen() {
     for (const t of sections.overdue) updateTask.mutate({ id: t.id, patch: { due_date: today } });
   };
 
-  const createAndOpen = () => setComposing(true);
-  const newTaskDialog = <NewTaskDialog visible={composing} initialDate={focus} onClose={() => setComposing(false)} />;
+  const createAndOpen = () => {
+    setComposeTime(null);
+    setComposing(true);
+  };
+  const createAt = (date: string, time: string | null) => {
+    setFocus(date);
+    setComposeTime(time);
+    setComposing(true);
+  };
+  const newTaskDialog = (
+    <NewTaskDialog visible={composing} initialDate={focus} initialTime={composeTime} onClose={() => setComposing(false)} />
+  );
 
   const title = focus === today ? "Today" : capitalize(relativeDayLabel(focus, today));
   const selectedTask = selectedId ? tasks.find((t) => t.id === selectedId) : undefined;
@@ -337,6 +355,30 @@ export default function TasksScreen() {
           </View>
         </View>
         <View className="flex-row items-center gap-1.5 pt-1">
+          {/* List or calendar */}
+          <View className="bg-chip flex-row rounded-[10px] p-0.5" accessibilityRole="tablist">
+            {([
+              { key: "list", label: "List", Icon: List },
+              { key: "calendar", label: "Calendar", Icon: CalendarDays },
+            ] as const).map(({ key, label, Icon }) => {
+              const on = key === "list" ? !inCalendar : inCalendar;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setCalendar({ view: key === "list" ? "list" : lastCalendar.current })}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={label}
+                  className={`h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2 ${on ? "bg-surface" : ""}`}
+                  style={on ? { shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
+                >
+                  <Icon size={15} color={on ? c.ink : c.ink3} strokeWidth={2} />
+                  {isDesktop && <Text className={`text-[12.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>}
+                </Pressable>
+              );
+            })}
+          </View>
+          {!inCalendar && (
           <View ref={filterRef} collapsable={false}>
             <Pressable
               onPress={() => setFiltersOpen((v) => !v)}
@@ -351,6 +393,7 @@ export default function TasksScreen() {
               <ListFilter size={17} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={2} />
             </Pressable>
           </View>
+          )}
           {isDesktop ? (
             <Pressable
               onPress={createAndOpen}
@@ -391,6 +434,8 @@ export default function TasksScreen() {
         </View>
       )}
 
+      {!inCalendar && (
+      <>
       <View className="mt-5">
         <WeekStrip selected={focus} today={today} onSelect={setFocus} marked={openDays} />
       </View>
@@ -408,6 +453,8 @@ export default function TasksScreen() {
         </View>
         <Text className="text-ink-3 ml-3 text-[15px]">Add a task{focus === today ? "" : ` for ${dayWord}`}</Text>
       </Pressable>
+      </>
+      )}
     </View>
   );
 
@@ -513,6 +560,33 @@ export default function TasksScreen() {
       {body}
     </ScrollView>
   );
+
+  if (inCalendar) {
+    const calendar = (
+      <View className="flex-1" style={isDesktop ? { paddingTop: 24 } : undefined}>
+        <View style={isDesktop ? { paddingHorizontal: 10 } : undefined}>{header}</View>
+        <View className="mt-4 flex-1">
+          <TaskCalendar focus={focus} onFocus={setFocus} today={today} onOpenTask={onOpen} onCreateAt={createAt} />
+        </View>
+      </View>
+    );
+    return (
+      <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+        {detailOpen ? (
+          <View className="flex-1 flex-row">
+            <View className="border-line flex-1 border-r">{calendar}</View>
+            <View className="w-[440px]">
+              <TaskEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
+            </View>
+          </View>
+        ) : (
+          calendar
+        )}
+        {!isDesktop && <Fab onPress={createAndOpen} label="Add task" bottom={112} visible />}
+        {newTaskDialog}
+      </SafeAreaView>
+    );
+  }
 
   // Desktop: master-detail while a task is open — the list on the left, the editor on the right.
   if (detailOpen) {
