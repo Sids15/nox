@@ -46,7 +46,9 @@ export const AuthRepository = {
       email,
       password,
       options: {
-        ...(name ? { data: { name } } : {}),
+        // `display_name` is the key the handle_new_user trigger copies into public.users (0001), and the
+        // one useIdentity reads first. This used to send `name`, which the trigger ignored.
+        ...(name ? { data: { display_name: name } } : {}),
         // Where the "Confirm email" link returns to — the app exchanges the PKCE code there.
         ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
       },

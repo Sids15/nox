@@ -1,5 +1,4 @@
-import { useAuth } from "@nox/features";
-import { initialsFrom } from "@nox/utils";
+import { useIdentity } from "../lib/use-identity";
 import { useRouter } from "expo-router";
 import { Pressable, Text } from "react-native";
 
@@ -9,7 +8,7 @@ import { Pressable, Text } from "react-native";
  */
 export function ProfileAvatar() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { initials } = useIdentity();
   return (
     <Pressable
       onPress={() => router.push("/settings")}
@@ -18,7 +17,7 @@ export function ProfileAvatar() {
       accessibilityLabel="Open settings"
       className="border-accent/[0.35] bg-accent/[0.18] rounded-pill h-[34px] w-[34px] items-center justify-center border"
     >
-      <Text className="text-accent text-[12px] font-bold">{initialsFrom(session?.user?.email)}</Text>
+      <Text className="text-accent text-[12px] font-bold">{initials}</Text>
     </Pressable>
   );
 }

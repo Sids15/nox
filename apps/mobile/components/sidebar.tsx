@@ -1,11 +1,11 @@
-import { useAuth, useIdeas, useNotes, useResources, useTasks, useThemeColors } from "@nox/features";
-import { displayNameFrom, initialsFrom } from "@nox/utils";
+import { useIdeas, useNotes, useResources, useTasks, useThemeColors } from "@nox/features";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
 import { Bookmark, FileText, Lightbulb, Search, SlidersHorizontal, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Image, Platform, Pressable, Text, View } from "react-native";
 import { clockLabel, greeting, skyColor, useClock } from "../lib/use-clock";
+import { useIdentity } from "../lib/use-identity";
 import { useSyncLabel } from "../lib/use-sync-label";
 import { CommandPalette } from "./command-palette";
 
@@ -45,7 +45,6 @@ export function Sidebar() {
   const c = useThemeColors();
   const router = useRouter();
   const pathname = usePathname();
-  const { session } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const now = useClock();
   const sync = useSyncLabel();
@@ -85,8 +84,7 @@ export function Sidebar() {
     { label: "Resources", icon: Bookmark, path: "/resources", count: resources.filter((r) => !r.is_archived).length },
   ];
 
-  const email = session?.user?.email ?? "";
-  const name = displayNameFrom(email);
+  const { name, firstName, initials, email } = useIdentity();
   const sky = skyColor(now, c.accent);
 
   return (
@@ -109,7 +107,7 @@ export function Sidebar() {
         />
         <Text className="text-ink-3 font-mono text-[11px] font-medium">{clockLabel(now)}</Text>
       </View>
-      <Text className="text-ink-2 px-2 pb-3.5 text-[12px]">{greeting(now, name)}</Text>
+      <Text className="text-ink-2 px-2 pb-3.5 text-[12px]">{greeting(now, firstName)}</Text>
 
       {/* Search */}
       <Pressable
@@ -162,7 +160,7 @@ export function Sidebar() {
         className="bg-chip border-line hover:bg-elev flex-row items-center gap-2.5 rounded-[10px] border px-[11px] py-[9px]"
       >
         <View className="bg-accent/[0.18] h-7 w-7 items-center justify-center rounded-full">
-          <Text className="text-accent text-[10.5px] font-bold">{initialsFrom(email)}</Text>
+          <Text className="text-accent text-[10.5px] font-bold">{initials}</Text>
         </View>
         <View className="flex-1">
           <Text className="text-ink text-[12.5px] font-semibold">{name}</Text>

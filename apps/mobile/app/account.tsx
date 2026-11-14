@@ -1,6 +1,6 @@
 import { useAuth, useThemeColors, useThemeVars } from "@nox/features";
 import { credentials } from "@nox/types";
-import { displayNameFrom, initialsFrom, monthShort, toDateKey } from "@nox/utils";
+import { monthShort, toDateKey } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { AlertCircle, Check, ChevronLeft, ChevronRight, Eye, EyeOff, Lock, Mail, Trash2, X } from "lucide-react-native";
 import { vars } from "nativewind";
@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Sidebar } from "../components/sidebar";
 import { authErrorMessage } from "../lib/auth-errors";
 import { CORAL, CORAL_BORDER, CORAL_SOFT } from "../lib/auth-theme";
+import { useIdentity } from "../lib/use-identity";
 import { useIsDesktop } from "../lib/use-responsive";
 import { goBack } from "../lib/go-back";
 
@@ -41,7 +42,7 @@ export default function AccountScreen() {
   };
 
   const email = session?.user?.email ?? "";
-  const name = displayNameFrom(email);
+  const { name, initials } = useIdentity();
   const joined = memberSince(session?.user?.created_at);
 
   const [pwOpen, setPwOpen] = useState(false);
@@ -79,7 +80,7 @@ export default function AccountScreen() {
       {/* Horizontal profile card */}
       <View className="border-line bg-surface rounded-card mt-6 flex-row items-center gap-4 border p-4">
         <View className="bg-accent/[0.18] h-14 w-14 items-center justify-center rounded-full">
-          <Text className="text-accent text-[18px] font-bold">{initialsFrom(email)}</Text>
+          <Text className="text-accent text-[18px] font-bold">{initials}</Text>
         </View>
         <View className="flex-1">
           <Text className="text-ink text-[17px] font-bold tracking-[-0.01em]">{name}</Text>
@@ -147,7 +148,7 @@ export default function AccountScreen() {
 
       <View className="mt-6 items-center">
         <View className="h-[76px] w-[76px] items-center justify-center rounded-full" style={{ backgroundColor: CORAL_SOFT }}>
-          <Text style={{ color: CORAL }} className="text-[24px] font-bold">{initialsFrom(email)}</Text>
+          <Text style={{ color: CORAL }} className="text-[24px] font-bold">{initials}</Text>
         </View>
         <Text className="text-ink mt-3 text-[19px] font-bold tracking-[-0.01em]">{name}</Text>
         <Text className="text-ink-3 mt-0.5 text-[13px]">{email || "not signed in"}</Text>

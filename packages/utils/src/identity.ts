@@ -27,3 +27,45 @@ export function displayNameFrom(email: string | null | undefined): string {
   const first = local.split(/[.\-_+]+/).filter(Boolean)[0] ?? local;
   return first[0]!.toUpperCase() + first.slice(1);
 }
+
+/** Metadata keys a person's name can arrive under: ours (email sign-up), then Google/Apple's. */
+const NAME_KEYS = ["display_name", "full_name", "name"] as const;
+
+export interface Identity {
+  /** The full display name: what they typed at sign-up, else their provider name, else from email. */
+  name: string;
+  /** First word of `name`, for greetings ("Good morning, Ada"). */
+  firstName: string;
+  /** 1–2 uppercase letters for the avatar. */
+  initials: string;
+}
+
+/**
+ * Who the signed-in user is, for display. Prefers a real name from the auth user's metadata — the
+ * one typed at sign-up, or the one Google/Apple provide — over guessing from the email address, which
+ * is what every screen used to do even when a name was right there.
+ */
+export function identityFrom(
+  email: string | null | undefined,
+  metadata?: Record<string, unknown> | null,
+): Identity {
+  let real = "";
+  for (const key of NAME_KEYS) {
+    const value = metadata?.[key];
+    if (typeof value === "string" && value.trim()) {
+      real = value.trim().replace(/\s+/g, " ").slice(0, 80);
+      break;
+    }
+  }
+  if (!real) {
+    const name = displayNameFrom(email);
+    return { name, firstName: name, initials: initialsFrom(email) };
+  }
+
+  const words = real.split(" ");
+  const first = words[0]!;
+  const last = words.length > 1 ? words[words.length - 1]! : "";
+  // Array.from so a name starting with an emoji or an accented letter isn't split mid-character.
+  const letters = last ? `${Array.from(first)[0]}${Array.from(last)[0]}` : Array.from(first).slice(0, 2).join("");
+  return { name: real, firstName: first, initials: letters.toUpperCase() };
+}

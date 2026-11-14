@@ -1,7 +1,7 @@
 import { useAuth, usePrefs, useThemeColors, type NotifKey } from "@nox/features";
 import { accents, type AccentName, type ThemeName } from "@nox/ui";
 import Constants from "expo-constants";
-import { capitalize as cap, displayNameFrom, initialsFrom } from "@nox/utils";
+import { capitalize as cap } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { BellRing, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { Alert } from "../lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sidebar } from "../components/sidebar";
 import { SegmentedControl } from "../components/tasks/segmented-control";
+import { useIdentity } from "../lib/use-identity";
 import { useSyncLabel } from "../lib/use-sync-label";
 import { ensurePermission, sendTestNotification } from "../lib/notifications";
 import { useIsDesktop } from "../lib/use-responsive";
@@ -73,7 +74,7 @@ export default function SettingsScreen() {
   const [signingOut, setSigningOut] = useState(false);
 
   const email = session?.user?.email ?? "";
-  const name = displayNameFrom(email);
+  const { name, initials } = useIdentity();
 
   const handleSignOut = async () => {
     setError(null);
@@ -138,7 +139,7 @@ export default function SettingsScreen() {
           className="mx-[20px] border-line bg-surface rounded-card mt-4 flex-row items-center gap-[13px] border p-[14px]"
         >
           <View className="bg-accent/[0.18] h-11 w-11 items-center justify-center rounded-full">
-            <Text className="text-accent text-[15px] font-bold">{initialsFrom(email)}</Text>
+            <Text className="text-accent text-[15px] font-bold">{initials}</Text>
           </View>
           <View className="flex-1">
             <Text className="text-ink text-[15.5px] font-semibold">{name}</Text>
