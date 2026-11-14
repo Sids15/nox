@@ -78,8 +78,8 @@ export default function FolderScreen() {
         <Text className="text-ink font-serif text-[26px] font-bold tracking-[-0.01em]">
           {folder?.name ?? "Folder"}
         </Text>
-        <Text className="text-ink-3 mt-1 text-[10.5px] tracking-[0.14em]">
-          {folderNotes.length} NOTES
+        <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+          {plural(folderNotes.length, "note")}
         </Text>
       </View>
 
@@ -89,10 +89,10 @@ export default function FolderScreen() {
         contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
         <View className="px-screen mt-4">
           {folderNotes.length > 0 ? (
-            <View className="border-line bg-surface rounded-card overflow-hidden border">
+            <View className="border-line border-t">
               {folderNotes.map((n, i) => (
                 <View key={n.id}>
-                  {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                  {i > 0 && <View className="bg-line ml-[56px] h-px" />}
                   <NoteRow note={n} onPress={() => router.push(`/note/${n.id}`)} />
                 </View>
               ))}

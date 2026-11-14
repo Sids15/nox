@@ -15,6 +15,7 @@ import { useSyncLabel } from "../lib/use-sync-label";
 import { ensurePermission, sendTestNotification } from "../lib/notifications";
 import { useIsDesktop } from "../lib/use-responsive";
 import { goBack } from "../lib/go-back";
+import { SectionHeading } from "../components/section-heading";
 
 const ACCENT_ORDER: AccentName[] = ["vermilion", "indigo", "moss", "plum"];
 const THEMES: ThemeName[] = ["light", "dark"];
@@ -22,11 +23,7 @@ const THEMES: ThemeName[] = ["light", "dark"];
 const APP_VERSION = Constants.expoConfig?.version ?? "dev";
 
 function SectionLabel({ children }: { children: string }) {
-  return (
-    <Text className="text-ink-3 mb-2 mt-6 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">
-      {children}
-    </Text>
-  );
+  return <SectionHeading className="mt-6">{children}</SectionHeading>;
 }
 
 /** 46×28 pill toggle (handoff): accent when on, chip + hairline when off. */

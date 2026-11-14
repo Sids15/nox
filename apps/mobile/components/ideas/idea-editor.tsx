@@ -22,13 +22,10 @@ import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { TagChip } from "../tag-chip";
 import { SegmentedControl } from "../tasks/segmented-control";
+import { SectionHeading } from "../section-heading";
 
 function SectionLabel({ children }: { children: string }) {
-  return (
-    <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] text-[10px] font-semibold tracking-[0.14em]">
-      {children}
-    </Text>
-  );
+  return <SectionHeading className="mt-7 px-screen pl-[22px]">{children}</SectionHeading>;
 }
 
 /**

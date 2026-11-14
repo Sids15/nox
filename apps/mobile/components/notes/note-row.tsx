@@ -37,7 +37,7 @@ export function NoteRow({ note, onPress, selected = false }: { note: Note; onPre
   const mono = note.type === "voice" || note.type === "sketch";
   const sub = subline(note);
   return (
-    <Pressable onPress={onPress} className={`min-h-[58px] flex-row items-center gap-3 px-[14px] ${selected ? "bg-chip" : "hover:bg-chip"}`}>
+    <Pressable onPress={onPress} className={`min-h-[58px] flex-row items-center gap-3 rounded-[8px] px-[10px] ${selected ? "bg-chip" : "hover:bg-surface"}`}>
       {selected && <View className="bg-accent absolute bottom-0 left-0 top-0 w-[2px]" />}
       <Thumb note={note} />
       <View className="flex-1">

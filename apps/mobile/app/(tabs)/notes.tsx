@@ -27,17 +27,15 @@ import { NoteRow } from "../../components/notes/note-row";
 import { PinnedNoteCard } from "../../components/notes/pinned-note-card";
 import { noteMatches } from "../../components/notes/note-utils";
 import { ProfileAvatar } from "../../components/profile-avatar";
+import { SectionHeading } from "../../components/section-heading";
 
 function SectionLabel({ children }: { children: string }) {
-  return (
-    <Text className="text-ink-3 mb-2 mt-4 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">
-      {children}
-    </Text>
-  );
+  return <SectionHeading className="mt-4">{children}</SectionHeading>;
 }
 
+/** A group of rows on the page — flat with a hairline above, like the Tasks list, not a boxed card. */
 function Card({ children }: { children: ReactNode }) {
-  return <View className="border-line bg-surface rounded-card overflow-hidden border">{children}</View>;
+  return <View className="border-line border-t">{children}</View>;
 }
 
 /** A folder-pane nav row (desktop): icon · name · count. Folder actions live in the note-list header. */
@@ -176,8 +174,8 @@ export default function NotesScreen() {
                 <FolderPlus size={15} color={c.ink2} strokeWidth={1.8} />
               </Pressable>
             </View>
-            <Text className="text-ink-3 mb-3 mt-1.5 px-[9px] text-[10px] font-medium tracking-[0.14em]">
-              {active.length} NOTES · {folders.length} FOLDERS
+            <Text className="text-ink-3 mb-3 mt-1 px-[9px] text-[13px] font-medium">
+              {plural(active.length, "note")} · {plural(folders.length, "folder")}
             </Text>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
               <View className="gap-0.5">
@@ -268,7 +266,7 @@ export default function NotesScreen() {
                         <Card>
                           {scopedPinned.map((n, i) => (
                             <View key={n.id}>
-                              {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                              {i > 0 && <View className="bg-line ml-[56px] h-px" />}
                               <NoteRow note={n} selected={n.id === selectedNoteId} onPress={() => openNote(n)} />
                             </View>
                           ))}
@@ -281,7 +279,7 @@ export default function NotesScreen() {
                         <Card>
                           {scopedRecent.map((n, i) => (
                             <View key={n.id}>
-                              {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                              {i > 0 && <View className="bg-line ml-[56px] h-px" />}
                               <NoteRow note={n} selected={n.id === selectedNoteId} onPress={() => openNote(n)} />
                             </View>
                           ))}
@@ -458,7 +456,7 @@ export default function NotesScreen() {
                   <Card>
                     {folders.map((f, i) => (
                       <View key={f.id}>
-                        {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                        {i > 0 && <View className="bg-line ml-[56px] h-px" />}
                         <Pressable
                           onPress={() => router.push(`/folder/${f.id}`)}
                           className="min-h-[50px] flex-row items-center gap-3 px-[14px]"
@@ -480,7 +478,7 @@ export default function NotesScreen() {
                   <Card>
                     {recent.map((n, i) => (
                       <View key={n.id}>
-                        {i > 0 && <View className="bg-line ml-[14px] h-px" />}
+                        {i > 0 && <View className="bg-line ml-[56px] h-px" />}
                         <NoteRow note={n} onPress={() => openNote(n)} />
                       </View>
                     ))}

@@ -479,8 +479,8 @@ export default function TasksScreen() {
             <Fold title="Coming up · next 7 days" count={sections.upcoming.length} open={upcomingOpen} onToggle={() => setUpcomingOpen((v) => !v)}>
               {sections.upcomingByDay.map(([day, list]) => (
                 <View key={day}>
-                  <Text className="text-ink-3 mb-0.5 mt-3.5 pl-1 text-[10.5px] font-semibold tracking-[0.1em]">
-                    {dateLabel(day, today).toUpperCase()}
+                  <Text className="text-ink-2 mb-0.5 mt-3.5 pl-1 text-[13px] font-semibold">
+                    {dateLabel(day, today)}
                   </Text>
                   {rows(list)}
                 </View>

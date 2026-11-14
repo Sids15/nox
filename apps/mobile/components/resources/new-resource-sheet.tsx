@@ -305,7 +305,7 @@ export function NewResourceSheet({
 
           {/* Tags */}
           <View className="gap-[9px]">
-            <Text className="text-ink-3 text-[10px] font-semibold tracking-[0.14em]">TAGS</Text>
+            <Text className="text-ink-2 text-[13px] font-semibold">Tags</Text>
             <View className="flex-row flex-wrap items-center gap-[6px]">
               {selectedTags.map((t) => (
                 <Pressable key={t.id} onPress={() => removeTag(t.id)} style={{ backgroundColor: t.color }} className="rounded-pill flex-row items-center gap-1.5 px-3 py-[7px]">
