@@ -20,6 +20,7 @@ import { useIsDesktop } from "../../lib/use-responsive";
 import { MenuDivider, MenuLabel, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { anchorOf, durationLabel, rebaseReminders } from "./task-properties";
+import { withAlpha } from "../../lib/color";
 
 /** Minutes a task covers when it has no duration set. */
 const BLOCK = 30;
@@ -516,7 +517,7 @@ export function TaskCalendar({
                             left: `${(lane / lanes) * 100}%`,
                             width: `${100 / lanes}%`,
                             paddingRight: 6,
-                            backgroundColor: done ? c.chip : `${priorityRing[p.task.priority]}24`,
+                            backgroundColor: done ? c.chip : withAlpha(priorityRing[p.task.priority], 0.14),
                             borderLeftWidth: 3,
                             borderLeftColor: done ? c.line : priorityRing[p.task.priority],
                             opacity: dragging ? 0.35 : p.projected ? 0.6 : 1,

@@ -32,6 +32,7 @@ import { MenuDivider, MenuLabel, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { MiniCalendar } from "./mini-calendar";
 import { TimePicker } from "./time-picker";
+import { withAlpha } from "../../lib/color";
 
 /**
  * The task property bar — Date · Time · Remind · Repeat · Priority — shared by the new-task dialog and
@@ -203,7 +204,7 @@ function PropButton({
       className={`h-[32px] flex-row items-center rounded-[9px] ${
         open ? "bg-accent/[0.16]" : set ? "bg-accent/[0.09]" : ""
       }`}
-      style={color && set ? { backgroundColor: `${color}1a` } : undefined}
+      style={color && set ? { backgroundColor: withAlpha(color, 0.1) } : undefined}
     >
       <Pressable
         onPress={onPress}
