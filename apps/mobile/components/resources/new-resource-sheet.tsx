@@ -2,12 +2,12 @@ import { newId } from "@nox/db";
 import { useCreateResource, useCreateTag, useSessionStore, useThemeColors, useThemeVars, useUpdateResource } from "@nox/features";
 import { resourceTypes, type Resource, type ResourceInput, type Tag } from "@nox/types";
 import { capitalize as cap, domainFrom } from "@nox/utils";
-import { ImagePlus, Link2, Plus, X } from "lucide-react-native";
+import { Check, Image as ImageIcon, ImagePlus, Link2, PlayCircle, Plus, Quote, X } from "lucide-react-native";
 import { vars } from "nativewind";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Alert } from "../../lib/alert";
-import { SegmentedControl } from "../tasks/segmented-control";
+import { pressScale } from "../menu";
 import { pickImage } from "../../lib/media";
 import { uploadToBucket, useSignedUrl } from "../../lib/storage";
 import { fetchUrlMeta, videoThumbnail } from "../../lib/url-meta";
@@ -27,7 +27,18 @@ function ImagePreview({ localUri, path }: { localUri: string | null; path: strin
   return <Image source={{ uri }} style={{ width: "100%", height: 150 }} resizeMode="cover" />;
 }
 
-const TYPE_OPTS = resourceTypes.map((t) => ({ value: t, label: cap(t) }));
+const TYPE_ICON = { link: Link2, image: ImageIcon, video: PlayCircle, text: Quote } as const;
+const TYPE_TABS = resourceTypes.map((t) => ({ value: t, label: t === "text" ? "Snippet" : cap(t), Icon: TYPE_ICON[t] }));
+
+/** A bordered input row on the sheet's paper. */
+function Field({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
+  return (
+    <View className="border-line bg-surface h-[44px] flex-row items-center gap-2.5 rounded-[11px] border px-3">
+      {icon}
+      {children}
+    </View>
+  );
+}
 
 function letterColor(seed: string): string {
   let h = 0;
@@ -108,7 +119,11 @@ export function NewResourceSheet({
     // A YouTube link resolves a reliable thumbnail immediately (og:image fetch is best-effort and
     // often blocked for video hosts).
     const vt = videoThumbnail(u);
-    if (vt) setThumbnail(vt);
+    if (vt) {
+      setThumbnail(vt);
+      // A video link pasted under Link is a video: switch so it saves and plays as one.
+      setType((t) => (t === "link" ? "video" : t));
+    }
     fetchTimer.current = setTimeout(async () => {
       const meta = await fetchUrlMeta(u);
       if (gen !== fetchGen.current || !meta) return; // superseded (url changed / resource switched)
@@ -160,7 +175,12 @@ export function NewResourceSheet({
   const exact = tags.some((t) => t.name.toLowerCase() === q);
   const suggestions = q ? tags.filter((t) => t.name.toLowerCase().includes(q) && !tagIds.includes(t.id)) : [];
 
+  const canSave =
+    !uploading &&
+    (type === "text" ? !!body.trim() : type === "image" ? !!thumbnail : !!url.trim());
+
   const save = () => {
+    if (!canSave) return;
     const isMedia = type === "text" || type === "image";
     const input: ResourceInput = {
       type,
@@ -188,47 +208,97 @@ export function NewResourceSheet({
         {/* The backdrop always fills the whole screen. As flex-1 it stopped at the top of the
             keyboard avoider's padding, so while typing on iOS the strip between the sheet and the
             keyboard showed the screen behind, undimmed. A spacer now does the pushing. */}
-        <Pressable className="absolute inset-0 bg-black/55" onPress={onClose} />
+        <Pressable className="absolute inset-0 bg-black/40" onPress={onClose} accessibilityLabel="Close" />
         {!isDesktop && <View className="flex-1" pointerEvents="none" />}
         <View
           className={
             isDesktop
-              ? "bg-sheet border-line w-full gap-4 rounded-[18px] border p-5"
+              ? "bg-sheet border-line w-full gap-4 rounded-[18px] border px-6 pb-5 pt-5"
               : "bg-sheet gap-4 rounded-t-[28px] px-5 pb-9 pt-2.5"
           }
           style={
             isDesktop
-              ? { maxWidth: 520, shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 60, shadowOffset: { width: 0, height: 24 }, elevation: 20 }
+              ? { maxWidth: 540, shadowColor: "#1B2131", shadowOpacity: 0.22, shadowRadius: 40, shadowOffset: { width: 0, height: 18 }, elevation: 20 }
               : { shadowColor: "rgb(4,4,10)", shadowOpacity: 0.4, shadowRadius: 40, shadowOffset: { width: 0, height: -14 } }
           }
         >
-          {!isDesktop && <View className="bg-ink-3 h-1 w-9 self-center rounded-full opacity-50" />}
+          {!isDesktop && <View className="bg-ink-3 mb-1 h-1 w-9 self-center rounded-full opacity-40" />}
+
+          {/* Header */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-ink text-[19px] font-bold tracking-[-0.02em]">
-              {resource ? "Edit resource" : "New resource"}
-            </Text>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <Text className="text-ink-3 text-[14px] font-semibold">Cancel</Text>
+            <Text className="text-ink font-serif text-[22px] font-bold">{resource ? "Edit resource" : "Save something"}</Text>
+            <Pressable
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              className="hover:bg-chip -mr-1.5 h-8 w-8 items-center justify-center rounded-[9px]"
+            >
+              <X size={18} color={c.ink2} strokeWidth={2.2} />
             </Pressable>
           </View>
 
-          {/* Type */}
-          <SegmentedControl value={type} onChange={setType} options={TYPE_OPTS} />
+          {/* Type — icon tabs */}
+          <View className="border-line flex-row gap-1 border-b" accessibilityRole="tablist">
+            {TYPE_TABS.map(({ value, label, Icon }) => {
+              const on = type === value;
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() => setType(value)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  className="-mb-px flex-row items-center gap-1.5 px-2.5 pb-2.5 pt-1"
+                  style={{ borderBottomWidth: 2, borderBottomColor: on ? c.accent : "transparent" }}
+                >
+                  <Icon size={15} color={on ? c.ink : c.ink3} strokeWidth={2} />
+                  <Text className={`text-[13.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
-          {/* URL / snippet body / image picker */}
+          {/* The thing itself */}
           {type === "text" ? (
-            <TextInput
-              value={body}
-              onChangeText={setBody}
-              multiline
-              placeholder="Paste or write the snippet…"
-              placeholderTextColor={c.ink3}
-              className="bg-chip rounded-input text-ink min-h-[80px] px-3 py-3 text-[14px] leading-[21px]"
-              style={{ textAlignVertical: "top" }}
-            />
+            <View className="gap-2.5">
+              <View className="border-line bg-surface flex-row rounded-[12px] border px-3.5 py-3">
+                <View className="bg-accent mr-3 w-[3px] rounded-full" />
+                <TextInput
+                  value={body}
+                  onChangeText={setBody}
+                  multiline
+                  autoFocus={!resource}
+                  placeholder="Paste a quote, a command, a line worth keeping…"
+                  placeholderTextColor={c.ink3}
+                  accessibilityLabel="Snippet"
+                  className="text-ink min-h-[96px] flex-1 font-serif text-[16px] leading-[24px]"
+                  style={{ textAlignVertical: "top", paddingVertical: 0, outlineWidth: 0 } as object}
+                />
+              </View>
+              <Field icon={<Quote size={14} color={c.ink3} strokeWidth={2} />}>
+                <TextInput
+                  value={title}
+                  onChangeText={(t) => {
+                    titleTouched.current = true;
+                    setTitle(t);
+                  }}
+                  placeholder="Source (optional) — e.g. Dieter Rams"
+                  placeholderTextColor={c.ink3}
+                  accessibilityLabel="Source"
+                  className="text-ink flex-1 text-[14px]"
+                  style={{ paddingVertical: 0, outlineWidth: 0 } as object}
+                />
+              </Field>
+            </View>
           ) : type === "image" ? (
-            <View className="gap-3">
-              <Pressable onPress={pickAndUpload} className="bg-chip rounded-input overflow-hidden">
+            <View className="gap-2.5">
+              <Pressable
+                onPress={pickAndUpload}
+                accessibilityRole="button"
+                accessibilityLabel={localImage || thumbnail ? "Change picture" : "Choose a picture"}
+                className="border-line bg-surface hover:bg-chip overflow-hidden rounded-[12px] border"
+                style={localImage || thumbnail ? undefined : { borderStyle: "dashed" }}
+              >
                 {localImage || thumbnail ? (
                   <View>
                     <ImagePreview localUri={localImage} path={thumbnail} />
@@ -237,127 +307,158 @@ export function NewResourceSheet({
                         <ActivityIndicator color="#fff" />
                       </View>
                     )}
-                    <View className="absolute bottom-2 right-2 rounded-pill bg-black/60 px-3 py-1.5">
+                    <View className="absolute bottom-2 right-2 rounded-[8px] bg-black/60 px-2.5 py-1">
                       <Text className="text-[12px] font-semibold text-white">Change</Text>
                     </View>
                   </View>
                 ) : (
-                  <View className="h-[150px] items-center justify-center gap-2">
-                    <ImagePlus size={22} color={c.ink3} strokeWidth={1.8} />
-                    <Text className="text-ink-3 text-[13px] font-medium">Add a picture</Text>
+                  <View className="h-[150px] items-center justify-center gap-1.5">
+                    <ImagePlus size={22} color={c.ink2} strokeWidth={1.8} />
+                    <Text className="text-ink text-[14px] font-semibold">Choose a picture</Text>
+                    <Text className="text-ink-3 text-[12.5px]">JPEG, PNG or WebP, up to 10 MB</Text>
                   </View>
                 )}
               </Pressable>
-              <TextInput
-                value={title}
-                onChangeText={(t) => {
-                  titleTouched.current = true;
-                  setTitle(t);
-                }}
-                placeholder="Caption (optional)"
-                placeholderTextColor={c.ink3}
-                className="bg-chip rounded-input text-ink h-11 px-3 text-[14px]"
-                style={{ paddingVertical: 0 }}
-              />
-            </View>
-          ) : (
-            <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
-              <Link2 size={15} color={c.ink3} strokeWidth={1.8} />
-              <TextInput
-                value={url}
-                onChangeText={onUrl}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                placeholder="Paste a URL"
-                placeholderTextColor={c.ink3}
-                className="text-ink flex-1 text-[12.5px]"
-                style={{ paddingVertical: 0 }}
-              />
-            </View>
-          )}
-
-          {/* Fetched preview (link / video) */}
-          {type !== "text" && type !== "image" && !!domain && (
-            <View className="border-line flex-row items-center gap-[11px] rounded-[14px] border px-3 py-[11px]">
-              <View className="h-9 w-9 items-center justify-center rounded-[9px]" style={{ backgroundColor: `${letterColor(domain)}29` }}>
-                <Text style={{ color: letterColor(domain) }} className="text-[13px] font-bold">{domain.charAt(0).toUpperCase()}</Text>
-              </View>
-              <View className="flex-1">
+              <Field>
                 <TextInput
                   value={title}
                   onChangeText={(t) => {
                     titleTouched.current = true;
                     setTitle(t);
                   }}
-                  placeholder="Title"
+                  placeholder="Caption (optional)"
                   placeholderTextColor={c.ink3}
-                  className="text-ink text-[13.5px] font-semibold"
-                  style={{ paddingVertical: 0 }}
+                  accessibilityLabel="Caption"
+                  className="text-ink flex-1 text-[14px]"
+                  style={{ paddingVertical: 0, outlineWidth: 0 } as object}
                 />
-                <Text className="text-ink-3 mt-0.5 text-[10px]">
-                  {fetched ? "fetched preview · " : ""}{domain}
-                </Text>
-              </View>
-              <View className={`h-1.5 w-1.5 rounded-full ${fetched ? "bg-success" : "bg-ink-3"}`} />
+              </Field>
+            </View>
+          ) : (
+            <View className="gap-2.5">
+              <Field icon={<Link2 size={15} color={c.ink3} strokeWidth={2} />}>
+                <TextInput
+                  value={url}
+                  onChangeText={onUrl}
+                  autoFocus={!resource}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  placeholder={type === "video" ? "Paste a YouTube or Vimeo link" : "Paste a link"}
+                  placeholderTextColor={c.ink3}
+                  accessibilityLabel="URL"
+                  onSubmitEditing={() => canSave && save()}
+                  className="text-ink flex-1 text-[14px]"
+                  style={{ paddingVertical: 0, outlineWidth: 0 } as object}
+                />
+                {!!url && (
+                  <Pressable onPress={() => onUrl("")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear link">
+                    <X size={14} color={c.ink3} strokeWidth={2.2} />
+                  </Pressable>
+                )}
+              </Field>
+
+              {/* Preview: what the card will look like, with an editable title. */}
+              {!!domain && (
+                <View className="border-line bg-surface flex-row overflow-hidden rounded-[12px] border">
+                  {thumbnail && /^https?:/.test(thumbnail) ? (
+                    <Image source={{ uri: thumbnail }} style={{ width: 96, alignSelf: "stretch", minHeight: 72 }} resizeMode="cover" />
+                  ) : (
+                    <View className="w-[64px] items-center justify-center" style={{ backgroundColor: `${letterColor(domain)}1f` }}>
+                      <Text style={{ color: letterColor(domain) }} className="text-[18px] font-bold">
+                        {domain.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <View className="flex-1 justify-center px-3 py-2.5">
+                    <TextInput
+                      value={title}
+                      onChangeText={(t) => {
+                        titleTouched.current = true;
+                        setTitle(t);
+                      }}
+                      placeholder={fetched ? "Add a title" : "Fetching the title…"}
+                      placeholderTextColor={c.ink3}
+                      accessibilityLabel="Title"
+                      className="text-ink text-[14.5px] font-semibold"
+                      style={{ paddingVertical: 0, outlineWidth: 0 } as object}
+                    />
+                    <View className="mt-1 flex-row items-center gap-1.5">
+                      {!fetched && <ActivityIndicator size="small" color={c.ink3} style={{ transform: [{ scale: 0.6 }], width: 12, height: 12 }} />}
+                      <Text className="text-ink-3 text-[12px]">{domain}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
-          {/* Tags */}
-          <View className="gap-[9px]">
+          {/* Tags: every tag you have, tap to add or remove; type to make a new one. */}
+          <View className="gap-2">
             <Text className="text-ink-2 text-[13px] font-semibold">Tags</Text>
-            <View className="flex-row flex-wrap items-center gap-[6px]">
-              {selectedTags.map((t) => (
-                <Pressable key={t.id} onPress={() => removeTag(t.id)} style={{ backgroundColor: t.color }} className="rounded-pill flex-row items-center gap-1.5 px-3 py-[7px]">
-                  <Text className="text-[12px] font-semibold text-white">{t.name}</Text>
-                  <X size={11} color="#fff" strokeWidth={2.5} style={{ opacity: 0.8 }} />
-                </Pressable>
-              ))}
-              <TextInput
-                value={tagQuery}
-                onChangeText={setTagQuery}
-                onSubmitEditing={createAndAdd}
-                autoCapitalize="none"
-                placeholder="add tag"
-                placeholderTextColor={c.ink3}
-                className="text-ink min-w-[70px] flex-1 text-[13px]"
-                style={{ paddingVertical: 6 }}
-              />
-            </View>
-
-            {!!q && (
-              <View className="border-line bg-elev rounded-input overflow-hidden border">
-                {!exact && (
-                  <Pressable onPress={createAndAdd} className="border-line flex-row items-center gap-[10px] border-b px-[13px] py-3">
-                    <View className="bg-accent/[0.15] h-6 w-6 items-center justify-center rounded-full">
-                      <Plus size={12} color={c.accent} strokeWidth={2.4} />
-                    </View>
-                    <Text className="text-accent text-[13.5px] font-semibold">Create tag “{tagQuery.trim()}”</Text>
-                  </Pressable>
-                )}
-                {suggestions.map((t, i) => (
+            <View className="flex-row flex-wrap items-center gap-1.5">
+              {tags.map((t) => {
+                const on = tagIds.includes(t.id);
+                return (
                   <Pressable
                     key={t.id}
-                    onPress={() => addTag(t.id)}
-                    className={`flex-row items-center gap-[10px] px-[13px] py-3 ${i < suggestions.length - 1 ? "border-line border-b" : ""}`}
+                    onPress={() => (on ? removeTag(t.id) : addTag(t.id))}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on }}
+                    style={{ backgroundColor: on ? t.color : `${t.color}1f` }}
+                    className="rounded-pill flex-row items-center gap-1 px-2.5 py-[5px]"
                   >
-                    <View style={{ width: 8, height: 8, borderRadius: 99, backgroundColor: t.color, marginHorizontal: 8 }} />
-                    <Text className="text-ink-2 flex-1 text-[13.5px]">{t.name}</Text>
+                    {on && <Check size={11} color="#fff" strokeWidth={3} />}
+                    <Text style={{ color: on ? "#fff" : t.color }} className="text-[12.5px] font-semibold">
+                      {t.name}
+                    </Text>
                   </Pressable>
-                ))}
+                );
+              })}
+              <View className="border-line rounded-pill flex-row items-center gap-1 border border-dashed px-2.5" style={{ height: 27 }}>
+                <Plus size={12} color={c.ink3} strokeWidth={2.2} />
+                <TextInput
+                  value={tagQuery}
+                  onChangeText={setTagQuery}
+                  onSubmitEditing={createAndAdd}
+                  submitBehavior="submit"
+                  autoCapitalize="none"
+                  placeholder="New tag"
+                  placeholderTextColor={c.ink3}
+                  accessibilityLabel="New tag"
+                  className="text-ink text-[12.5px]"
+                  style={{ paddingVertical: 0, outlineWidth: 0, width: Math.max(64, Math.min(160, tagQuery.length * 8 + 16)) } as object}
+                />
               </View>
+            </View>
+            {!!q && !exact && (
+              <Pressable onPress={createAndAdd} accessibilityRole="button" className="hover:bg-chip flex-row items-center gap-2 self-start rounded-[8px] px-2 py-1.5">
+                <Plus size={13} color={c.accent} strokeWidth={2.4} />
+                <Text className="text-accent text-[13px] font-semibold">Create tag “{tagQuery.trim()}”</Text>
+              </Pressable>
             )}
           </View>
 
-          {/* Save */}
-          <Pressable
-            onPress={save}
-            disabled={uploading}
-            className={`bg-accent items-center rounded-[14px] py-[15px] ${uploading ? "opacity-50" : ""}`}
-            style={{ shadowColor: c.accent, shadowOpacity: 0.35, shadowRadius: 26, shadowOffset: { width: 0, height: 10 }, elevation: 6 }}
-          >
-            <Text className="text-on-accent text-[15px] font-bold">{uploading ? "Uploading…" : "Save resource"}</Text>
-          </Pressable>
+          {/* Footer */}
+          <View className={`flex-row items-center gap-2 pt-1 ${isDesktop ? "justify-end" : ""}`}>
+            {isDesktop && (
+              <Pressable onPress={onClose} accessibilityRole="button" style={pressScale} className="hover:bg-chip h-10 justify-center rounded-[10px] px-4">
+                <Text className="text-ink-2 text-[14px] font-semibold">Cancel</Text>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={save}
+              disabled={!canSave}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canSave }}
+              style={pressScale}
+              className={`bg-accent h-10 items-center justify-center rounded-[10px] px-5 ${isDesktop ? "" : "h-[48px] flex-1 rounded-[12px]"} ${canSave ? "hover:opacity-90" : "opacity-40"}`}
+            >
+              <Text className="text-on-accent text-[14.5px] font-semibold">
+                {uploading ? "Uploading…" : resource ? "Save changes" : "Save"}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
