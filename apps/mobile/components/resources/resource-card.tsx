@@ -1,7 +1,7 @@
 import { useThemeColors } from "@nox/features";
 import type { Resource, Tag } from "@nox/types";
 import { relativeAge } from "@nox/utils";
-import { Archive, ArchiveRestore, Copy, ExternalLink, MoreHorizontal, Pencil, Play, Trash2 } from "lucide-react-native";
+import { Archive, ArchiveRestore, Copy, ExternalLink, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Play, Quote, Trash2 } from "lucide-react-native";
 import { useRef, useState, type ReactNode } from "react";
 import { Image, type ImageStyle, Platform, Pressable, type StyleProp, Text, View } from "react-native";
 import { useSignedUrl } from "../../lib/storage";
@@ -55,7 +55,18 @@ export interface ResourceActions {
  * on hover on desktop — holds Open, Edit, Copy link, Mark as used and Delete. Long-press opens the
  * same menu on phones.
  */
-export function ResourceCard({ resource, tags, actions }: { resource: Resource; tags: Tag[]; actions: ResourceActions }) {
+export function ResourceCard({
+  resource,
+  tags,
+  actions,
+  layout = "card",
+}: {
+  resource: Resource;
+  tags: Tag[];
+  actions: ResourceActions;
+  /** "row": one compact line for the list view. */
+  layout?: "card" | "row";
+}) {
   const c = useThemeColors();
   const [hover, setHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -87,6 +98,95 @@ export function ResourceCard({ resource, tags, actions }: { resource: Resource; 
       </Pressable>
     </View>
   );
+
+  const menu = (
+      <Popover anchorRef={anchor} open={menuOpen} onClose={() => setMenuOpen(false)} width={220} accessibilityLabel="Resource options">
+      <View className="p-1.5">
+        {hasUrl && (
+          <MenuRow label="Open" icon={<ExternalLink size={15} color={c.ink2} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onOpen)} />
+        )}
+        <MenuRow label="Edit" icon={<Pencil size={15} color={c.ink2} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onEdit)} />
+        {hasUrl && web && typeof navigator !== "undefined" && !!navigator.clipboard && (
+          <MenuRow
+            label="Copy link"
+            icon={<Copy size={15} color={c.ink2} strokeWidth={2} />}
+            trailing={<View />}
+            onPress={run(() => void navigator.clipboard.writeText(resource.url!).catch(() => {}))}
+          />
+        )}
+        <MenuRow
+          label={resource.is_archived ? "Move back to Saved" : "Mark as used"}
+          icon={
+            resource.is_archived ? (
+              <ArchiveRestore size={15} color={c.ink2} strokeWidth={2} />
+            ) : (
+              <Archive size={15} color={c.ink2} strokeWidth={2} />
+            )
+          }
+          trailing={<View />}
+          onPress={run(actions.onToggleUsed)}
+        />
+        <MenuDivider />
+        <MenuRow label="Delete" danger icon={<Trash2 size={15} color={c.high} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onDelete)} />
+      </View>
+    </Popover>
+  );
+
+  if (layout === "row") {
+    const typeIcon = { link: Link2, video: Play, image: ImageIcon, text: Quote }[resource.type];
+    const TypeIcon = typeIcon ?? Link2;
+    const thumb = resource.thumbnail_url;
+    const domain = resource.domain ?? (resource.type === "text" ? "Snippet" : resource.type === "image" ? "Picture" : "");
+    return (
+      <View onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)}>
+        <Pressable
+          onPress={actions.onOpen}
+          onLongPress={() => setMenuOpen(true)}
+          accessibilityRole={hasUrl ? "link" : "button"}
+          className={`flex-row items-center gap-3 rounded-[10px] px-2.5 py-2 ${menuOpen ? "bg-chip" : "hover:bg-surface"}`}
+        >
+          <View className="bg-chip h-11 w-11 items-center justify-center overflow-hidden rounded-[9px]">
+            {thumb ? <Thumb value={thumb} style={{ width: "100%", height: "100%" }} /> : <TypeIcon size={17} color={c.ink2} strokeWidth={2} />}
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text numberOfLines={1} className={`text-ink text-[14.5px] ${resource.type === "text" ? "font-serif" : "font-semibold"}`}>
+              {resource.type === "text" ? `“${resource.body ?? title}”` : title}
+            </Text>
+            <View className="mt-0.5 flex-row items-center gap-2">
+              {domain ? (
+                <Text numberOfLines={1} className="text-ink-3 text-[12px]">
+                  {resource.type === "text" && resource.title ? `— ${resource.title}` : domain}
+                </Text>
+              ) : null}
+              {tags.slice(0, 3).map((t) => (
+                <View key={t.id} style={{ backgroundColor: `${t.color}1f` }} className="rounded-[6px] px-1.5 py-0.5">
+                  <Text style={{ color: t.color }} className="text-[11px] font-semibold">
+                    {t.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+          <Text className="text-ink-3 text-[11.5px]">{relativeAge(resource.created_at)}</Text>
+          <View ref={anchor} collapsable={false} style={{ opacity: !hoverOnly || hover || menuOpen ? 1 : 0 }}>
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation?.();
+                setMenuOpen(true);
+              }}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={`Options for ${title}`}
+              className="hover:bg-chip h-8 w-8 items-center justify-center rounded-[8px]"
+            >
+              <MoreHorizontal size={16} color={c.ink2} strokeWidth={2.2} />
+            </Pressable>
+          </View>
+        </Pressable>
+        {menu}
+      </View>
+    );
+  }
 
   let body: ReactNode;
   let media = false;
@@ -194,36 +294,7 @@ export function ResourceCard({ resource, tags, actions }: { resource: Resource; 
       </Pressable>
       {menuButton(media)}
 
-      <Popover anchorRef={anchor} open={menuOpen} onClose={() => setMenuOpen(false)} width={220} accessibilityLabel="Resource options">
-        <View className="p-1.5">
-          {hasUrl && (
-            <MenuRow label="Open" icon={<ExternalLink size={15} color={c.ink2} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onOpen)} />
-          )}
-          <MenuRow label="Edit" icon={<Pencil size={15} color={c.ink2} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onEdit)} />
-          {hasUrl && web && typeof navigator !== "undefined" && !!navigator.clipboard && (
-            <MenuRow
-              label="Copy link"
-              icon={<Copy size={15} color={c.ink2} strokeWidth={2} />}
-              trailing={<View />}
-              onPress={run(() => void navigator.clipboard.writeText(resource.url!).catch(() => {}))}
-            />
-          )}
-          <MenuRow
-            label={resource.is_archived ? "Move back to Saved" : "Mark as used"}
-            icon={
-              resource.is_archived ? (
-                <ArchiveRestore size={15} color={c.ink2} strokeWidth={2} />
-              ) : (
-                <Archive size={15} color={c.ink2} strokeWidth={2} />
-              )
-            }
-            trailing={<View />}
-            onPress={run(actions.onToggleUsed)}
-          />
-          <MenuDivider />
-          <MenuRow label="Delete" danger icon={<Trash2 size={15} color={c.high} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onDelete)} />
-        </View>
-      </Popover>
+      {menu}
     </View>
   );
 }
