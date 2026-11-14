@@ -1,5 +1,4 @@
 import {
-  useDeleteTask,
   usePrefs,
   useTasks,
   useThemeColors,
@@ -17,6 +16,7 @@ import { NoxDateTimePicker } from "../date-time-picker";
 import { DropdownChip } from "../dropdown-chip";
 import { OverflowMenu } from "../overflow-menu";
 import { useIsDesktop } from "../../lib/use-responsive";
+import { useTaskDelete } from "../../lib/use-task-delete";
 import { SegmentedControl } from "./segmented-control";
 
 const PRIORITY_SOFT: Record<Task["priority"], string> = {
@@ -79,7 +79,7 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
   const task = useMemo(() => tasks.find((t) => t.id === id), [tasks, id]);
 
   const toggle = useToggleTask();
-  const del = useDeleteTask();
+  const requestDelete = useTaskDelete();
   const updateTask = useUpdateTask();
   const patch = (p: Partial<TaskInput>) => task && updateTask.mutate({ id: task.id, patch: p });
 
@@ -398,10 +398,8 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
           {
             label: "Delete task",
             destructive: true,
-            onPress: () => {
-              del.mutate(task.id);
-              onClose();
-            },
+            // Closes only once something is deleted — cancelling the repeat prompt keeps the editor open.
+            onPress: () => requestDelete(task, onClose),
           },
         ]}
       />

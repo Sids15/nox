@@ -1,5 +1,5 @@
 import type { Task } from "@nox/types";
-import { dayOfWeek } from "@nox/utils";
+import { addDays, dayOfWeek } from "@nox/utils";
 
 /** Days between two YYYY-MM-DD keys (b − a), local midnights. */
 function daysBetween(a: string, b: string): number {
@@ -66,4 +66,43 @@ export function templatesNeedingOccurrence(tasks: Task[], focusDate: string): Ta
       occursOn(t, focusDate) &&
       !withOccurrence.has(t.id),
   );
+}
+
+/**
+ * A template's reminders, moved from its anchor day to `toDate` at the same wall-clock time.
+ * `reminder_times` are absolute timestamps on the anchor day, so copied verbatim onto a later
+ * occurrence they are already in the past and never fire. Shifted in local time (setDate), so a
+ * 9:00 reminder stays 9:00 across a DST change.
+ */
+export function shiftReminders(times: string[], fromDate: string, toDate: string): string[] {
+  const days = daysBetween(fromDate, toDate);
+  if (days === 0) return times;
+  return times.map((iso) => {
+    const d = new Date(iso);
+    d.setDate(d.getDate() + days);
+    return d.toISOString();
+  });
+}
+
+/** How far ahead to look for a template's next day. Covers any weekly rule with room to spare. */
+const NEXT_OCCURRENCE_HORIZON_DAYS = 366;
+
+/**
+ * The next day after a template's anchor that its rule includes and that has no occurrence row yet —
+ * where the anchor moves to when the user deletes only the anchor day. Days that already have an
+ * occurrence are skipped: moving the anchor onto one would show the task twice that day. Null when
+ * the task isn't a dated template or nothing falls inside the horizon.
+ */
+export function nextOccurrenceDate(template: Task, tasks: Task[]): string | null {
+  const anchor = template.due_date;
+  if (anchor === null || template.repeat === "none" || template.origin_task_id !== null) return null;
+
+  const taken = new Set(
+    tasks.filter((t) => t.origin_task_id === template.id && t.due_date !== null).map((t) => t.due_date),
+  );
+  for (let i = 1; i <= NEXT_OCCURRENCE_HORIZON_DAYS; i++) {
+    const day = addDays(anchor, i);
+    if (occursOn(template, day) && !taken.has(day)) return day;
+  }
+  return null;
 }

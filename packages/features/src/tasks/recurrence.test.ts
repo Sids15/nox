@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Task } from "@nox/types";
-import { occursOn, templatesNeedingOccurrence } from "./recurrence";
+import { nextOccurrenceDate, occursOn, shiftReminders, templatesNeedingOccurrence } from "./recurrence";
 
 // Anchor 2026-07-06 is a Monday. That week: Mon 06, Tue 07, Wed 08, Thu 09, Fri 10, Sat 11, Sun 12.
 const MON = "2026-07-06";
@@ -83,5 +83,47 @@ describe("templatesNeedingOccurrence", () => {
     const plain = mk({ id: "p", repeat: "none" });
     const weekly = mk({ id: "w", repeat: "weekly" });
     expect(templatesNeedingOccurrence([plain, weekly], "2026-07-08")).toEqual([]); // Wed ≠ Mon
+  });
+});
+
+describe("shiftReminders", () => {
+  test("moves each reminder by the day gap, keeping the local wall-clock time", () => {
+    const at = new Date(2026, 6, 6, 9, 30).toISOString(); // Mon 06, 9:30 local
+    const [shifted] = shiftReminders([at], MON, "2026-07-09");
+    const d = new Date(shifted!);
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([2026, 6, 9, 9, 30]);
+  });
+
+  test("is a no-op for the same day", () => {
+    const times = ["2026-07-06T09:30:00.000Z"];
+    expect(shiftReminders(times, MON, MON)).toBe(times);
+  });
+});
+
+describe("nextOccurrenceDate", () => {
+  test("daily → the next day", () => {
+    expect(nextOccurrenceDate(mk({ repeat: "daily" }), [])).toBe("2026-07-07");
+  });
+
+  test("weekdays skips the weekend from a Friday anchor", () => {
+    expect(nextOccurrenceDate(mk({ repeat: "weekdays", due_date: "2026-07-10" }), [])).toBe("2026-07-13");
+  });
+
+  test("custom follows the configured weekdays", () => {
+    const t = mk({ repeat: "custom", repeat_config: { weekdays: [1, 4] } }); // Mon + Thu
+    expect(nextOccurrenceDate(t, [])).toBe("2026-07-09");
+  });
+
+  test("skips days that already have an occurrence, so the task never shows twice", () => {
+    const t = mk({ repeat: "daily" });
+    const tue = mk({ id: "o1", origin_task_id: "tmpl", due_date: "2026-07-07" });
+    const wed = mk({ id: "o2", origin_task_id: "tmpl", due_date: "2026-07-08" });
+    expect(nextOccurrenceDate(t, [t, tue, wed])).toBe("2026-07-09");
+  });
+
+  test("null for anything that is not a dated template", () => {
+    expect(nextOccurrenceDate(mk({ repeat: "none" }), [])).toBeNull();
+    expect(nextOccurrenceDate(mk({ repeat: "daily", due_date: null }), [])).toBeNull();
+    expect(nextOccurrenceDate(mk({ repeat: "daily", origin_task_id: "other" }), [])).toBeNull();
   });
 });

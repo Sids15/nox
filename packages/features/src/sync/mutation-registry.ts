@@ -35,6 +35,7 @@ export function registerMutationDefaults(qc: QueryClient): void {
   def<{ id: string; status: ToggleableStatus }>(["task", "status"], ({ id, status }) => TaskRepository.setStatus(id, status));
   def<{ id: string; patch: Partial<TaskInput> }>(["task", "update"], ({ id, patch }) => TaskRepository.update(id, patch));
   def<string>(["task", "delete"], (id) => TaskRepository.softDelete(id));
+  def<string>(["task", "delete-series"], (templateId) => TaskRepository.softDeleteSeries(templateId));
 
   // Ideas
   def<{ input: IdeaInput; id: string }>(["idea", "create"], ({ input, id }) => IdeaRepository.create(input, id));

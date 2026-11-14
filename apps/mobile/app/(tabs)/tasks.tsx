@@ -1,6 +1,5 @@
 import {
   useCreateTask,
-  useDeleteTask,
   useEnsureOccurrences,
   useRunCarryover,
   useTasks,
@@ -19,6 +18,7 @@ import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { useIsDesktop } from "../../lib/use-responsive";
+import { useTaskDelete } from "../../lib/use-task-delete";
 import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
 import { TaskEditor } from "../../components/tasks/task-editor";
@@ -90,7 +90,7 @@ export default function TasksScreen() {
   const { data: tasks = [], isLoading, isError, refetch } = useTasks();
   const createTask = useCreateTask();
   const toggleTask = useToggleTask();
-  const deleteTask = useDeleteTask();
+  const requestDelete = useTaskDelete();
   const ensureOccurrences = useEnsureOccurrences();
   const runCarryover = useRunCarryover();
 
@@ -137,7 +137,8 @@ export default function TasksScreen() {
 
   const onToggle = (t: Task) =>
     toggleTask.mutate({ id: t.id, status: t.status === "complete" ? "pending" : "complete" });
-  const onDelete = (t: Task) => deleteTask.mutate(t.id);
+  // Repeating tasks ask "this day only / every day" first; one-off tasks delete straight away.
+  const onDelete = (t: Task) => requestDelete(t);
   // Desktop: open in the editor pane (no navigation). Mobile: push the standalone route.
   const onOpen = (t: Task) => {
     if (isDesktop) {

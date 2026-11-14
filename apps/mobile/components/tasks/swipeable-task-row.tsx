@@ -59,12 +59,11 @@ export function SwipeableTaskRow({
       onSwipeableOpen={(direction) => {
         // Swipe toward the coral panel deletes (removes the task); swipe toward the green panel
         // completes (strikes it through and springs back).
-        if (direction === "left") {
-          onDelete();
-        } else {
-          onComplete();
-          ref.current?.close();
-        }
+        // Both spring the row closed: a deleted row unmounts anyway, and a repeating task's delete
+        // asks first — on Cancel the row must not be left stuck open on the red panel.
+        if (direction === "left") onDelete();
+        else onComplete();
+        ref.current?.close();
       }}
     >
       {children}

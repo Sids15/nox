@@ -77,12 +77,33 @@ export const TaskRepository = {
   },
 
   /**
+   * Soft-delete a whole repeating task: the template and every occurrence generated from it, in one
+   * statement. Deleting only the template would stop future days but leave the already-generated
+   * ones behind. The id is validated as a UUID before it is interpolated into the filter.
+   */
+  async softDeleteSeries(templateId: string): Promise<void> {
+    const id = task.shape.id.parse(templateId);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ deleted: true })
+      .or(`id.eq.${id},origin_task_id.eq.${id}`);
+    if (error) throw error;
+  },
+
+  /**
    * Materialize a recurring template's occurrence for `dueDate` (generate-on-demand). Copies the
    * template's editable fields, links back via `origin_task_id`, and is a plain (non-repeating) task.
+   * `reminderTimes` are the template's reminders already moved onto `dueDate` by the caller — the
+   * template's own are timestamps on its anchor day and would be in the past here.
    * Returns null on a unique-violation (23505) — the `(origin_task_id, due_date)` index is the race
    * backstop when two devices generate the same occurrence.
    */
-  async createOccurrence(template: Task, dueDate: string, id: string): Promise<Task | null> {
+  async createOccurrence(
+    template: Task,
+    dueDate: string,
+    id: string,
+    reminderTimes: string[],
+  ): Promise<Task | null> {
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -97,7 +118,7 @@ export const TaskRepository = {
         notes: template.notes,
         due_date: dueDate,
         due_time: template.due_time,
-        reminder_times: template.reminder_times,
+        reminder_times: reminderTimes,
         priority: template.priority,
         status: "pending",
         repeat: "none",

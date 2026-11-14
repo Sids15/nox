@@ -12,7 +12,7 @@ import { useCallback, useRef } from "react";
 import { usePrefs } from "../prefs/prefs-store";
 import { carryoverTaskIds } from "./carryover";
 import { groupTasks, type GroupedTasks } from "./group-tasks";
-import { templatesNeedingOccurrence } from "./recurrence";
+import { shiftReminders, templatesNeedingOccurrence } from "./recurrence";
 import { taskKeys } from "./task-keys";
 
 /** Read the current tasks cache (defaulting to empty) — shared by the optimistic mutations. */
@@ -155,6 +155,30 @@ export function useDeleteTask() {
 }
 
 /**
+ * Delete a whole repeating task — the template plus every occurrence generated from it — removing
+ * them all from the cache immediately. Pass the TEMPLATE id (an occurrence's `origin_task_id`).
+ */
+export function useDeleteTaskSeries() {
+  const qc = useQueryClient();
+  return useMutation<unknown, Error, string, { previous: Task[] }>({
+    mutationKey: ["task", "delete-series"],
+    onMutate: async (templateId: string) => {
+      await qc.cancelQueries({ queryKey: taskKeys.all });
+      const previous = snapshot(qc);
+      qc.setQueryData<Task[]>(
+        taskKeys.all,
+        previous.filter((t) => t.id !== templateId && t.origin_task_id !== templateId),
+      );
+      return { previous };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx) qc.setQueryData(taskKeys.all, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
+  });
+}
+
+/**
  * Generate-on-demand recurrence. Returns `ensure(focusDate)` — for each repeating template that
  * should have an occurrence on that day but doesn't (see `templatesNeedingOccurrence`), it adds the
  * occurrence to the cache optimistically and materializes it via the repository. Idempotent + quiet.
@@ -173,7 +197,13 @@ export function useEnsureOccurrences() {
       let anyCreated = false;
       await Promise.all(
         templates.map((template) =>
-          TaskRepository.createOccurrence(template, focusDate, newId())
+          TaskRepository.createOccurrence(
+            template,
+            focusDate,
+            newId(),
+            // templatesNeedingOccurrence only returns dated templates; the fallback is for the types.
+            shiftReminders(template.reminder_times, template.due_date ?? focusDate, focusDate),
+          )
             .then((row) => {
               if (row) anyCreated = true;
             })
