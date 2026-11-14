@@ -1,7 +1,7 @@
 import { parseQuickAdd, useCreateTask, useThemeColors, type QuickAddResult } from "@nox/features";
 import type { TaskInput } from "@nox/types";
 import { todayKey } from "@nox/utils";
-import { ArrowUp, Sparkles, X } from "lucide-react-native";
+import { ArrowUp, CornerDownLeft, Sparkles, X } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, Text, TextInput, View, type TextStyle } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
@@ -19,6 +19,12 @@ const TITLE_FONT: TextStyle = {
 };
 
 const TIPS = "Try “tomorrow 6pm”, “every mon”, “!high”";
+
+/** Press feedback (Emil Kowalski): a 0.97 squeeze so the button visibly hears the tap. */
+const press = ({ pressed }: { pressed: boolean }) => ({
+  transform: [{ scale: pressed ? 0.97 : 1 }],
+  ...(Platform.OS === "web" ? ({ transitionProperty: "transform", transitionDuration: "140ms" } as object) : null),
+});
 
 /**
  * The task-name field, with the phrases quick add recognised highlighted in place — Todoist's smart
@@ -308,20 +314,18 @@ export function TaskComposer({
 
   return (
     <View>
-      <View className="px-5 pb-1 pt-5">
+      <View className={`pb-1 pl-5 ${compact ? "pr-5 pt-4" : "pr-12 pt-5"}`}>
+        {/* No label above the title — the placeholder already says what this is. */}
         {!compact && (
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-ink-3 font-mono text-[10px] font-semibold tracking-[0.16em]">NEW TASK</Text>
-            <Pressable
-              onPress={onClose}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              className="hover:bg-chip -mr-1.5 -mt-1 h-7 w-7 items-center justify-center rounded-full"
-            >
-              <X size={15} color={c.ink3} strokeWidth={2} />
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            className="hover:bg-chip absolute right-3 top-3.5 z-10 h-8 w-8 items-center justify-center rounded-full"
+          >
+            <X size={15} color={c.ink3} strokeWidth={2} />
+          </Pressable>
         )}
 
         <TitleField value={raw} onChange={setRaw} parsed={parsed} onSubmit={submit} inputRef={titleRef} />
@@ -352,7 +356,7 @@ export function TaskComposer({
       {error ? <Text className="text-high mt-3 px-5 text-[12.5px]">{error}</Text> : null}
 
       {/* Footer band */}
-      <View className="border-line bg-surface/60 mt-4 flex-row items-center gap-3 border-t px-4 py-3">
+      <View className="border-line mt-4 flex-row items-center gap-3 border-t px-4 py-3">
         <Pressable
           onPress={() => setCreateMore((v) => !v)}
           accessibilityRole="switch"
@@ -381,7 +385,7 @@ export function TaskComposer({
         <View className="flex-1">
           {added ? (
             <Text numberOfLines={1} className="text-success text-[12px] font-semibold">
-              ✓ Added “{added}”
+              Added “{added}”
             </Text>
           ) : null}
         </View>
@@ -392,13 +396,14 @@ export function TaskComposer({
             disabled={!canAdd}
             accessibilityRole="button"
             accessibilityLabel="Add task"
-            className={`h-9 w-9 items-center justify-center rounded-full ${canAdd ? "bg-accent" : "bg-chip"}`}
+            style={press}
+            className={`h-10 w-10 items-center justify-center rounded-full ${canAdd ? "bg-accent" : "bg-chip"}`}
           >
             <ArrowUp size={18} color={canAdd ? c.onAccent : c.ink3} strokeWidth={2.6} />
           </Pressable>
         ) : (
           <>
-            <Pressable onPress={onClose} accessibilityRole="button" className="hover:bg-chip rounded-[9px] px-3 py-2">
+            <Pressable onPress={onClose} accessibilityRole="button" style={press} className="hover:bg-chip h-[34px] justify-center rounded-[9px] px-3">
               <Text className="text-ink-2 text-[13px] font-semibold">Cancel</Text>
             </Pressable>
             <Pressable
@@ -406,12 +411,11 @@ export function TaskComposer({
               disabled={!canAdd}
               accessibilityRole="button"
               accessibilityLabel="Add task"
-              className={`flex-row items-center gap-2 rounded-[9px] px-3.5 py-2 ${canAdd ? "bg-accent hover:opacity-90" : "bg-chip"}`}
+              style={press}
+              className={`h-[34px] flex-row items-center gap-2 rounded-[9px] px-3.5 ${canAdd ? "bg-accent hover:opacity-90" : "bg-chip"}`}
             >
               <Text className={`text-[13px] font-bold ${canAdd ? "text-on-accent" : "text-ink-3"}`}>Add task</Text>
-              <View className={`rounded-[4px] px-1 ${canAdd ? "bg-white/20" : "bg-line"}`}>
-                <Text className={`font-mono text-[10px] font-bold ${canAdd ? "text-on-accent" : "text-ink-3"}`}>↵</Text>
-              </View>
+              <CornerDownLeft size={13} color={canAdd ? c.onAccent : c.ink3} strokeWidth={2.4} />
             </Pressable>
           </>
         )}
