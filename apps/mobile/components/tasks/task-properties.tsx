@@ -11,8 +11,8 @@ import {
   toDateKey,
   weekdayShort,
 } from "@nox/utils";
-import { Bell, BellPlus, Calendar, Check, Clock, Flag, Plus, Repeat, X, type LucideIcon } from "lucide-react-native";
-import { useEffect, useState, type ReactNode } from "react";
+import { Bell, BellPlus, Calendar, Check, Clock, Flag, Plus, Repeat, Sparkles, X, type LucideIcon } from "lucide-react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { NoxDateTimePicker } from "../date-time-picker";
 import { MiniCalendar } from "./mini-calendar";
@@ -139,12 +139,18 @@ function reminderPresets(date: string | null, time: string | null): { label: str
 
 /* ─────────────────────────────── primitives ─────────────────────────────── */
 
+/**
+ * A property button. Unset properties are quiet — no box, just icon + name, a chip fill on hover — so
+ * the bar reads as a few set values rather than a row of empty outlines. Set ones get a tinted fill;
+ * `auto` adds a sparkle when the value was read from the typed title rather than picked.
+ */
 function PropButton({
   icon: Icon,
   label,
   set,
   open,
   color,
+  auto,
   onPress,
   onClear,
 }: {
@@ -153,6 +159,7 @@ function PropButton({
   set: boolean;
   open: boolean;
   color?: string;
+  auto?: boolean;
   onPress: () => void;
   onClear?: () => void;
 }) {
@@ -164,18 +171,19 @@ function PropButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ expanded: open }}
-      className={`flex-row items-center gap-1.5 rounded-[9px] border px-2.5 py-[7px] ${
+      className={`h-[32px] flex-row items-center gap-1.5 rounded-[9px] border px-2.5 ${
         open
           ? "border-accent/[0.6] bg-accent/[0.14]"
           : set
-            ? "border-accent/[0.25] bg-accent/[0.08] hover:bg-accent/[0.14]"
-            : "border-line hover:bg-chip"
+            ? "border-accent/[0.22] bg-accent/[0.08] hover:bg-accent/[0.14]"
+            : "hover:bg-chip border-transparent"
       }`}
     >
-      <Icon size={14} color={tint} strokeWidth={2} />
+      <Icon size={14} color={set || open ? tint : c.ink3} strokeWidth={2} />
       <Text style={{ color: set || open ? tint : c.ink2 }} className="text-[13px] font-semibold">
         {label}
       </Text>
+      {auto && <Sparkles size={11} color={tint} strokeWidth={2.2} />}
       {set && onClear && (
         <Pressable
           onPress={(e) => {
@@ -442,12 +450,18 @@ export function PropertyBar({
   compact,
   /** Horizontal inset for the bar and panels, to line up with the surrounding content. */
   inset = 20,
+  autoFields,
+  trailing,
 }: {
   value: TaskProps;
   onChange: (patch: Partial<TaskProps>) => void;
   today: string;
   compact: boolean;
   inset?: number;
+  /** Fields whose value was read from the typed title (sparkle on their button). */
+  autoFields?: ReadonlySet<string>;
+  /** Extra controls at the end of the bar. */
+  trailing?: ReactNode;
 }) {
   const c = useThemeColors();
   const theme = usePrefs((s) => s.theme);
@@ -456,19 +470,34 @@ export function PropertyBar({
   const { date, time, reminders, repeat, priority } = value;
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? null : p));
 
-  // Esc closes an open panel before anything else hears it (capture phase), so in the dialog the
-  // first Esc folds the panel and only the second closes the dialog.
+  // Esc closes an open panel before anything else hears it, so in the dialog the first Esc folds the
+  // panel and only the second closes the dialog. Both halves of the key need catching: our dialog
+  // listens for keydown, but react-native-web's Modal closes itself on keyup. Window capture runs
+  // before any listener on document.
+  const swallowEscUp = useRef(false);
+  const panelOpen = useRef(false);
+  panelOpen.current = panel !== null;
   useEffect(() => {
-    if (Platform.OS !== "web" || !panel) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+    if (Platform.OS !== "web") return;
+    const onDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !panelOpen.current) return;
       e.preventDefault();
       e.stopPropagation();
+      swallowEscUp.current = true;
       setPanel(null);
     };
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, [panel]);
+    const onUp = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !swallowEscUp.current) return;
+      e.stopPropagation();
+      swallowEscUp.current = false;
+    };
+    window.addEventListener("keydown", onDown, true);
+    window.addEventListener("keyup", onUp, true);
+    return () => {
+      window.removeEventListener("keydown", onDown, true);
+      window.removeEventListener("keyup", onUp, true);
+    };
+  }, []);
 
   // Clearing the date clears what hangs off it; a repeat needs a day, so it supplies one.
   const setDate = (next: string | null) =>
@@ -642,6 +671,7 @@ export function PropertyBar({
         icon={Calendar}
         label={date ? dateLabel(date, today) : "Date"}
         set={date !== null}
+        auto={autoFields?.has("date")}
         open={panel === "date"}
         onPress={() => toggle("date")}
         onClear={() => setDate(null)}
@@ -651,6 +681,7 @@ export function PropertyBar({
           icon={Clock}
           label={time ? formatTime12(time)! : "Time"}
           set={time !== null}
+          auto={autoFields?.has("time")}
           open={panel === "time"}
           onPress={() => toggle("time")}
           onClear={() => onChange({ time: null })}
@@ -668,14 +699,16 @@ export function PropertyBar({
         icon={Repeat}
         label={repeatLabel(repeat, date)}
         set={repeat.kind !== "none"}
+        auto={autoFields?.has("repeat")}
         open={panel === "repeat"}
         onPress={() => toggle("repeat")}
         onClear={() => setRepeat({ kind: "none", weekdays: [] })}
       />
       <PropButton
         icon={Flag}
-        label={cap(priority)}
+        label={priority === "medium" ? "Priority" : cap(priority)}
         set={priority !== "medium"}
+        auto={autoFields?.has("priority")}
         color={priority === "medium" ? undefined : priorityColors[priority]}
         open={panel === "priority"}
         onPress={() => toggle("priority")}
@@ -704,8 +737,9 @@ export function PropertyBar({
     <View>
       {/* Wraps rather than scrolling sideways: a sideways row hid Repeat and Priority off the edge
           on phones, with nothing to say they were there. */}
-      <View className="flex-row flex-wrap gap-1.5" style={{ paddingHorizontal: inset }}>
+      <View className="flex-row flex-wrap items-center gap-1" style={{ paddingHorizontal: inset - 6 }}>
         {buttons}
+        {trailing}
       </View>
       {panel && (
         <View className="border-line bg-bg/40 mt-3 rounded-[12px] border p-2.5" style={{ marginHorizontal: inset - 8 }}>
