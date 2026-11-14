@@ -202,28 +202,29 @@ export default function LoginScreen() {
             </Pressable>
           )}
 
-          {/* Heading */}
+          {/* Heading — centred over the form, with room before the first field (the tagline used to
+              sit left-aligned and run straight into the EMAIL label). */}
           {mode === "signin" ? (
-            <>
+            <View className="mb-5 items-center">
               {/* Tinted, not raw: the asset is white-on-transparent and this screen's bg-bg follows
                   the theme, so an untinted mark would vanish on light. */}
               <Image
                 source={require("../../assets/nox-wordmark.png")}
-                style={{ width: 96, height: 56, tintColor: c.ink }}
+                style={{ width: 104, height: 60, tintColor: c.ink }}
                 resizeMode="contain"
                 accessibilityLabel="Nox"
               />
-              <Text className="text-ink-2 mt-3 text-[15px] leading-[22px]">
+              <Text className="text-ink-2 mt-3 text-center text-[15px] leading-[22px]">
                 Ideas, notes, tasks and resources —{"\n"}one quiet place, on every device.
               </Text>
-            </>
+            </View>
           ) : (
-            <>
+            <View className="mb-5">
               <Text className="text-ink text-[30px] font-bold tracking-[-0.02em]">Create your account</Text>
               <Text className="text-ink-2 mt-2 text-[14.5px] leading-[21px]">
                 Syncs instantly between iPhone and Windows.
               </Text>
-            </>
+            </View>
           )}
 
           {/* Fields */}
