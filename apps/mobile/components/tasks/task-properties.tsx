@@ -26,7 +26,8 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { Platform, Pressable, Text, View, type TextStyle } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
+import { MenuDivider, MenuLabel, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { MiniCalendar } from "./mini-calendar";
 import { TimePicker } from "./time-picker";
@@ -154,15 +155,6 @@ function reminderPresets(date: string | null, time: string | null): { label: str
 
 /* ─────────────────────────────── primitives ─────────────────────────────── */
 
-/** Numbers in hints and times line up in columns without switching to a monospace costume. */
-const TABULAR: TextStyle = { fontVariant: ["tabular-nums"] };
-const WEB = Platform.OS === "web";
-/** Press feedback (Emil Kowalski): a 0.97 squeeze so the control visibly hears the tap. */
-const pressScale = ({ pressed }: { pressed: boolean }) => ({
-  transform: [{ scale: pressed ? 0.97 : 1 }],
-  ...(WEB ? ({ transitionProperty: "transform, background-color", transitionDuration: "140ms" } as object) : null),
-});
-
 /**
  * A property button. Unset properties are quiet — icon and name, a fill only on hover — so the bar
  * reads as the few values that are set. Set ones carry a tinted fill; `auto` adds a sparkle when the
@@ -233,55 +225,6 @@ function PropButton({
     </View>
   );
 }
-
-/** A row in a menu: optional leading icon, label, right-aligned hint, check when selected. */
-function MenuRow({
-  label,
-  hint,
-  selected = false,
-  disabled = false,
-  onPress,
-  icon,
-  trailing,
-}: {
-  label: string;
-  hint?: string;
-  selected?: boolean;
-  disabled?: boolean;
-  onPress: () => void;
-  icon?: ReactNode;
-  trailing?: ReactNode;
-}) {
-  const c = useThemeColors();
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="menuitem"
-      accessibilityState={{ selected, disabled }}
-      className={`min-h-[36px] flex-row items-center gap-2.5 rounded-[8px] px-2.5 ${selected ? "bg-accent/[0.1]" : "hover:bg-chip"} ${
-        disabled ? "opacity-40" : ""
-      }`}
-    >
-      {icon}
-      <Text numberOfLines={1} className={`flex-1 text-[13.5px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>
-        {label}
-      </Text>
-      {hint ? (
-        <Text style={TABULAR} className={`text-[12px] ${selected ? "text-accent" : "text-ink-3"}`}>
-          {hint}
-        </Text>
-      ) : null}
-      {trailing ?? (selected ? <Check size={14} color={c.accent} strokeWidth={2.6} /> : <View style={{ width: 14 }} />)}
-    </Pressable>
-  );
-}
-
-function MenuLabel({ children }: { children: string }) {
-  return <Text className="text-ink-3 px-2.5 pb-1 pt-2 text-[11.5px] font-semibold">{children}</Text>;
-}
-
-const MenuDivider = () => <View className="bg-line mx-1 my-1.5 h-px" />;
 
 /** A square check for multi-select rows (reminders), distinct from the single-select tick. */
 function CheckBox({ on }: { on: boolean }) {
@@ -480,7 +423,7 @@ export function PropertyBar({
   const panelOpen = useRef(false);
   panelOpen.current = panel !== null;
   useEffect(() => {
-    if (!WEB) return;
+    if (Platform.OS !== "web") return;
     const onDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || !panelOpen.current) return;
       e.preventDefault();
