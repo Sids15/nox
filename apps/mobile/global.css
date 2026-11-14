@@ -32,6 +32,21 @@
   }
 }
 
+/*
+ * Text rendering. Without these, macOS browsers draw the system font with subpixel smoothing, which
+ * makes every weight read heavier and blurrier than in native apps — the whole UI looked bold.
+ * Grayscale antialiasing, kerning and contextual alternates match how the font looks natively.
+ */
+html,
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-feature-settings: "kern" 1, "calt" 1;
+  font-synthesis: none;
+}
+
 /* Text selection and the caret carry the accent instead of the browser's blue. */
 ::selection {
   background: rgb(var(--accent) / 0.22);
