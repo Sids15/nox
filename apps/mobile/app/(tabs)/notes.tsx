@@ -13,7 +13,7 @@ import type { Note } from "@nox/types";
 import { useRouter } from "expo-router";
 import { ChevronRight, Folder, FolderPlus, MoreHorizontal, NotebookPen, Plus, Search } from "lucide-react-native";
 import { vars } from "nativewind";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DesktopHeader } from "../../components/desktop-header";
@@ -89,6 +89,17 @@ export default function NotesScreen() {
   const deleteFolder = useDeleteFolder();
 
   const active = useMemo(() => notes.filter((n) => !n.is_archived), [notes]);
+
+  // Desktop opens the most recent note on arrival (pinned first) so the editor pane starts with
+  // something in it, the way a notes app does. Once only: after the user closes a note, or picks a
+  // folder, the empty pane is their choice and must not be refilled behind their back.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (!isDesktop || autoOpened.current || isLoading || selectedNoteId) return;
+    autoOpened.current = true;
+    const first = active.find((n) => n.is_pinned) ?? active[0];
+    if (first) setSelectedNoteId(first.id);
+  }, [isDesktop, isLoading, active, selectedNoteId]);
   const filtered = useMemo(() => active.filter((n) => noteMatches(n, search)), [active, search]);
   const pinned = filtered.filter((n) => n.is_pinned);
   const recent = filtered.filter((n) => !n.is_pinned);
