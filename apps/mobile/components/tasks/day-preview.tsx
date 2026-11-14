@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { TABULAR } from "../menu";
 import { layoutDay } from "./task-calendar";
+import { withAlpha } from "../../lib/color";
 
 const ROW = 30; // px per hour
 
@@ -61,8 +62,11 @@ export function DayPreview({
     ...timed.map((p) => timeToMinutes(p.task.due_time!)),
     ...(time ? [timeToMinutes(time), timeToMinutes(time) + (duration ?? 30)] : []),
   ];
-  const start = Math.max(0, Math.min(7, ...mins.map((m) => Math.floor(m / 60))));
-  const end = Math.min(24, Math.max(22, ...mins.map((m) => Math.ceil(m / 60) + 1)));
+  // Only the hours around what's there (an hour either side), at least four of them.
+  let start = Math.max(0, Math.min(...mins.map((m) => Math.floor(m / 60))) - 1);
+  let end = Math.min(24, Math.max(...mins.map((m) => Math.ceil(m / 60))) + 1);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) [start, end] = [9, 13];
+  while (end - start < 4) end < 24 ? end++ : start--;
   firstHour.current = start;
   const hours = Array.from({ length: end - start }, (_, i) => start + i);
   const top = (m: number) => (m / 60 - start) * ROW;
@@ -72,13 +76,11 @@ export function DayPreview({
 
   return (
     <View className="flex-1">
-      <View className="border-line border-b px-4 pb-2.5 pt-4">
-        <Text className="text-ink font-serif text-[16px] font-bold">{label.charAt(0).toUpperCase() + label.slice(1)}</Text>
-        <Text className="text-ink-3 mt-0.5 text-[12px]">
-          {timed.length ? `${timed.length} scheduled` : "Nothing scheduled"}
-          {untimed ? ` · ${untimed} anytime` : ""}
-        </Text>
-      </View>
+      <Text className="text-ink-3 px-4 pb-1 pt-4 text-[12px]">
+        <Text className="text-ink-2 font-semibold">{label.charAt(0).toUpperCase() + label.slice(1)}</Text>
+        {timed.length ? ` · ${timed.length} scheduled` : ""}
+        {untimed ? ` · ${untimed} anytime` : ""}
+      </Text>
       <ScrollView ref={scroller} className="flex-1" contentContainerStyle={{ paddingVertical: 8 }} showsVerticalScrollIndicator={false}>
         <View style={{ height: hours.length * ROW, marginLeft: 50, marginRight: 12 }}>
           {hours.map((h) => (
@@ -87,8 +89,8 @@ export function DayPreview({
               onPress={() => onPickTime(`${String(h).padStart(2, "0")}:00`)}
               accessibilityRole="button"
               accessibilityLabel={`Set time to ${formatTime12(`${h}:00`)}`}
-              className="border-line hover:bg-accent/[0.06] absolute left-0 right-0 border-t"
-              style={{ top: (h - start) * ROW, height: ROW }}
+              className="hover:bg-accent/[0.06] absolute left-0 right-0 border-t"
+              style={{ top: (h - start) * ROW, height: ROW, borderTopColor: withAlpha(c.ink3, 0.12) }}
             >
               <Text style={[TABULAR, { position: "absolute", left: -46, top: -7, width: 40, textAlign: "right" }]} className="text-ink-3 text-[10.5px]">
                 {formatTime12(`${h}:00`)!.replace(":00", "")}
@@ -128,9 +130,6 @@ export function DayPreview({
           )}
         </View>
       </ScrollView>
-      {!time && (
-        <Text className="text-ink-3 border-line border-t px-4 py-2.5 text-[12px]">Anytime that day. Click an hour to schedule it.</Text>
-      )}
     </View>
   );
 }

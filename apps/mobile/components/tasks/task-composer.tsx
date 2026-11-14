@@ -16,6 +16,7 @@ import { Platform, Pressable, Text, TextInput, View, type TextStyle } from "reac
 import { AutoGrowInput } from "../blocks/auto-grow-input";
 import { DayPreview } from "./day-preview";
 import { anchorOf, PropertyBar, rebaseReminders, type RepeatValue, type TaskProps } from "./task-properties";
+import { withAlpha } from "../../lib/color";
 
 const WEB = Platform.OS === "web";
 
@@ -340,6 +341,13 @@ export function TaskComposer({
     );
   }, [allTasks, date, time, today, skipped]);
 
+  // The day beside the box only when it has something to show: a time picked, or timed tasks that day.
+  const dayHasTimed = useMemo(
+    () => !!date && tasksOnDay(allTasks, date, today, skipped).some((p) => p.task.status !== "complete" && p.task.due_time),
+    [allTasks, date, today, skipped],
+  );
+  const showDay = !compact && !!date && (!!time || dayHasTimed);
+
   const form = (
     <View>
       <View className={`pb-1 pl-5 ${compact ? "pr-5 pt-4" : "pr-12 pt-5"}`}>
@@ -395,13 +403,13 @@ export function TaskComposer({
 
   return (
     <View>
-      {compact ? (
+      {!showDay ? (
         form
       ) : (
         // The form sets the height; the day beside it fills that and scrolls inside.
-        <View className="flex-row" style={{ minHeight: 300 }}>
+        <View className="flex-row" style={{ minHeight: 200 }}>
           <View className="min-w-0 flex-1 pb-4">{form}</View>
-          <View className="border-line bg-bg w-[260px] border-l">
+          <View className="bg-bg w-[230px]" style={{ borderLeftWidth: 1, borderLeftColor: withAlpha(c.ink3, 0.1) }}>
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
               <DayPreview date={date} time={time} title={title} today={today} duration={duration} onPickTime={(t) => onChange({ time: t })} />
             </View>
@@ -410,7 +418,7 @@ export function TaskComposer({
       )}
 
       {/* Footer band */}
-      <View className="border-line mt-4 flex-row items-center gap-3 border-t px-4 py-3">
+      <View className="mt-2 flex-row items-center gap-3 px-4 pb-3.5 pt-2">
         <Pressable
           onPress={() => setCreateMore((v) => !v)}
           accessibilityRole="switch"
@@ -457,9 +465,7 @@ export function TaskComposer({
           </Pressable>
         ) : (
           <>
-            <Pressable onPress={onClose} accessibilityRole="button" style={press} className="hover:bg-chip h-[34px] justify-center rounded-[9px] px-3">
-              <Text className="text-ink-2 text-[13px] font-semibold">Cancel</Text>
-            </Pressable>
+
             <Pressable
               onPress={submit}
               disabled={!canAdd}
