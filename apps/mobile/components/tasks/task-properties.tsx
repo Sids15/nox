@@ -337,6 +337,22 @@ function RemindMenu({
   return (
     <View className="p-1.5">
       <MenuLabel>{time ? `Before ${formatTime12(time)}` : "On an all-day task"}</MenuLabel>
+      {(() => {
+        // Say why options are greyed out, instead of leaving them silently unclickable.
+        const pastCount = presets.filter((p) => p.at.getTime() <= now).length;
+        if (pastCount === 0) return null;
+        const all = pastCount === presets.length;
+        return (
+          <View className="bg-medium/[0.1] mx-1 mb-1.5 flex-row gap-2 rounded-[8px] px-2.5 py-2">
+            <Clock size={13} color={c.medium} strokeWidth={2.2} style={{ marginTop: 2 }} />
+            <Text className="text-ink-2 flex-1 text-[12.5px] leading-[17px]">
+              {all
+                ? "This task's time has already passed, so there's nothing left to remind you about. Move it to a later time to set a reminder."
+                : "Greyed-out times have already passed."}
+            </Text>
+          </View>
+        );
+      })()}
       {presets.map((p) => {
         const on = reminders.some((r) => sameMinute(r, p.at.toISOString()));
         const sub =
