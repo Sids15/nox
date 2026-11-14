@@ -1,26 +1,18 @@
 import { useAuth, useThemeColors } from "@nox/features";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Eye, EyeOff, Lock } from "lucide-react-native";
+import { Check, Eye, EyeOff } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { AuthShell } from "../../components/auth-shell";
+import { pressScale } from "../../components/menu";
 import { authErrorMessage } from "../../lib/auth-errors";
-import { CORAL, CORAL_GRADIENT } from "../../lib/auth-theme";
 
 const MIN_LENGTH = 8;
 
-/** Uppercase field label (mono, tracked) — matches the login screen. */
-function FieldLabel({ children }: { children: string }) {
-  return (
-    <Text className="text-ink-3 mb-1.5 mt-4 text-[10.5px] font-semibold tracking-[0.16em]">{children}</Text>
-  );
-}
-
 /**
  * Set-a-new-password screen, reached only with an active password-recovery session (the reset link
- * was exchanged by useAuthDeepLink, which raised the `recovery` flag). Submitting updates the
- * password, clears recovery, and drops the user into the app.
+ * was exchanged by useAuthDeepLink, which raised the `recovery` flag). Saving updates the password,
+ * clears recovery and opens the app; Cancel signs the recovery session out.
  */
 export default function ResetPasswordScreen() {
   const { updatePassword, setRecovery, signOut } = useAuth();
@@ -59,82 +51,80 @@ export default function ResetPasswordScreen() {
     }
   };
 
-  const field = (name: string, value: string, onChange: (v: string) => void, placeholder: string, right?: ReactNode) => (
-    <View
-      className="bg-chip rounded-input h-[52px] flex-row items-center gap-2.5 px-3.5"
-      style={{ borderWidth: 1, borderColor: focused === name ? CORAL : c.line }}
-    >
-      <Lock size={17} color={c.ink3} strokeWidth={1.8} />
-      <TextInput
-        className="flex-1 text-[15px]"
-        style={{ paddingVertical: 0, color: c.ink }}
-        value={value}
-        onChangeText={onChange}
-        onFocus={() => setFocused(name)}
-        onBlur={() => setFocused((f) => (f === name ? null : f))}
-        placeholder={placeholder}
-        placeholderTextColor={c.ink3}
-        secureTextEntry={!show}
-        autoCapitalize="none"
-        autoComplete="new-password"
-      />
-      {right}
+  const field = (name: string, label: string, value: string, onChange: (v: string) => void, bad: boolean, right?: ReactNode) => (
+    <View className="mt-4">
+      <Text className="text-ink-2 mb-1.5 text-[13.5px] font-semibold">{label}</Text>
+      <View
+        className="bg-surface h-[48px] flex-row items-center rounded-[11px] px-3.5"
+        style={{ borderWidth: 1, borderColor: bad ? c.critical : focused === name ? c.accent : c.line }}
+      >
+        <TextInput
+          className="text-ink flex-1 text-[15.5px]"
+          style={{ paddingVertical: 0, outlineWidth: 0 } as object}
+          value={value}
+          onChangeText={onChange}
+          onFocus={() => setFocused(name)}
+          onBlur={() => setFocused((f) => (f === name ? null : f))}
+          onSubmitEditing={() => void onSubmit()}
+          placeholderTextColor={c.ink3}
+          secureTextEntry={!show}
+          autoCapitalize="none"
+          autoComplete="new-password"
+          accessibilityLabel={label}
+        />
+        {right}
+      </View>
     </View>
   );
 
   return (
-    <SafeAreaView className="bg-bg flex-1">
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 28, paddingVertical: 28, maxWidth: 460, width: "100%", alignSelf: "center" }}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-        >
-          <Text className="text-ink font-serif text-[30px] font-bold tracking-[-0.01em]">Set a new password</Text>
-          <Text className="text-ink-2 mt-2 text-[14.5px] leading-[21px]">
-            Choose a new password for your account. You'll be signed in once it's saved.
-          </Text>
+    <AuthShell>
+      <Text className="text-ink font-serif text-[32px] font-bold leading-[39px] tracking-[-0.01em]">Set a new password</Text>
+      <Text className="text-ink-2 mt-2 text-[15.5px] leading-[23px]">You'll be signed in as soon as it's saved.</Text>
 
-          <FieldLabel>NEW PASSWORD</FieldLabel>
-          {field(
-            "password",
-            password,
-            setPassword,
-            "••••••••",
-            <Pressable onPress={() => setShow((s) => !s)} hitSlop={8}>
-              {show ? <EyeOff size={18} color={c.ink3} strokeWidth={1.8} /> : <Eye size={18} color={c.ink3} strokeWidth={1.8} />}
-            </Pressable>,
-          )}
-          {password.length > 0 && !longEnough ? (
-            <Text className="text-ink-3 mt-1.5 text-[12.5px]">At least {MIN_LENGTH} characters.</Text>
-          ) : null}
+      <View className="mt-3">
+        {field(
+          "password",
+          "New password",
+          password,
+          setPassword,
+          false,
+          <Pressable onPress={() => setShow((s) => !s)} hitSlop={8} accessibilityRole="button" accessibilityLabel={show ? "Hide password" : "Show password"}>
+            {show ? <EyeOff size={18} color={c.ink3} strokeWidth={1.9} /> : <Eye size={18} color={c.ink3} strokeWidth={1.9} />}
+          </Pressable>,
+        )}
+        <View className="mt-2 flex-row items-center gap-1.5">
+          <Check size={13} color={longEnough ? c.success : c.ink3} strokeWidth={2.6} />
+          <Text className={`text-[12.5px] ${longEnough ? "text-success" : "text-ink-3"}`}>At least {MIN_LENGTH} characters</Text>
+        </View>
 
-          <FieldLabel>CONFIRM PASSWORD</FieldLabel>
-          {field("confirm", confirm, setConfirm, "••••••••")}
-          {confirm.length > 0 && !matches ? (
-            <Text className="mt-1.5 text-[12.5px]" style={{ color: CORAL }}>Passwords don't match.</Text>
-          ) : null}
+        {field("confirm", "Confirm password", confirm, setConfirm, confirm.length > 0 && !matches)}
+        {confirm.length > 0 && !matches ? <Text className="text-critical mt-1.5 text-[12.5px]">Passwords don't match.</Text> : null}
+      </View>
 
-          {error ? <Text className="text-critical mt-3 text-[13px]">{error}</Text> : null}
+      {error ? (
+        <View className="bg-critical/[0.08] mt-4 rounded-[10px] px-3.5 py-2.5">
+          <Text className="text-critical text-[13.5px]">{error}</Text>
+        </View>
+      ) : null}
 
-          <Pressable disabled={!valid || busy} onPress={onSubmit} className={`mt-6 ${!valid || busy ? "opacity-50" : ""}`}>
-            <LinearGradient
-              colors={CORAL_GRADIENT}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 12, paddingVertical: 15, alignItems: "center", shadowColor: "#1B2131", shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 }}
-            >
-              <Text className="text-[15.5px] font-bold text-white">{busy ? "Saving…" : "Save password"}</Text>
-            </LinearGradient>
-          </Pressable>
+      <Pressable
+        disabled={!valid || busy}
+        onPress={() => void onSubmit()}
+        accessibilityRole="button"
+        style={pressScale}
+        className={`mt-6 h-[50px] items-center justify-center rounded-[12px] ${valid ? "bg-accent hover:opacity-90" : "bg-chip"}`}
+      >
+        {busy ? (
+          <ActivityIndicator color={c.onAccent} />
+        ) : (
+          <Text className={`text-[15.5px] font-semibold ${valid ? "text-on-accent" : "text-ink-3"}`}>Save password</Text>
+        )}
+      </Pressable>
 
-          <Pressable onPress={onCancel} hitSlop={8} className="mt-6 self-center">
-            <Text className="text-ink-2 text-[14px] font-semibold">Cancel</Text>
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <Pressable onPress={() => void onCancel()} hitSlop={8} accessibilityRole="button" className="mt-6 self-start">
+        <Text className="text-ink-2 text-[14.5px] font-semibold">Cancel and sign out</Text>
+      </Pressable>
+    </AuthShell>
   );
 }
