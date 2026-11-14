@@ -7,7 +7,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface Recording {
   uri: string;
@@ -66,20 +66,66 @@ export function useVoiceRecorder() {
   return { isRecording: state.isRecording, durationMs: state.durationMillis ?? 0, start, stop };
 }
 
-/** Play/pause a voice note from a local file or signed URL. */
-export function useAudioPlayback(source: string | null) {
+export interface Playback {
+  isPlaying: boolean;
+  ready: boolean;
+  failed: boolean;
+  positionMs: number;
+  durationMs: number;
+  toggle: () => void;
+  seek: (fraction: number) => void;
+  skip: (ms: number) => void;
+  rate: number;
+  setRate: (r: number) => void;
+}
+
+/** Play/pause a voice note from a local file or signed URL, with position for a progress bar. */
+export function useAudioPlayback(source: string | null, durationHintMs = 0): Playback {
   const player = useAudioPlayer(source ? { uri: source } : null);
   const status = useAudioPlayerStatus(player);
+  const [rate, setRateState] = useState(1);
+  const total = status.duration > 0 ? status.duration * 1000 : durationHintMs;
 
   const toggle = () => {
     if (!source) return;
-    if (status.playing) {
-      player.pause();
-    } else {
-      if (status.didJustFinish || status.currentTime >= status.duration) player.seekTo(0);
-      player.play();
+    try {
+      if (status.playing) player.pause();
+      else {
+        if (status.didJustFinish || (status.duration > 0 && status.currentTime >= status.duration)) void player.seekTo(0);
+        player.play();
+      }
+    } catch {
+      // player released (unmounting) — nothing to do
+    }
+  };
+  const seek = (fraction: number) => {
+    if (!total) return;
+    void player.seekTo((Math.min(1, Math.max(0, fraction)) * total) / 1000);
+  };
+
+  const skip = (ms: number) => {
+    const t = Math.max(0, (status.currentTime ?? 0) + ms / 1000);
+    void player.seekTo(total ? Math.min(t, total / 1000) : t);
+  };
+  const setRate = (r: number) => {
+    setRateState(r);
+    try {
+      player.setPlaybackRate(r, "high");
+    } catch {
+      // released
     }
   };
 
-  return { isPlaying: status.playing, toggle, ready: status.isLoaded };
+  return {
+    skip,
+    rate,
+    setRate,
+    isPlaying: status.playing,
+    ready: status.isLoaded,
+    failed: false,
+    positionMs: (status.currentTime ?? 0) * 1000,
+    durationMs: total,
+    toggle,
+    seek,
+  };
 }

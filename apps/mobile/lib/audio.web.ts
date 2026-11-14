@@ -136,44 +136,123 @@ export function useVoiceRecorder() {
   return { isRecording, durationMs, start, stop };
 }
 
-export function useAudioPlayback(source: string | null) {
+export interface Playback {
+  isPlaying: boolean;
+  ready: boolean;
+  /** The file couldn't be loaded or played (e.g. a WebM note opened in Safari, or a dead link). */
+  failed: boolean;
+  positionMs: number;
+  /** 0 until known. Recorded WebM often reports Infinity until played once; we fall back to the hint. */
+  durationMs: number;
+  toggle: () => void;
+  /** Seek to a fraction (0–1) of the duration. */
+  seek: (fraction: number) => void;
+  /** Jump by ms (negative goes back). */
+  skip: (ms: number) => void;
+  rate: number;
+  setRate: (r: number) => void;
+}
+
+/**
+ * Play a voice note on the web. Tracks the real position for a progress bar, and reports failure
+ * instead of showing "playing" when the browser refuses the file (play() rejects).
+ */
+export function useAudioPlayback(source: string | null, durationHintMs = 0): Playback {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [positionMs, setPositionMs] = useState(0);
+  const [durationMs, setDurationMs] = useState(0);
+  const [rate, setRateState] = useState(1);
 
   useEffect(() => {
+    setFailed(false);
+    setPositionMs(0);
+    setDurationMs(0);
     if (!source) {
       audioRef.current = null;
       setReady(false);
       return;
     }
-    const el = new Audio(source);
+    const el = new Audio();
+    el.preload = "metadata";
+    el.playbackRate = rate;
+    el.src = source;
     audioRef.current = el;
-    const onReady = () => setReady(true);
-    const onEnded = () => setIsPlaying(false);
+    const readDuration = () => {
+      if (Number.isFinite(el.duration) && el.duration > 0) setDurationMs(el.duration * 1000);
+    };
+    const onReady = () => {
+      setReady(true);
+      readDuration();
+    };
+    const onTime = () => setPositionMs(el.currentTime * 1000);
+    const onEnded = () => {
+      setIsPlaying(false);
+      setPositionMs(0);
+    };
+    const onPause = () => setIsPlaying(false);
+    const onPlay = () => setIsPlaying(true);
+    const onError = () => {
+      setFailed(true);
+      setIsPlaying(false);
+    };
+    el.addEventListener("loadedmetadata", onReady);
     el.addEventListener("canplay", onReady);
+    el.addEventListener("durationchange", readDuration);
+    el.addEventListener("timeupdate", onTime);
     el.addEventListener("ended", onEnded);
+    el.addEventListener("pause", onPause);
+    el.addEventListener("play", onPlay);
+    el.addEventListener("error", onError);
     return () => {
       el.pause();
+      el.removeEventListener("loadedmetadata", onReady);
       el.removeEventListener("canplay", onReady);
+      el.removeEventListener("durationchange", readDuration);
+      el.removeEventListener("timeupdate", onTime);
       el.removeEventListener("ended", onEnded);
+      el.removeEventListener("pause", onPause);
+      el.removeEventListener("play", onPlay);
+      el.removeEventListener("error", onError);
       audioRef.current = null;
       setReady(false);
       setIsPlaying(false);
     };
-  }, [source]);
+  }, [source]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = () => {
     const el = audioRef.current;
     if (!el) return;
     if (el.paused) {
-      void el.play();
-      setIsPlaying(true);
-    } else {
-      el.pause();
-      setIsPlaying(false);
-    }
+      el.play().catch(() => {
+        setFailed(true);
+        setIsPlaying(false);
+      });
+    } else el.pause();
   };
 
-  return { isPlaying, toggle, ready };
+  const total = durationMs || durationHintMs;
+  const seek = (fraction: number) => {
+    const el = audioRef.current;
+    if (!el || !total) return;
+    const t = (Math.min(1, Math.max(0, fraction)) * total) / 1000;
+    el.currentTime = t;
+    setPositionMs(t * 1000);
+  };
+
+  const skip = (ms: number) => {
+    const el = audioRef.current;
+    if (!el) return;
+    const t = Math.max(0, el.currentTime + ms / 1000);
+    el.currentTime = total ? Math.min(t, total / 1000) : t;
+    setPositionMs(el.currentTime * 1000);
+  };
+  const setRate = (r: number) => {
+    setRateState(r);
+    if (audioRef.current) audioRef.current.playbackRate = r;
+  };
+
+  return { isPlaying, ready, failed, positionMs, durationMs: total, toggle, seek, skip, rate, setRate };
 }
