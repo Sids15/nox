@@ -1,42 +1,68 @@
-import { useAuth, usePrefs, useThemeColors, type NotifKey } from "@nox/features";
+import { useAuth, usePrefs, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
 import { accents, type AccentName, type ThemeName } from "@nox/ui";
 import Constants from "expo-constants";
-import { capitalize as cap } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { BellRing, ChevronLeft, ChevronRight } from "lucide-react-native";
-import { useState } from "react";
-import { Linking, Pressable, ScrollView, Text, View } from "react-native";
-import { Alert } from "../lib/alert";
+import type { LucideIcon } from "lucide-react-native";
+import {
+  BellRing,
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Keyboard,
+  LogOut,
+  Minus,
+  Palette,
+  Plus,
+  RefreshCw,
+  UserRound,
+} from "lucide-react-native";
+import { useRef, useState, type ReactNode } from "react";
+import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { TABULAR, pressScale } from "../components/menu";
 import { Sidebar } from "../components/sidebar";
-import { SegmentedControl } from "../components/tasks/segmented-control";
-import { useIdentity } from "../lib/use-identity";
-import { useSyncLabel } from "../lib/use-sync-label";
-import { ensurePermission, sendTestNotification } from "../lib/notifications";
-import { useIsDesktop } from "../lib/use-responsive";
+import { Alert } from "../lib/alert";
 import { goBack } from "../lib/go-back";
-import { SectionHeading } from "../components/section-heading";
+import { ensurePermission, sendTestNotification } from "../lib/notifications";
+import { useIdentity } from "../lib/use-identity";
+import { useIsDesktop } from "../lib/use-responsive";
+import { useSyncLabel } from "../lib/use-sync-label";
 
-const ACCENT_ORDER: AccentName[] = ["vermilion", "indigo", "moss", "plum"];
-const THEMES: ThemeName[] = ["light", "dark"];
+const ACCENTS: { key: AccentName; label: string }[] = [
+  { key: "vermilion", label: "Vermilion" },
+  { key: "indigo", label: "Indigo" },
+  { key: "moss", label: "Moss" },
+  { key: "plum", label: "Plum" },
+];
 /** From app.json rather than a hard-coded string that drifted from the real release. */
 const APP_VERSION = Constants.expoConfig?.version ?? "dev";
+const hourLabel = (h: number) => (h === 0 || h === 24 ? "12 AM" : h === 12 ? "12 PM" : h < 12 ? `${h} AM` : `${h - 12} PM`);
+const MOD = Platform.OS === "web" && typeof navigator !== "undefined" && /Mac/.test(navigator.platform) ? "⌘" : "Ctrl";
 
-function SectionLabel({ children }: { children: string }) {
-  return <SectionHeading className="mt-6">{children}</SectionHeading>;
-}
+type SectionKey = "appearance" | "tasks" | "notifications" | "account" | "about";
+const SECTIONS: { key: SectionKey; label: string; Icon: LucideIcon }[] = [
+  { key: "appearance", label: "Appearance", Icon: Palette },
+  { key: "tasks", label: "Tasks & calendar", Icon: CalendarDays },
+  { key: "notifications", label: "Notifications", Icon: BellRing },
+  { key: "account", label: "Account & sync", Icon: UserRound },
+  { key: "about", label: "About", Icon: Info },
+];
 
-/** 46×28 pill toggle (handoff): accent when on, chip + hairline when off. */
-function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+// ── Building blocks ───────────────────────────────────────────────────────────────────────────────
+
+function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
   const c = useThemeColors();
   return (
     <Pressable
       onPress={() => onChange(!value)}
       accessibilityRole="switch"
       accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
       style={{
-        width: 46,
-        height: 28,
+        width: 42,
+        height: 26,
         borderRadius: 99,
         padding: 2,
         justifyContent: "center",
@@ -46,32 +72,139 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
         borderColor: c.line,
       }}
     >
-      <View
-        style={{
-          width: 24,
-          height: 24,
-          borderRadius: 99,
-          backgroundColor: value ? "#FFFFFF" : c.ink3,
-        }}
-      />
+      <View style={{ width: 22, height: 22, borderRadius: 99, backgroundColor: value ? "#FFFFFF" : c.ink3 }} />
     </Pressable>
   );
 }
 
+function Segments<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; label: string }[]; onChange: (v: T) => void }) {
+  return (
+    <View className="bg-chip flex-row rounded-[9px] p-0.5">
+      {options.map((o) => (
+        <Pressable
+          key={String(o.v)}
+          onPress={() => onChange(o.v)}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: value === o.v }}
+          className={`h-[30px] justify-center rounded-[7px] px-3 ${value === o.v ? "bg-surface" : ""}`}
+          style={value === o.v ? { shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
+        >
+          <Text className={`text-[13px] font-semibold ${value === o.v ? "text-ink" : "text-ink-3"}`}>{o.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function Stepper({ value, onDec, onInc, label }: { value: string; onDec: () => void; onInc: () => void; label: string }) {
+  const c = useThemeColors();
+  return (
+    <View className="border-line flex-row items-center rounded-[9px] border">
+      <Pressable onPress={onDec} accessibilityRole="button" accessibilityLabel={`Earlier ${label}`} className="hover:bg-chip h-[30px] w-[30px] items-center justify-center rounded-l-[9px]">
+        <Minus size={13} color={c.ink2} strokeWidth={2.4} />
+      </Pressable>
+      <Text style={TABULAR} className="text-ink w-[58px] text-center text-[13px] font-semibold">
+        {value}
+      </Text>
+      <Pressable onPress={onInc} accessibilityRole="button" accessibilityLabel={`Later ${label}`} className="hover:bg-chip h-[30px] w-[30px] items-center justify-center rounded-r-[9px]">
+        <Plus size={13} color={c.ink2} strokeWidth={2.4} />
+      </Pressable>
+    </View>
+  );
+}
+
+/** One setting: its name and a line of explanation on the left, the control on the right. */
+function Row({ title, detail, children, last, onPress }: { title: string; detail?: string; children?: ReactNode; last?: boolean; onPress?: () => void }) {
+  const inner = (
+    <>
+      <View className="min-w-0 flex-1 pr-3">
+        <Text className="text-ink text-[14.5px] font-medium">{title}</Text>
+        {detail ? <Text className="text-ink-3 mt-0.5 text-[12.5px] leading-[17px]">{detail}</Text> : null}
+      </View>
+      {children}
+    </>
+  );
+  const cls = `min-h-[56px] flex-row items-center px-4 py-3 ${last ? "" : "border-line border-b"}`;
+  return onPress ? (
+    <Pressable onPress={onPress} accessibilityRole="button" className={`${cls} hover:bg-chip`}>
+      {inner}
+    </Pressable>
+  ) : (
+    <View className={cls}>{inner}</View>
+  );
+}
+
+function Group({ children }: { children: ReactNode }) {
+  return <View className="border-line bg-surface overflow-hidden rounded-[14px] border">{children}</View>;
+}
+
+/** A miniature page of the app in a theme, for picking Paper or Night. */
+function ThemeTile({ theme, selected, onPress, accent }: { theme: ThemeName; selected: boolean; onPress: () => void; accent: string }) {
+  const c = useThemeColors();
+  const paper = theme === "light";
+  const bg = paper ? "#F5F1E8" : "#12151F";
+  const ink = paper ? "#1B2131" : "#EDE7DA";
+  const line = paper ? "rgba(27,33,49,0.14)" : "rgba(237,231,218,0.14)";
+  return (
+    <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ checked: selected }} accessibilityLabel={paper ? "Paper theme" : "Night theme"} className="flex-1" style={pressScale}>
+      <View className="overflow-hidden rounded-[12px]" style={{ backgroundColor: bg, borderWidth: selected ? 2 : 1, borderColor: selected ? c.accent : c.line, height: 92, padding: 12 }}>
+        <View style={{ width: 54, height: 8, borderRadius: 3, backgroundColor: ink }} />
+        {[0.9, 0.7, 0.8].map((w, i) => (
+          <View key={i} className="mt-2.5 flex-row items-center gap-2">
+            <View style={{ width: 9, height: 9, borderRadius: 9, borderWidth: 1.5, borderColor: i === 0 ? accent : line, backgroundColor: i === 0 ? accent : "transparent" }} />
+            <View style={{ height: 5, borderRadius: 3, backgroundColor: line, width: `${w * 70}%` }} />
+          </View>
+        ))}
+      </View>
+      <View className="mt-2 flex-row items-center justify-center gap-1.5">
+        {selected && <Check size={13} color={c.accent} strokeWidth={2.6} />}
+        <Text className={`text-[13.5px] ${selected ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{paper ? "Paper" : "Night"}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function Shortcut({ keys, label }: { keys: string[]; label: string }) {
+  return (
+    <View className="border-line flex-row items-center border-b px-4 py-2.5">
+      <Text className="text-ink-2 flex-1 text-[13.5px]">{label}</Text>
+      <View className="flex-row gap-1">
+        {keys.map((k) => (
+          <View key={k} className="bg-chip border-line min-w-[24px] items-center rounded-[6px] border px-1.5 py-0.5">
+            <Text className="text-ink-2 text-[12px] font-semibold">{k}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Settings, in five sections: Appearance (Paper or Night, accent), Tasks & calendar (default view,
+ * week start, hours, completed tasks), Notifications, Account & sync, and About (version, shortcuts,
+ * privacy). On desktop the sections are listed on the left and scroll into view; phones get one column.
+ */
 export default function SettingsScreen() {
   const router = useRouter();
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
   const { session, signOut } = useAuth();
-  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif } =
-    usePrefs();
-
+  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif, calendar, setCalendar } = usePrefs();
   const sync = useSyncLabel();
+  const { name, initials } = useIdentity();
+  const email = session?.user?.email ?? "";
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
-  const email = session?.user?.email ?? "";
-  const { name, initials } = useIdentity();
+  const scroller = useRef<ScrollView>(null);
+  const offsets = useRef<Partial<Record<SectionKey, number>>>({});
+  const [current, setCurrent] = useState<SectionKey>("appearance");
+  const jump = (k: SectionKey) => {
+    setCurrent(k);
+    scroller.current?.scrollTo({ y: Math.max(0, (offsets.current[k] ?? 0) - 16), animated: true });
+  };
 
   const handleSignOut = async () => {
     setError(null);
@@ -84,169 +217,268 @@ export default function SettingsScreen() {
       setSigningOut(false);
     }
   };
-
-  // Turning a notification on requires permission; if it's denied, keep the toggle off and point the
-  // user to system settings. Turning off is always allowed.
   const sendTest = async () => {
     await sendTestNotification();
     Alert.alert(
       "Test sent",
-      "If no notification appears in a few seconds, check that notifications are enabled for Nox in your system settings (and that Focus Assist / Do Not Disturb is off).",
+      "If no notification appears in a few seconds, check that notifications are enabled for Nox in your system settings (and that Focus or Do Not Disturb is off).",
     );
   };
-
+  // Turning a notification on needs permission; if it's refused, keep it off and point to system settings.
   const notif = async (key: NotifKey, value: boolean) => {
     if (value && !(await ensurePermission())) {
-      Alert.alert(
-        "Notifications are off",
-        "Enable notifications for Nox in your system settings to use reminders.",
-        [
-          { text: "Not now", style: "cancel" },
-          { text: "Open settings", onPress: () => Linking.openSettings() },
-        ],
-      );
+      Alert.alert("Notifications are off", "Enable notifications for Nox in your system settings to use reminders.", [
+        { text: "Not now", style: "cancel" },
+        { text: "Open settings", onPress: () => Linking.openSettings() },
+      ]);
       return;
     }
     setNotif(key, value);
   };
+  const cal = (p: Partial<CalendarPrefs>) => setCalendar(p);
+
+  const section = (key: SectionKey, title: string, intro: string, body: ReactNode) => (
+    <View key={key} onLayout={(e) => (offsets.current[key] = e.nativeEvent.layout.y)} className="mt-8">
+      <Text className="text-ink font-serif text-[19px] font-bold">{title}</Text>
+      <Text className="text-ink-3 mb-3 mt-0.5 text-[13px]">{intro}</Text>
+      {body}
+    </View>
+  );
+
+  const content = (
+    <>
+      {/* Profile */}
+      <Pressable
+        onPress={() => router.push("/account")}
+        accessibilityRole="button"
+        accessibilityLabel="Account"
+        className="border-line bg-surface hover:border-accent/[0.4] mt-5 flex-row items-center gap-3.5 rounded-[14px] border p-4"
+      >
+        <View className="bg-accent/[0.14] h-12 w-12 items-center justify-center rounded-full">
+          <Text className="text-accent font-serif text-[17px] font-bold">{initials}</Text>
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text numberOfLines={1} className="text-ink text-[16px] font-semibold">
+            {name}
+          </Text>
+          <Text numberOfLines={1} className="text-ink-3 mt-0.5 text-[13px]">
+            {email || "Not signed in"}
+          </Text>
+        </View>
+        <Text className="text-ink-3 mr-1 text-[13px]">Account</Text>
+        <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
+      </Pressable>
+
+      {section(
+        "appearance",
+        "Appearance",
+        "How Nox looks on this device.",
+        <>
+          <View className="flex-row gap-3">
+            <ThemeTile theme="light" selected={theme === "light"} onPress={() => setTheme("light")} accent={accents[accent]} />
+            <ThemeTile theme="dark" selected={theme === "dark"} onPress={() => setTheme("dark")} accent={accents[accent]} />
+          </View>
+          <View className="mt-4">
+            <Group>
+              <View className="px-4 py-3">
+                <Text className="text-ink text-[14.5px] font-medium">Accent</Text>
+                <Text className="text-ink-3 mt-0.5 text-[12.5px]">Buttons, highlights and today's date.</Text>
+                <View className="mt-3 flex-row flex-wrap gap-2">
+                  {ACCENTS.map((a) => {
+                    const on = a.key === accent;
+                    return (
+                      <Pressable
+                        key={a.key}
+                        onPress={() => setAccent(a.key)}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: on }}
+                        accessibilityLabel={`${a.label} accent`}
+                        className={`flex-row items-center gap-2 rounded-[10px] border px-2.5 py-1.5 ${on ? "" : "border-line hover:bg-chip"}`}
+                        style={on ? { borderColor: accents[a.key], backgroundColor: `${accents[a.key]}14` } : undefined}
+                      >
+                        <View className="h-4 w-4 items-center justify-center rounded-full" style={{ backgroundColor: accents[a.key] }}>
+                          {on && <Check size={10} color="#fff" strokeWidth={3.2} />}
+                        </View>
+                        <Text className={`text-[13px] ${on ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{a.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </Group>
+          </View>
+        </>,
+      )}
+
+      {section(
+        "tasks",
+        "Tasks & calendar",
+        "How Tasks opens and what the calendar shows.",
+        <Group>
+          <Row title="Open Tasks as" detail="You can switch any time from the Tasks header.">
+            <Segments
+              value={calendar.view}
+              options={[
+                { v: "list", label: "List" },
+                { v: "day", label: "Day" },
+                { v: "week", label: isDesktop ? "Week" : "3 days" },
+              ]}
+              onChange={(v) => cal({ view: v })}
+            />
+          </Row>
+          <Row title="Week starts on">
+            <Segments value={calendar.weekStartsOn} options={[{ v: 1, label: "Monday" }, { v: 0, label: "Sunday" }]} onChange={(v) => cal({ weekStartsOn: v as 0 | 1 })} />
+          </Row>
+          <Row title="Day starts" detail="The first hour the calendar shows. Earlier tasks still appear.">
+            <Stepper label="start" value={hourLabel(calendar.startHour)} onDec={() => cal({ startHour: Math.max(0, calendar.startHour - 1) })} onInc={() => cal({ startHour: Math.min(calendar.endHour - 1, calendar.startHour + 1) })} />
+          </Row>
+          <Row title="Day ends">
+            <Stepper label="end" value={hourLabel(calendar.endHour)} onDec={() => cal({ endHour: Math.max(calendar.startHour + 1, calendar.endHour - 1) })} onInc={() => cal({ endHour: Math.min(24, calendar.endHour + 1) })} />
+          </Row>
+          <Row title="Show weekends" detail="In the week view.">
+            <Toggle label="Show weekends" value={calendar.showWeekends} onChange={(v) => cal({ showWeekends: v })} />
+          </Row>
+          <Row title="Show completed tasks" detail="In the calendar. Done tasks are struck through." last>
+            <Toggle label="Show completed tasks" value={calendar.showCompleted} onChange={(v) => cal({ showCompleted: v })} />
+          </Row>
+        </Group>,
+      )}
+
+      {section(
+        "notifications",
+        "Notifications",
+        "What Nox may tell you, and when.",
+        <Group>
+          <Row title="Morning summary" detail="8:00 AM · what's on today">
+            <Toggle label="Morning summary" value={morningSummary} onChange={(v) => notif("morningSummary", v)} />
+          </Row>
+          <Row title="End-of-day prompt" detail="9:00 PM · plan tomorrow">
+            <Toggle label="End-of-day prompt" value={endOfDayPrompt} onChange={(v) => notif("endOfDayPrompt", v)} />
+          </Row>
+          <Row title="Task reminders" detail="At the reminder times you set on each task">
+            <Toggle label="Task reminders" value={taskReminders} onChange={(v) => notif("taskReminders", v)} />
+          </Row>
+          <Row title="Send a test notification" detail="Check that reminders can reach this device" onPress={sendTest} last>
+            <BellRing size={17} color={c.accent} strokeWidth={2} />
+          </Row>
+        </Group>,
+      )}
+
+      {section(
+        "account",
+        "Account & sync",
+        "Your notebook lives in your account and syncs to every device you sign in on.",
+        <Group>
+          <Row title="Sync" detail={sync.detail ?? "All changes saved"}>
+            <View className="flex-row items-center gap-2">
+              <View style={{ width: 8, height: 8, borderRadius: 99, backgroundColor: sync.color }} />
+              <Text className="text-ink-2 text-[13.5px] font-medium">{sync.title}</Text>
+            </View>
+          </Row>
+          <Row title="Account" detail="Name, email, password, and deleting your account" onPress={() => router.push("/account")}>
+            <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
+          </Row>
+          <Row title="Sign out" detail="Your notes stay in your account." onPress={handleSignOut} last>
+            {signingOut ? <RefreshCw size={16} color={c.ink3} strokeWidth={2} /> : <LogOut size={16} color={c.high} strokeWidth={2} />}
+          </Row>
+        </Group>,
+      )}
+      {error ? <Text className="text-high mt-2 text-[13px]">{error}</Text> : null}
+
+      {section(
+        "about",
+        "About",
+        `Nox ${APP_VERSION}`,
+        <>
+          {isDesktop && (
+            <Group>
+              <View className="border-line flex-row items-center gap-2 border-b px-4 py-3">
+                <Keyboard size={15} color={c.ink2} strokeWidth={2} />
+                <Text className="text-ink text-[14.5px] font-medium">Keyboard shortcuts</Text>
+              </View>
+              <Shortcut keys={[MOD, "K"]} label="Search everything" />
+              <Shortcut keys={["⌥", "1–4"]} label="Ideas, Notes, Tasks, Resources" />
+              <Shortcut keys={["Enter"]} label="Add the task you're typing" />
+              <Shortcut keys={[MOD, "Enter"]} label="Add a task from anywhere in the box" />
+              <View className="flex-row items-center px-4 py-2.5">
+                <Text className="text-ink-2 flex-1 text-[13.5px]">Close a dialog or menu</Text>
+                <View className="bg-chip border-line rounded-[6px] border px-1.5 py-0.5">
+                  <Text className="text-ink-2 text-[12px] font-semibold">Esc</Text>
+                </View>
+              </View>
+            </Group>
+          )}
+          <Text className="text-ink-3 mt-4 text-[12.5px] leading-[19px]">
+            Your notes, ideas, tasks and resources are stored in your account and visible only to you. Dictation in Chrome and Edge is transcribed by the browser's speech service; Nox doesn't record or keep the audio.
+          </Text>
+        </>,
+      )}
+    </>
+  );
+
+  const header = (
+    <View className="flex-row items-center gap-2">
+      <Pressable onPress={() => goBack("/tasks")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Back" className="hover:bg-chip -ml-2 h-9 w-9 items-center justify-center rounded-[10px]">
+        <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
+      </Pressable>
+      <Text className="text-ink font-serif text-[28px] font-bold">Settings</Text>
+    </View>
+  );
+
+  if (!isDesktop) {
+    return (
+      <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 48, paddingHorizontal: 20, paddingTop: 8 }} showsVerticalScrollIndicator={false}>
+          {header}
+          {content}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <View className="flex-1 flex-row">
-      {isDesktop && <Sidebar />}
-      <View className="flex-1">
-      <ScrollView contentContainerStyle={{ paddingBottom: 40, maxWidth: 620, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 26 } : null) }} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View className="px-screen flex-row items-center gap-3 pt-2">
-          <Pressable
-            onPress={() => goBack("/tasks")}
-            hitSlop={8}
-            accessibilityLabel="Go back"
-            className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
-          >
-            <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
-          </Pressable>
-          <Text className="text-ink font-serif text-2xl font-bold tracking-[-0.01em]">Settings</Text>
-        </View>
-
-        {/* Profile card */}
-        <Pressable
-          onPress={() => router.push("/account")}
-          accessibilityLabel="Account"
-          className="mx-[20px] border-line bg-surface rounded-card mt-4 flex-row items-center gap-[13px] border p-[14px]"
-        >
-          <View className="bg-accent/[0.18] h-11 w-11 items-center justify-center rounded-full">
-            <Text className="text-accent text-[15px] font-bold">{initials}</Text>
-          </View>
-          <View className="flex-1">
-            <Text className="text-ink text-[15.5px] font-semibold">{name}</Text>
-            <Text className="text-ink-3 mt-0.5 text-[12px]">{email || "not signed in"}</Text>
-          </View>
-          <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
-        </Pressable>
-
-        {/* Appearance */}
-        <View className="px-screen">
-          <SectionLabel>APPEARANCE</SectionLabel>
-        </View>
-        <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
-          {/* Both choices visible at once. This used to be a row reading "Dark ›" that flipped the
-              theme on tap — the chevron promised a screen that never opened. */}
-          <View className="border-line flex-row items-center border-b px-[14px] py-[9px]">
-            <Text className="text-ink flex-1 text-[14.5px]">Theme</Text>
-            <View style={{ width: 176 }}>
-              <SegmentedControl
-                value={theme}
-                onChange={setTheme}
-                options={THEMES.map((t) => ({ value: t, label: cap(t) }))}
-              />
-            </View>
-          </View>
-          <View className="flex-row items-center px-[14px] py-[13px]">
-            <Text className="text-ink flex-1 text-[14.5px]">Accent</Text>
-            <View className="flex-row items-center gap-[9px]">
-              {ACCENT_ORDER.map((a) => {
-                const selected = a === accent;
+        <Sidebar />
+        <View className="flex-1 flex-row justify-center">
+          {/* Section links */}
+          <View className="w-[200px] pr-4 pt-[30px]">
+            <View className="gap-0.5" style={{ marginTop: 52 }}>
+              {SECTIONS.map(({ key, label, Icon }) => {
+                const on = current === key;
                 return (
                   <Pressable
-                    key={a}
-                    onPress={() => setAccent(a)}
-                    accessibilityLabel={`${a} accent`}
-                    accessibilityState={{ selected }}
-                    style={{
-                      borderRadius: 99,
-                      borderWidth: 1.5,
-                      padding: 2.5,
-                      borderColor: selected ? accents[a] : "transparent",
-                    }}
+                    key={key}
+                    onPress={() => jump(key)}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Go to ${label}`}
+                    className={`h-[36px] flex-row items-center gap-2.5 rounded-[10px] px-3 ${on ? "bg-accent/[0.12]" : "hover:bg-chip"}`}
                   >
-                    <View style={{ width: 20, height: 20, borderRadius: 99, backgroundColor: accents[a] }} />
+                    <Icon size={15} color={on ? c.accent : c.ink2} strokeWidth={2} />
+                    <Text className={`text-[14px] ${on ? "text-accent font-semibold" : "text-ink-2 font-medium"}`}>{label}</Text>
                   </Pressable>
                 );
               })}
             </View>
           </View>
-        </View>
-
-        {/* Notifications */}
-        <View className="px-screen">
-          <SectionLabel>NOTIFICATIONS</SectionLabel>
-        </View>
-        <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
-          <View className="border-line flex-row items-center border-b px-[14px] py-3">
-            <View className="flex-1">
-              <Text className="text-ink text-[14.5px]">Morning summary</Text>
-              <Text className="text-ink-3 mt-0.5 text-[10.5px]">8:00 AM</Text>
-            </View>
-            <Toggle value={morningSummary} onChange={(v) => notif("morningSummary", v)} />
-          </View>
-          <View className="border-line flex-row items-center border-b px-[14px] py-3">
-            <View className="flex-1">
-              <Text className="text-ink text-[14.5px]">End-of-day prompt</Text>
-              <Text className="text-ink-3 mt-0.5 text-[10.5px]">9:00 PM · plan tomorrow</Text>
-            </View>
-            <Toggle value={endOfDayPrompt} onChange={(v) => notif("endOfDayPrompt", v)} />
-          </View>
-          <View className="border-line flex-row items-center border-b px-[14px] py-3">
-            <Text className="text-ink flex-1 text-[14.5px]">Task reminders</Text>
-            <Toggle value={taskReminders} onChange={(v) => notif("taskReminders", v)} />
-          </View>
-          <Pressable onPress={sendTest} className="flex-row items-center px-[14px] py-3">
-            <View className="flex-1">
-              <Text className="text-ink text-[14.5px]">Send test notification</Text>
-              <Text className="text-ink-3 mt-0.5 text-[11.5px]">Check that reminders can reach you</Text>
-            </View>
-            <BellRing size={16} color={c.accent} strokeWidth={1.9} />
-          </Pressable>
-        </View>
-
-        {/* Sync */}
-        <View className="px-screen">
-          <SectionLabel>SYNC</SectionLabel>
-        </View>
-        <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
-          <View className="flex-row items-center gap-[10px] px-[14px] py-3">
-            <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: sync.color }} />
-            <Text className="text-ink flex-1 text-[14.5px] font-medium">{sync.title}</Text>
-            <Text className="text-ink-3 text-[10.5px]">{sync.detail ?? "all changes saved"}</Text>
-          </View>
-        </View>
-
-        {/* Sign out */}
-        <View className="px-screen mt-4">
-          <Pressable
-            disabled={signingOut}
-            onPress={handleSignOut}
-            className="bg-high/[0.09] items-center rounded-[14px] py-[13px]"
+          <ScrollView
+            ref={scroller}
+            style={{ maxWidth: 640, flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 80, paddingTop: 30, paddingHorizontal: 8 }}
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={64}
+            onScroll={(e) => {
+              const y = e.nativeEvent.contentOffset.y + 80;
+              let k: SectionKey = "appearance";
+              for (const s of SECTIONS) if ((offsets.current[s.key] ?? Infinity) <= y) k = s.key;
+              setCurrent(k);
+            }}
           >
-            <Text className="text-high text-[14px] font-semibold">Sign out</Text>
-          </Pressable>
-          {error ? <Text className="text-high mt-2 text-center text-[13px]">{error}</Text> : null}
+            {header}
+            {content}
+          </ScrollView>
+          <View className="w-[60px]" />
         </View>
-
-        <Text className="text-ink-3 mt-3 text-center text-[10px]">nox {APP_VERSION}</Text>
-      </ScrollView>
-      </View>
       </View>
     </SafeAreaView>
   );
