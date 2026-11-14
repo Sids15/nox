@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { AccentName, ThemeName } from "@nox/ui";
+import { accents, DEFAULT_ACCENT, type AccentName, type ThemeName } from "@nox/ui";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -25,15 +25,15 @@ interface PrefsState {
 
 /**
  * User preferences (theme, accent, notification toggles), persisted to AsyncStorage. Defaults match
- * the handoff Settings screen: dark + violet, morning/EOD summaries on, task reminders on. The
+ * Ink & Paper: light + vermilion, morning/EOD summaries on, task reminders on. The
  * toggles drive local notification scheduling (apps/mobile/lib/use-notifications.ts); delivery is
  * verified in a dev build (Expo Go dropped notification support in SDK 53+).
  */
 export const usePrefs = create<PrefsState>()(
   persist(
     (set) => ({
-      theme: "dark",
-      accent: "violet",
+      theme: "light",
+      accent: DEFAULT_ACCENT,
       morningSummary: true,
       endOfDayPrompt: true,
       taskReminders: true,
@@ -49,6 +49,19 @@ export const usePrefs = create<PrefsState>()(
     {
       name: "nox:prefs",
       storage: createJSONStorage(() => AsyncStorage),
+      // v1 = the Ink & Paper redesign. The old accents (violet/green/coral/blue) no longer exist:
+      // map each to its nearest new one, and move everyone onto the new light default once.
+      version: 1,
+      migrate: (persisted, from) => {
+        const s = (persisted ?? {}) as Partial<PrefsState> & { accent?: string };
+        if (from < 1) {
+          const map: Record<string, AccentName> = { violet: "indigo", blue: "indigo", green: "moss", coral: "vermilion" };
+          s.accent = map[s.accent ?? ""] ?? DEFAULT_ACCENT;
+          s.theme = "light";
+        }
+        if (!s.accent || !(s.accent in accents)) s.accent = DEFAULT_ACCENT;
+        return s as PrefsState;
+      },
       partialize: (s) => ({
         theme: s.theme,
         accent: s.accent,

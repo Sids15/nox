@@ -16,14 +16,14 @@ import { ensurePermission, sendTestNotification } from "../lib/notifications";
 import { useIsDesktop } from "../lib/use-responsive";
 import { goBack } from "../lib/go-back";
 
-const ACCENT_ORDER: AccentName[] = ["violet", "green", "coral", "blue"];
-const THEMES: ThemeName[] = ["dark", "light"];
+const ACCENT_ORDER: AccentName[] = ["vermilion", "indigo", "moss", "plum"];
+const THEMES: ThemeName[] = ["light", "dark"];
 /** From app.json rather than a hard-coded string that drifted from the real release. */
 const APP_VERSION = Constants.expoConfig?.version ?? "dev";
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <Text className="text-ink-3 mb-2 mt-6 pl-0.5 font-mono text-[10px] font-semibold tracking-[0.14em]">
+    <Text className="text-ink-3 mb-2 mt-6 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">
       {children}
     </Text>
   );
@@ -129,7 +129,7 @@ export default function SettingsScreen() {
           >
             <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
           </Pressable>
-          <Text className="text-ink text-2xl font-bold tracking-[-0.02em]">Settings</Text>
+          <Text className="text-ink font-serif text-2xl font-bold tracking-[-0.01em]">Settings</Text>
         </View>
 
         {/* Profile card */}
@@ -199,14 +199,14 @@ export default function SettingsScreen() {
           <View className="border-line flex-row items-center border-b px-[14px] py-3">
             <View className="flex-1">
               <Text className="text-ink text-[14.5px]">Morning summary</Text>
-              <Text className="text-ink-3 mt-0.5 font-mono text-[10.5px]">8:00 AM</Text>
+              <Text className="text-ink-3 mt-0.5 text-[10.5px]">8:00 AM</Text>
             </View>
             <Toggle value={morningSummary} onChange={(v) => notif("morningSummary", v)} />
           </View>
           <View className="border-line flex-row items-center border-b px-[14px] py-3">
             <View className="flex-1">
               <Text className="text-ink text-[14.5px]">End-of-day prompt</Text>
-              <Text className="text-ink-3 mt-0.5 font-mono text-[10.5px]">9:00 PM · plan tomorrow</Text>
+              <Text className="text-ink-3 mt-0.5 text-[10.5px]">9:00 PM · plan tomorrow</Text>
             </View>
             <Toggle value={endOfDayPrompt} onChange={(v) => notif("endOfDayPrompt", v)} />
           </View>
@@ -231,7 +231,7 @@ export default function SettingsScreen() {
           <View className="flex-row items-center gap-[10px] px-[14px] py-3">
             <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: sync.color }} />
             <Text className="text-ink flex-1 text-[14.5px] font-medium">{sync.title}</Text>
-            <Text className="text-ink-3 font-mono text-[10.5px]">{sync.detail ?? "all changes saved"}</Text>
+            <Text className="text-ink-3 text-[10.5px]">{sync.detail ?? "all changes saved"}</Text>
           </View>
         </View>
 
@@ -247,7 +247,7 @@ export default function SettingsScreen() {
           {error ? <Text className="text-high mt-2 text-center text-[13px]">{error}</Text> : null}
         </View>
 
-        <Text className="text-ink-3 mt-3 text-center font-mono text-[10px]">nox {APP_VERSION}</Text>
+        <Text className="text-ink-3 mt-3 text-center text-[10px]">nox {APP_VERSION}</Text>
       </ScrollView>
       </View>
       </View>

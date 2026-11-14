@@ -21,16 +21,16 @@ module.exports = {
         // Text ramp (handoff: text / text2 .62 / text3 .34).
         ink: {
           DEFAULT: c("--ink"),
-          2: a("--ink-dim", 0.62),
-          3: a("--ink-dim", 0.34),
+          2: c("--ink-2"),
+          3: c("--ink-3"),
           // compat aliases for pre-handoff placeholder screens
-          secondary: a("--ink-dim", 0.62),
-          muted: a("--ink-dim", 0.34),
+          secondary: c("--ink-2"),
+          muted: c("--ink-3"),
         },
 
-        line: a("--line", 0.075),
-        chip: a("--chip", 0.06),
-        border: a("--line", 0.075), // alias so existing `border-border` keeps resolving
+        line: a("--line", 0.1),
+        chip: a("--chip", 0.055),
+        border: a("--line", 0.1), // alias so existing `border-border` keeps resolving
 
         accent: {
           DEFAULT: c("--accent"),
@@ -63,6 +63,9 @@ module.exports = {
           "Arial",
           "sans-serif",
         ],
+        // Display voice: Georgia ships on iOS, macOS and Windows, so headings look the same everywhere
+        // with nothing to download (Android falls back to its sans).
+        serif: ["Georgia", "Iowan Old Style", "ui-serif", "Times New Roman", "serif"],
         mono: ["Menlo", "ui-monospace", "SFMono-Regular", "Consolas", "Liberation Mono", "monospace"],
       },
       borderRadius: {

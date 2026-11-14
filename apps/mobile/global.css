@@ -4,34 +4,41 @@
 
 /*
  * Nox theme variables — RGB channel triples consumed by the Tailwind preset as
- * `rgb(var(--x) / <alpha>)`. Dark-first: these :root values apply unconditionally so the app is
- * always dark, regardless of the device's system appearance. (Expo Go ignores app.json's
- * userInterfaceStyle, so we can't rely on the OS forcing dark — hence no prefers-color-scheme
- * light block here.) The light theme lands with the Settings slice, driven at RUNTIME via a root
- * `vars()` override / colorScheme toggle — not the OS media query. Accent switching works the same
- * way (override --accent on a root wrapper).
+ * `rgb(var(--x) / <alpha>)`. These :root values are the first-paint fallback (Ink & Paper, light);
+ * the root layout overrides them at runtime with `vars()` from the user's theme and accent
+ * (packages/ui/src/colors.ts is the source of truth).
  */
 @layer base {
   :root {
-    --bg: 12 12 19; /* #0C0C13 */
-    --surface: 20 20 29; /* #14141D */
-    --elev: 27 27 38; /* #1B1B26 */
-    --sheet: 24 24 34; /* #181822 */
-    --ink: 241 241 247; /* #F1F1F7 primary text */
-    --ink-dim: 228 228 245; /* base for text2 (.62) / text3 (.34) */
-    --line: 255 255 255; /* hairline, applied at .075 */
-    --chip: 255 255 255; /* subtle fill, applied at .06 */
-    --tabbar: 23 23 33; /* floating tab bar, applied at .86 + blur */
+    --bg: 245 241 232; /* #F5F1E8 paper */
+    --surface: 251 248 241;
+    --elev: 255 253 248;
+    --sheet: 255 253 248;
+    --ink: 27 33 49; /* #1B2131 ink navy */
+    --ink-2: 74 80 99;
+    --ink-3: 110 111 119;
+    --line: 27 33 49; /* hairline, applied at .1 */
+    --chip: 27 33 49; /* subtle fill, applied at .055 */
+    --tabbar: 251 248 241;
 
-    --accent: 124 111 242; /* #7C6FF2 violet (default; user-switchable) */
+    --accent: 217 71 43; /* #D9472B vermilion (default; user-switchable) */
     --on-accent: 255 255 255;
 
-    --critical: 214 69 69; /* #D64545 */
-    --high: 210 96 74; /* #D2604A — high / destructive / overdue */
-    --medium: 201 138 43; /* #C98A2B — medium / carried-over */
-    --success: 47 157 114; /* #2F9D72 — success / synced */
-    --info: 76 127 224; /* #4C7FE0 — info / exploring */
+    --critical: 194 54 43;
+    --high: 208 96 60;
+    --medium: 176 122 30;
+    --success: 78 138 79;
+    --info: 68 103 184;
   }
+}
+
+/* Text selection and the caret carry the accent instead of the browser's blue. */
+::selection {
+  background: rgb(var(--accent) / 0.22);
+}
+input,
+textarea {
+  caret-color: rgb(var(--accent));
 }
 
 /*

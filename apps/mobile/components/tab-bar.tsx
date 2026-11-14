@@ -1,4 +1,4 @@
-import { useThemeColors } from "@nox/features";
+import { usePrefs, useThemeColors } from "@nox/features";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import {
@@ -27,6 +27,7 @@ const TAB_META: Record<string, { label: string; Icon: LucideIcon }> = {
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const c = useThemeColors();
+  const theme = usePrefs((st) => st.theme);
 
   return (
     <View
@@ -43,7 +44,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         elevation: 12,
       }}
     >
-      <BlurView intensity={18} tint="dark" style={{ borderRadius: 31, overflow: "hidden" }}>
+      <BlurView intensity={18} tint={theme === "dark" ? "dark" : "light"} style={{ borderRadius: 31, overflow: "hidden" }}>
         <View
           className="border-line bg-tabbar flex-row border"
           style={{ height: 62, borderRadius: 31 }}

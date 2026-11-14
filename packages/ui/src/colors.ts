@@ -8,47 +8,57 @@
 
 export type ThemeName = "dark" | "light";
 
-/** User-selectable accents (default = violet). Accent + semantic colors are theme-independent. */
+/**
+ * Ink & Paper. The world is stationery: warm paper, ink-navy type, one stamped accent — vermilion
+ * by default, the red of a hanko seal or a diary's date. Night mode is the same notebook under a
+ * desk lamp: ink-blue paper, warm off-white type. See DESIGN.md.
+ */
 export const accents = {
-  violet: "#7C6FF2",
-  green: "#2F9D72",
-  coral: "#D2604A",
-  blue: "#4C7FE0",
+  vermilion: "#D9472B",
+  indigo: "#3E5BA9",
+  moss: "#4F7A4A",
+  plum: "#8A4F7D",
 } as const;
 export type AccentName = keyof typeof accents;
+export const DEFAULT_ACCENT: AccentName = "vermilion";
 
-/** Semantic colors (same across themes). */
+/** Semantic colors (same across themes), tuned to sit on paper and on ink. */
 const SEMANTIC = {
-  critical: "#D64545",
-  high: "#D2604A", // also destructive / overdue
-  medium: "#C98A2B", // also carried-over
-  success: "#2F9D72", // also synced
-  info: "#4C7FE0", // also exploring
+  critical: "#C2362B",
+  high: "#D0603C", // also destructive / overdue
+  medium: "#B07A1E", // ochre — also carried-over
+  success: "#4E8A4F", // also synced
+  info: "#4467B8",
 } as const;
 
-/** RGB channel triples per theme (consumed as `rgb(var(--x) / <alpha>)`). */
+/**
+ * RGB channel triples per theme (consumed as `rgb(var(--x) / <alpha>)`). ink2/ink3 are solid
+ * colours, not alpha over ink, so secondary and placeholder text hold 4.5:1 on their own paper.
+ */
 const PALETTE: Record<ThemeName, Record<string, string>> = {
-  dark: {
-    bg: "12 12 19",
-    surface: "20 20 29",
-    elev: "27 27 38",
-    sheet: "24 24 34",
-    ink: "241 241 247",
-    inkDim: "228 228 245", // base for text2 (.62) / text3 (.34)
-    line: "255 255 255",
-    chip: "255 255 255",
-    tabbar: "23 23 33",
-  },
   light: {
-    bg: "244 244 247",
-    surface: "255 255 255",
-    elev: "255 255 255",
-    sheet: "255 255 255",
-    ink: "23 23 31",
-    inkDim: "28 28 42",
-    line: "22 22 40",
-    chip: "22 22 40",
-    tabbar: "255 255 255",
+    bg: "245 241 232", // #F5F1E8 paper
+    surface: "251 248 241", // #FBF8F1
+    elev: "255 253 248", // #FFFDF8
+    sheet: "255 253 248",
+    ink: "27 33 49", // #1B2131 ink navy
+    ink2: "74 80 99", // #4A5063
+    ink3: "110 111 119", // #6E6F77
+    line: "27 33 49",
+    chip: "27 33 49",
+    tabbar: "251 248 241",
+  },
+  dark: {
+    bg: "18 21 31", // #12151F ink night
+    surface: "24 28 40", // #181C28
+    elev: "31 36 51", // #1F2433
+    sheet: "28 33 48",
+    ink: "237 231 218", // #EDE7DA warm paper white
+    ink2: "185 180 168", // #B9B4A8
+    ink3: "140 138 134", // #8C8A86
+    line: "237 231 218",
+    chip: "237 231 218",
+    tabbar: "24 28 40",
   },
 };
 
@@ -71,7 +81,8 @@ export function themeVars(theme: ThemeName, accentHex: string): Record<string, s
     "--elev": p.elev!,
     "--sheet": p.sheet!,
     "--ink": p.ink!,
-    "--ink-dim": p.inkDim!,
+    "--ink-2": p.ink2!,
+    "--ink-3": p.ink3!,
     "--line": p.line!,
     "--chip": p.chip!,
     "--tabbar": p.tabbar!,
@@ -115,9 +126,9 @@ export function resolveColors(theme: ThemeName, accentHex: string): ThemeColors 
     elev: rgb(p.elev!),
     sheet: rgb(p.sheet!),
     ink: rgb(p.ink!),
-    ink2: rgba(p.inkDim!, 0.62),
-    ink3: rgba(p.inkDim!, 0.34),
-    line: rgba(p.line!, 0.075),
+    ink2: rgb(p.ink2!),
+    ink3: rgb(p.ink3!),
+    line: rgba(p.line!, 0.1),
     chip: rgba(p.chip!, 0.06),
     tabbar: rgba(p.tabbar!, 0.86),
     accent: accentHex,
@@ -148,5 +159,5 @@ export function navThemeFor(theme: ThemeName, accentHex: string) {
   } as const;
 }
 
-/** Dark + violet resolved colors — a static fallback for any non-hook context. */
-export const dark: ThemeColors = resolveColors("dark", accents.violet);
+/** Light + vermilion resolved colors — a static fallback for any non-hook context. */
+export const dark: ThemeColors = resolveColors("light", accents.vermilion);

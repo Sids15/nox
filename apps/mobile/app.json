@@ -6,8 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "nox",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0C0C13",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F5F1E8",
     "newArchEnabled": true,
     "web": {
       "bundler": "metro",
@@ -34,14 +34,14 @@
       "@sentry/react-native",
       "@react-native-community/datetimepicker",
       ["expo-audio", { "microphonePermission": "Allow Nox to record voice notes." }],
-      ["expo-notifications", { "color": "#7C5CFF" }],
+      ["expo-notifications", { "color": "#D9472B" }],
       [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#0C0C13"
+          "backgroundColor": "#F5F1E8"
         }
       ],
       "expo-web-browser"
