@@ -10,6 +10,7 @@ import {
 } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { withAlpha } from "../lib/color";
 
 /** Route name → icon + label. Order here is cosmetic; the actual order comes from Tabs.Screen. */
 const TAB_META: Record<string, { label: string; Icon: LucideIcon }> = {
@@ -37,17 +38,20 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         left: 20,
         right: 20,
         bottom: Math.max(insets.bottom, 20) + 12,
-        shadowColor: "rgb(6,6,14)",
-        shadowOpacity: 0.25,
-        shadowRadius: 22,
-        shadowOffset: { width: 0, height: 18 },
+        // Rounded like the bar itself, or the web draws the shadow as a square behind it.
+        borderRadius: 31,
+        shadowColor: "#1B2131",
+        shadowOpacity: 0.14,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 8 },
         elevation: 12,
       }}
     >
       <BlurView intensity={18} tint={theme === "dark" ? "dark" : "light"} style={{ borderRadius: 31, overflow: "hidden" }}>
         <View
-          className="border-line bg-tabbar flex-row border"
-          style={{ height: 62, borderRadius: 31 }}
+          className="border-line flex-row border"
+          // Nearly opaque: at 86% the list underneath showed through and collided with the labels.
+          style={{ height: 62, borderRadius: 31, backgroundColor: withAlpha(c.surface, 0.97) }}
         >
           {state.routes.map((route, index) => {
             const meta = TAB_META[route.name];

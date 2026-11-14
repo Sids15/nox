@@ -75,6 +75,8 @@ function NoteList({
                 selected={n.id === selectedId}
                 onPress={() => onOpen(n)}
                 folderName={folderNameOf?.(n)}
+                // Under "Today" / "Yesterday" the day is already said: show the time.
+                timeOnly={g.label === "Today" || g.label === "Yesterday"}
               />
             ))}
           </View>
@@ -102,13 +104,18 @@ function FolderNavRow({
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row items-center gap-2.5 rounded-[10px] px-[11px] py-2 ${active ? "bg-accent/[0.12]" : "hover:bg-chip"}`}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      // Same row as the Resources library rail and the sidebar: medium weight, semibold when current.
+      className={`h-[36px] flex-row items-center gap-2.5 rounded-[10px] px-[11px] ${active ? "bg-accent/[0.12]" : "hover:bg-chip"}`}
     >
-      <Icon size={16} color={active ? c.accent : c.ink2} strokeWidth={1.8} />
-      <Text numberOfLines={1} className={`flex-1 text-[13px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>
+      <Icon size={15} color={active ? c.accent : c.ink2} strokeWidth={2} />
+      <Text numberOfLines={1} className={`flex-1 text-[14px] ${active ? "text-accent font-semibold" : "text-ink-2 font-medium"}`}>
         {label}
       </Text>
-      <Text className="text-ink-3 text-[10.5px] font-medium">{count}</Text>
+      <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[12px]">
+        {count}
+      </Text>
     </Pressable>
   );
 }

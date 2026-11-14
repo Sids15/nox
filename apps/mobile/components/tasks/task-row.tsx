@@ -51,9 +51,8 @@ export function TaskRow({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${task.title}${when ? `, ${when}` : ""}`}
-      className={`min-h-[54px] flex-row items-center pr-3 ${selected ? "bg-chip" : "bg-bg hover:bg-surface"}`}
+      className={`min-h-[54px] flex-row items-center pr-3 ${selected ? "bg-accent/[0.1] rounded-[10px]" : "bg-bg hover:bg-surface"}`}
     >
-      {selected && <View className="bg-accent absolute bottom-0 left-0 top-0 w-[2px]" />}
 
       {timeGutter && (
         <Text

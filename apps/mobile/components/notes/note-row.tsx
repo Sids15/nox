@@ -3,7 +3,7 @@ import type { Note } from "@nox/types";
 import { Folder, Image as ImageIcon, Link2, Mic, Pin } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { TagChip } from "../tag-chip";
-import { noteBody, noteMedia, noteTitle, noteWhen } from "./note-utils";
+import { noteBody, noteMedia, noteTime, noteTitle, noteWhen } from "./note-utils";
 
 /**
  * A note in a list: the title, two lines of what it says, then when it was edited, its folder (when
@@ -15,12 +15,15 @@ export function NoteRow({
   onPress,
   selected = false,
   folderName,
+  timeOnly = false,
 }: {
   note: Note;
   onPress: () => void;
   selected?: boolean;
   /** Shown when the list mixes folders (All notes, search). */
   folderName?: string;
+  /** The list's heading already names the day, so show just the time. */
+  timeOnly?: boolean;
 }) {
   const c = useThemeColors();
   const body = noteBody(note);
@@ -45,7 +48,7 @@ export function NoteRow({
         </Text>
       ) : null}
       <View className="mt-1.5 flex-row flex-wrap items-center gap-x-2 gap-y-1">
-        <Text className="text-ink-3 text-[12px]">{noteWhen(note.updated_at)}</Text>
+        <Text className="text-ink-3 text-[12px]">{timeOnly ? noteTime(note.updated_at) : noteWhen(note.updated_at)}</Text>
         {folderName && (
           <View className="flex-row items-center gap-1">
             <Folder size={11} color={c.ink3} strokeWidth={2} />

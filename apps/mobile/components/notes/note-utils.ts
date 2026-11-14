@@ -93,3 +93,9 @@ export function groupNotesByDate(notes: Note[], now = new Date()): { label: stri
   }
   return groups;
 }
+
+/** Just the time a note was edited ("3:40 PM"), for lists whose heading already names the day. */
+export function noteTime(iso: string): string {
+  const d = new Date(iso);
+  return formatTime12(`${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`)!;
+}
