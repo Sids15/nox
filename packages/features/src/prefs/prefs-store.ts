@@ -5,6 +5,30 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 export type NotifKey = "morningSummary" | "endOfDayPrompt" | "taskReminders";
 
+/** How the Tasks calendar looks. Every field is the user's to change from the calendar's settings. */
+export interface CalendarPrefs {
+  /** Tasks opens as a list, or the calendar's day or week. */
+  view: "list" | "day" | "week";
+  /** First and last hour drawn on the grid (0–24). */
+  startHour: number;
+  endHour: number;
+  /** 0 = Sunday, 1 = Monday. */
+  weekStartsOn: 0 | 1;
+  showWeekends: boolean;
+  showCompleted: boolean;
+  density: "compact" | "comfortable";
+}
+
+export const DEFAULT_CALENDAR: CalendarPrefs = {
+  view: "list",
+  startHour: 7,
+  endHour: 22,
+  weekStartsOn: 1,
+  showWeekends: true,
+  showCompleted: true,
+  density: "comfortable",
+};
+
 interface PrefsState {
   theme: ThemeName;
   accent: AccentName;
@@ -15,6 +39,8 @@ interface PrefsState {
   lastCarryoverOn: string | null;
   /** Onboarding finished on this device (the account also records it — see useOnboarded). */
   onboarded: boolean;
+  calendar: CalendarPrefs;
+  setCalendar: (patch: Partial<CalendarPrefs>) => void;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -42,6 +68,8 @@ export const usePrefs = create<PrefsState>()(
       taskReminders: true,
       lastCarryoverOn: null,
       onboarded: false,
+      calendar: DEFAULT_CALENDAR,
+      setCalendar: (patch) => set((s) => ({ calendar: { ...s.calendar, ...patch } })),
       hydrated: false,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -65,7 +93,13 @@ export const usePrefs = create<PrefsState>()(
           s.theme = "light";
         }
         if (!s.accent || !(s.accent in accents)) s.accent = DEFAULT_ACCENT;
+        s.calendar = { ...DEFAULT_CALENDAR, ...(s.calendar ?? {}) };
         return s as PrefsState;
+      },
+      // Fill in calendar settings added after the stored copy was written.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<PrefsState>;
+        return { ...current, ...p, calendar: { ...DEFAULT_CALENDAR, ...(p.calendar ?? {}) } };
       },
       partialize: (s) => ({
         theme: s.theme,
@@ -75,6 +109,7 @@ export const usePrefs = create<PrefsState>()(
         taskReminders: s.taskReminders,
         lastCarryoverOn: s.lastCarryoverOn,
         onboarded: s.onboarded,
+        calendar: s.calendar,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first
