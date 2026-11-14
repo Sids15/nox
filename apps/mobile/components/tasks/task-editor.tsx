@@ -66,7 +66,7 @@ type PickerState = { mode: "date" | "time"; target: "due" | "reminder" };
  * is what the back button / "Add task" / post-delete flow calls (router.back on the route, clear the
  * selection in the split). Renders no SafeAreaView / Sidebar — the caller owns the frame.
  */
-export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean; onClose: () => void }) {
+export function TaskEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
   const theme = usePrefs((s) => s.theme);
@@ -371,24 +371,6 @@ export function TaskEditor({ id, isNew, onClose }: { id: string; isNew: boolean;
           created {shortDate(task.created_at).toLowerCase()} · updated {relativeFromNow(task.updated_at)}
         </Text>
 
-        {/* Add task (create mode); edit-mode delete lives in the … overflow menu */}
-        {isNew && (
-          <View className="px-screen mt-[14px]">
-            <Pressable
-              onPress={onClose}
-              className="bg-accent items-center rounded-[14px] py-[13px]"
-              style={{
-                shadowColor: c.accent,
-                shadowOpacity: 0.4,
-                shadowRadius: 13,
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 6,
-              }}
-            >
-              <Text className="text-on-accent text-[14px] font-bold">Add task</Text>
-            </Pressable>
-          </View>
-        )}
       </ScrollView>
 
       <OverflowMenu

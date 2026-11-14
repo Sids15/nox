@@ -12,7 +12,7 @@ import { goBack } from "../../lib/go-back";
  * desktop so a deep-linked editor still sits inside the app chrome.
  */
 export default function TaskDetailScreen() {
-  const { id, new: newParam } = useLocalSearchParams<{ id: string; new?: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const isDesktop = useIsDesktop();
 
   return (
@@ -20,7 +20,7 @@ export default function TaskDetailScreen() {
       <View className="flex-1 flex-row">
         {isDesktop && <Sidebar />}
         <View className="flex-1">
-          <TaskEditor id={id} isNew={newParam === "1"} onClose={() => goBack("/tasks")} />
+          <TaskEditor id={id} onClose={() => goBack("/tasks")} />
         </View>
       </View>
     </SafeAreaView>

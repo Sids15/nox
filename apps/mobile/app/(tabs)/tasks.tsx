@@ -1,5 +1,4 @@
 import {
-  useCreateTask,
   useEnsureOccurrences,
   useRunCarryover,
   useTasks,
@@ -22,6 +21,7 @@ import { useIsDesktop } from "../../lib/use-responsive";
 import { useTaskDelete } from "../../lib/use-task-delete";
 import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
+import { TaskComposer } from "../../components/tasks/task-composer";
 import { TaskEditor } from "../../components/tasks/task-editor";
 import { TaskRow } from "../../components/tasks/task-row";
 import { WeekStrip } from "../../components/tasks/week-strip";
@@ -125,11 +125,10 @@ export default function TasksScreen() {
   const [doneOpen, setDoneOpen] = useState(false);
   // Desktop master-detail: the task currently open in the right-hand editor pane.
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedIsNew, setSelectedIsNew] = useState(false);
+  const [composing, setComposing] = useState(false);
   const filtersActive = filters.status !== "all" || filters.priority !== "all" || filters.time !== "all";
 
   const { data: tasks = [], isLoading, isError, refetch } = useTasks();
-  const createTask = useCreateTask();
   const toggleTask = useToggleTask();
   const requestDelete = useTaskDelete();
   const ensureOccurrences = useEnsureOccurrences();
@@ -203,29 +202,21 @@ export default function TasksScreen() {
   const onOpen = (t: Task) => {
     if (isDesktop) {
       setSelectedId(t.id);
-      setSelectedIsNew(false);
+      setComposing(false);
     } else {
       router.push(`/task/${t.id}`);
     }
   };
 
   // Create a draft task on the focused day and open its editor to configure it.
+  // Compose a new task on the focused day. Nothing is created until the composer's Add — see
+  // TaskComposer. Desktop composes in the right-hand pane; phones get the /task/new screen.
   const createAndOpen = () => {
-    const id = createTask.create({
-      title: "New task",
-      notes: null,
-      due_date: focus,
-      due_time: null,
-      reminder_times: [],
-      priority: "medium",
-      repeat: "none",
-      repeat_config: null,
-    });
     if (isDesktop) {
-      setSelectedId(id);
-      setSelectedIsNew(true);
+      setComposing(true);
+      setSelectedId(null);
     } else {
-      router.push(`/task/${id}?new=1`);
+      router.push(`/task/new?date=${focus}`);
     }
   };
 
@@ -233,7 +224,7 @@ export default function TasksScreen() {
   const selectedTask = selectedId ? tasks.find((t) => t.id === selectedId) : undefined;
   // Desktop splits only while a task is open; otherwise the list gets a centred, readable column
   // instead of a 400px strip beside an empty "No task selected" pane.
-  const detailOpen = isDesktop && !!selectedTask;
+  const detailOpen = isDesktop && (!!selectedTask || composing);
 
   const list = (
       <ScrollView
@@ -391,7 +382,11 @@ export default function TasksScreen() {
         <View className="flex-1 flex-row">
           <View className="border-line w-[400px] border-r">{list}</View>
           <View className="flex-1">
-            <TaskEditor key={selectedId} id={selectedId!} isNew={selectedIsNew} onClose={() => setSelectedId(null)} />
+            {composing ? (
+              <TaskComposer key={focus} initialDate={focus} onDone={() => setComposing(false)} />
+            ) : (
+              <TaskEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
+            )}
           </View>
         </View>
       </SafeAreaView>
