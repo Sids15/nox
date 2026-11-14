@@ -30,6 +30,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { COVER, COVER_DIM, COVER_INK, NotebookPage } from "../components/auth-shell";
 import { pressScale } from "../components/menu";
 import { SegmentedControl } from "../components/tasks/segmented-control";
 import { useIdentity } from "../lib/use-identity";
@@ -179,19 +180,8 @@ function Onboarding() {
   ];
 
   const body = [
-    /* 0 — welcome */
-    <View key="welcome">
-      <Image
-        source={require("../assets/nox-wordmark.png")}
-        style={{ width: 92, height: 54, tintColor: c.ink, marginLeft: -4 }}
-        resizeMode="contain"
-        accessibilityLabel="Nox"
-      />
-      <View className="mt-8">
-        <Title>A quiet notebook for everything you're working on.</Title>
-      </View>
-      <Lead>Plan the day, catch ideas, keep notes and save what's worth keeping — in one place, on your phone and your computer.</Lead>
-    </View>,
+    /* 0 — welcome: rendered as the notebook's cover below */
+    <View key="welcome" />,
 
     /* 1 — the four spaces */
     <View key="spaces">
@@ -385,8 +375,65 @@ function Onboarding() {
     </View>,
   ][step];
 
+  // The first frame is the notebook's cover: ink in either theme, paper type, the promise in the
+  // serif, and a page of the day writing itself in — continuous with the sign-in screen's cover.
+  if (step === 0) {
+    const first = (identity.name === "You" ? "" : identity.name).split(" ")[0];
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: COVER }}>
+        <View className="flex-1 self-center" style={{ width: "100%", maxWidth: 520 }}>
+          <View className="flex-row items-center justify-between px-7 pt-4">
+            <Image
+              source={require("../assets/nox-wordmark.png")}
+              style={{ width: 70, height: 41, tintColor: COVER_INK, marginLeft: -3 }}
+              resizeMode="contain"
+              accessibilityLabel="Nox"
+            />
+            <Text className="text-[13px] font-medium" style={{ color: COVER_DIM }} accessibilityLabel={`Step 1 of ${STEPS}`}>
+              1 of {STEPS}
+            </Text>
+          </View>
+
+          <ScrollView
+            className="flex-1"
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 28, paddingVertical: 24 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text className="text-[15px] font-semibold" style={{ color: "#E8775B" }}>
+              {first ? `Welcome, ${first}.` : "Welcome."}
+            </Text>
+            <Text className="mt-3 font-serif text-[36px] font-bold leading-[43px] tracking-[-0.01em]" style={{ color: COVER_INK }}>
+              A quiet notebook for everything you're working on.
+            </Text>
+            <Text className="mt-4 text-[16px] leading-[24px]" style={{ color: COVER_DIM }}>
+              Plan the day, catch ideas, keep notes and save what's worth keeping, on your phone and your computer.
+            </Text>
+            <View className="mt-9">
+              <NotebookPage animate />
+            </View>
+          </ScrollView>
+
+          <View className="px-7 pb-5 pt-2">
+            <Pressable
+              onPress={() => go(1)}
+              accessibilityRole="button"
+              style={pressScale}
+              className="bg-accent hover:opacity-90 h-[52px] flex-row items-center justify-center gap-2 rounded-[13px]"
+            >
+              <Text className="text-on-accent text-[16px] font-semibold">Open the notebook</Text>
+              <ArrowRight size={17} color={c.onAccent} strokeWidth={2.4} />
+            </Pressable>
+            <Text className="mt-3 text-center text-[12.5px]" style={{ color: COVER_DIM }}>
+              Takes about a minute. You can skip any step.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const last = step === STEPS - 1;
-  const nextLabel = step === 0 ? "Get started" : last ? (added ? "Open Nox" : "Skip and open Nox") : "Continue";
+  const nextLabel = last ? (added ? "Open Nox" : "Skip and open Nox") : "Continue";
 
   return (
     <SafeAreaView className="bg-bg flex-1">
