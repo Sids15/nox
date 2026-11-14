@@ -6,6 +6,19 @@ import { task, taskInput, type Task, type TaskInput } from "@nox/types";
 export type ToggleableStatus = "pending" | "complete";
 
 /**
+ * Drop `duration_minutes` from a write unless a value is being set. A database that hasn't had
+ * migration 0008 yet has no such column, and naming it would fail every create and edit; leaving it
+ * out keeps those working, and only setting a duration needs the migration.
+ */
+function withoutUnsetDuration<T extends { duration_minutes?: number | null }>(row: T): T {
+  if (row.duration_minutes === undefined || row.duration_minutes === null) {
+    const { duration_minutes: _omit, ...rest } = row;
+    return rest as T;
+  }
+  return row;
+}
+
+/**
  * The only module that touches Supabase for tasks. Inputs are validated with Zod before hitting the
  * network and rows are re-parsed on the way back, so nothing untyped crosses this boundary. Errors
  * are surfaced (never swallowed) for the UI to handle. RLS scopes every query to the current user;
@@ -56,7 +69,7 @@ export const TaskRepository = {
 
     const { data, error } = await supabase
       .from("tasks")
-      .insert({ ...parsed, id, user_id: session.user.id })
+      .insert({ ...withoutUnsetDuration(parsed), id, user_id: session.user.id })
       .select()
       .single();
     if (error) throw error;
@@ -66,9 +79,11 @@ export const TaskRepository = {
   /** Patch an existing task's editable fields (used by the detail editor). */
   async update(id: string, patch: Partial<TaskInput>): Promise<Task> {
     const parsed = taskInput.partial().parse(patch);
+    // Clearing a duration (null) is only sent when the patch asks for it explicitly.
+    const row = "duration_minutes" in patch && patch.duration_minutes === null ? parsed : withoutUnsetDuration(parsed);
     const { data, error } = await supabase
       .from("tasks")
-      .update(parsed)
+      .update(row)
       .eq("id", id)
       .select()
       .single();
@@ -136,6 +151,7 @@ export const TaskRepository = {
         notes: template.notes,
         due_date: dueDate,
         due_time: template.due_time,
+        ...(template.duration_minutes ? { duration_minutes: template.duration_minutes } : {}),
         reminder_times: reminderTimes,
         priority: template.priority,
         status: "pending",

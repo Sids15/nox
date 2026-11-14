@@ -18,6 +18,8 @@ export const task = syncedRow.extend({
   notes: z.string().max(2_000).nullable().default(null),
   due_date: z.string().date().nullable().default(null),
   due_time: z.string().nullable().default(null),
+  /** How long it takes, in minutes (5–1440); null = not set. Needs migration 0008. */
+  duration_minutes: z.number().int().min(5).max(1440).nullable().optional(),
   reminder_times: z.array(z.string().datetime({ offset: true })).default([]),
   priority: z.enum(taskPriorityLevels).default("medium"),
   status: z.enum(taskStatuses).default("pending"),
@@ -38,6 +40,7 @@ export const taskInput = task.pick({
   notes: true,
   due_date: true,
   due_time: true,
+  duration_minutes: true,
   reminder_times: true,
   priority: true,
   repeat: true,
