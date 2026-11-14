@@ -7,7 +7,7 @@ import {
   useUpdateTask,
 } from "@nox/features";
 import type { Task } from "@nox/types";
-import { addDays, capitalize, relativeDayLabel, todayKey } from "@nox/utils";
+import { addDays, capitalize, dayOfWeek, relativeDayLabel, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -31,11 +31,6 @@ import { useTaskDelete } from "../../lib/use-task-delete";
 const LONG_WEEKDAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const LONG_MONTH = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-/** "Saturday, 14 November". */
-function longDate(key: string): string {
-  const [y, m, d] = key.split("-").map(Number) as [number, number, number];
-  return `${LONG_WEEKDAY[new Date(y, m - 1, d).getDay()]}, ${d} ${LONG_MONTH[m - 1]}`;
-}
 
 const byTime = (a: Task, b: Task) => (a.due_time ?? "").localeCompare(b.due_time ?? "") || a.created_at.localeCompare(b.created_at);
 const byOrder = (a: Task, b: Task) =>
@@ -44,6 +39,31 @@ const byOrder = (a: Task, b: Task) =>
   a.created_at.localeCompare(b.created_at);
 
 /* ─────────────────────────────── pieces ─────────────────────────────── */
+
+/**
+ * The tear-off calendar leaf: a small paper tile with a vermilion month band over the day number set
+ * large in the serif. It is the one signature move of the Ink & Paper world (DESIGN.md) and follows
+ * the day being viewed.
+ */
+function CalendarLeaf({ dateKey }: { dateKey: string }) {
+  const c = useThemeColors();
+  const month = LONG_MONTH[Number(dateKey.slice(5, 7)) - 1]!.slice(0, 3).toUpperCase();
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      className="border-line bg-elev w-[54px] overflow-hidden rounded-[10px] border"
+      style={{ shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 }}
+    >
+      <View className="items-center py-[3px]" style={{ backgroundColor: c.accent }}>
+        <Text className="text-on-accent text-[10px] font-bold tracking-[0.08em]">{month}</Text>
+      </View>
+      <Text style={TABULAR} className="text-ink py-1 text-center font-serif text-[26px] font-bold leading-[32px]">
+        {Number(dateKey.slice(8))}
+      </Text>
+    </View>
+  );
+}
 
 interface TaskFilters {
   status: "all" | "active" | "completed";
@@ -297,14 +317,16 @@ export default function TasksScreen() {
 
   const header = (
     <View className="px-screen pt-2">
-      {/* Title with one plain line under it — no label above, no progress ring. */}
+      {/* The calendar leaf (the app's signature: a tear-off date in ink and vermilion) beside the
+          title, with one plain line under the title — no label above, no progress ring. */}
       <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-3">
-          <Text className="text-ink text-[30px] font-bold leading-[36px] tracking-[-0.02em]">{title}</Text>
+        <CalendarLeaf dateKey={focus} />
+        <View className="flex-1 pl-3.5 pr-3 pt-0.5">
+          <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">{title}</Text>
           {/* Two runs that wrap as wholes — a narrow pane breaks between them, never inside "1 of 12". */}
           <View className="mt-0.5 flex-row flex-wrap">
             <Text className="text-ink-3 mr-2 text-[13.5px] font-medium">
-              {longDate(focus)}
+              {LONG_WEEKDAY[dayOfWeek(focus)]}
               {progressText ? "  ·" : ""}
             </Text>
             {progressText && (
@@ -457,7 +479,7 @@ export default function TasksScreen() {
             <Fold title="Coming up · next 7 days" count={sections.upcoming.length} open={upcomingOpen} onToggle={() => setUpcomingOpen((v) => !v)}>
               {sections.upcomingByDay.map(([day, list]) => (
                 <View key={day}>
-                  <Text className="text-ink-3 mb-0.5 mt-3.5 pl-1 font-mono text-[10.5px] font-semibold tracking-[0.1em]">
+                  <Text className="text-ink-3 mb-0.5 mt-3.5 pl-1 text-[10.5px] font-semibold tracking-[0.1em]">
                     {dateLabel(day, today).toUpperCase()}
                   </Text>
                   {rows(list)}
