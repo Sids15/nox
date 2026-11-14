@@ -3,6 +3,7 @@ import type { Task } from "@nox/types";
 import { capitalize, formatTime12, relativeDayLabel, todayKey } from "@nox/utils";
 import { AlignLeft, Bell, Check, Repeat, RotateCcw } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
+import { pressScale, TABULAR } from "../menu";
 
 /**
  * One task in a list, in the flat style of Things and Todoist: no card around it, a hairline between
@@ -56,7 +57,8 @@ export function TaskRow({
 
       {timeGutter && (
         <Text
-          className={`w-[64px] pl-1 font-mono text-[11.5px] font-medium ${complete ? "text-ink-3" : "text-ink-2"}`}
+          style={TABULAR}
+          className={`w-[68px] pl-1 text-[12.5px] font-semibold ${complete ? "text-ink-3" : "text-ink-2"}`}
           numberOfLines={1}
         >
           {time ?? ""}
@@ -69,6 +71,7 @@ export function TaskRow({
         accessibilityRole="checkbox"
         accessibilityState={{ checked: complete }}
         accessibilityLabel={`${complete ? "Mark not done" : "Mark done"}: ${task.title}, ${task.priority} priority`}
+        style={pressScale}
         className={timeGutter ? "" : "ml-1"}
       >
         {complete ? (
@@ -100,17 +103,23 @@ export function TaskRow({
             {carried && (
               <View className="bg-medium/[0.13] flex-row items-center gap-1 rounded-[5px] px-1.5 py-[2px]">
                 <RotateCcw size={9} color={c.medium} strokeWidth={2.2} />
-                <Text className="text-medium font-mono text-[9.5px] font-semibold">CARRIED OVER</Text>
+                <Text className="text-medium text-[11px] font-semibold">Carried over</Text>
               </View>
             )}
             {when ? (
-              <Text className={`font-mono text-[11px] font-medium ${overdue ? "text-high" : "text-ink-3"}`}>{when}</Text>
+              <Text style={TABULAR} className={`text-[12px] font-medium ${overdue ? "text-high" : "text-ink-3"}`}>
+                {when}
+              </Text>
             ) : null}
             {recurring && <Repeat size={11} color={c.ink3} strokeWidth={2} />}
             {reminders > 0 && (
               <View className="flex-row items-center gap-0.5">
                 <Bell size={11} color={c.ink3} strokeWidth={2} />
-                {reminders > 1 && <Text className="text-ink-3 font-mono text-[10.5px]">{reminders}</Text>}
+                {reminders > 1 && (
+                  <Text style={TABULAR} className="text-ink-3 text-[11.5px]">
+                    {reminders}
+                  </Text>
+                )}
               </View>
             )}
             {task.notes ? <AlignLeft size={11} color={c.ink3} strokeWidth={2} /> : null}
