@@ -19,7 +19,9 @@ import { BlockToolbar } from "../blocks/block-toolbar";
 import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { OverflowMenu } from "../overflow-menu";
+import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
+import { noteTitle } from "./note-utils";
 
 /**
  * The note editor body — driven by an `id` (not the route params) so it works both as the standalone
@@ -147,10 +149,15 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
           {
             label: "Delete note",
             destructive: true,
-            onPress: () => {
-              del.mutate(note.id);
-              onClose();
-            },
+            onPress: () =>
+              confirmDelete({
+                title: "Delete note?",
+                message: `“${noteTitle(note)}” will be deleted on all your devices.`,
+                onConfirm: () => {
+                  del.mutate(note.id);
+                  onClose();
+                },
+              }),
           },
         ]}
       />

@@ -12,6 +12,7 @@ import { relativeDayLabel } from "@nox/utils";
 import { useCallback } from "react";
 
 import { Alert } from "./alert";
+import { confirmDelete } from "./confirm";
 
 /** A repeating task is either the template (it carries the rule) or a day generated from one. */
 export function isRepeating(task: Task): boolean {
@@ -21,9 +22,9 @@ export function isRepeating(task: Task): boolean {
 /**
  * The one delete path for tasks — the swipe action and the editor menu both go through it.
  *
- * A one-off task is deleted outright. A repeating task asks first, because "delete" is ambiguous
- * there and the old behaviour picked the surprising answer silently: it removed only the day you
- * swiped, and the task was back the next morning. The two choices:
+ * Every delete asks first. A one-off task gets a plain confirm. A repeating task gets a choice,
+ * because "delete" is ambiguous there and the old behaviour picked the surprising answer silently:
+ * it removed only the day you swiped, and the task was back the next morning. The two choices:
  *
  * - **This day only** — a generated day is tombstoned (its slot stays taken, so it is not
  *   regenerated). The template itself only ever shows on its anchor day, so skipping THAT day moves
@@ -43,8 +44,14 @@ export function useTaskDelete(): (task: Task, onDeleted?: () => void) => void {
   return useCallback(
     (task, onDeleted) => {
       if (!isRepeating(task)) {
-        deleteTask.mutate(task.id);
-        onDeleted?.();
+        confirmDelete({
+          title: "Delete task?",
+          message: `“${task.title}” will be deleted on all your devices.`,
+          onConfirm: () => {
+            deleteTask.mutate(task.id);
+            onDeleted?.();
+          },
+        });
         return;
       }
 

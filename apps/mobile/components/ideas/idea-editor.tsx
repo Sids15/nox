@@ -18,6 +18,7 @@ import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { OverflowMenu } from "../overflow-menu";
 import { StatusStepper } from "./status-stepper";
+import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { TagChip } from "../tag-chip";
 import { SegmentedControl } from "../tasks/segmented-control";
@@ -226,10 +227,15 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
           {
             label: "Delete",
             destructive: true,
-            onPress: () => {
-              del.mutate(idea.id);
-              onClose();
-            },
+            onPress: () =>
+              confirmDelete({
+                title: "Delete idea?",
+                message: `“${idea.title}” will be deleted on all your devices. Archive keeps it out of the way instead.`,
+                onConfirm: () => {
+                  del.mutate(idea.id);
+                  onClose();
+                },
+              }),
           },
         ]}
       />

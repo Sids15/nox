@@ -24,6 +24,7 @@ import { MasonrySkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { ResourceCard } from "../../components/resources/resource-card";
 import { NewResourceSheet } from "../../components/resources/new-resource-sheet";
+import { confirmDelete } from "../../lib/confirm";
 import { nextTagColor } from "../../lib/tag-palette";
 import { useIsDesktop } from "../../lib/use-responsive";
 
@@ -378,8 +379,16 @@ export default function ResourcesScreen() {
             </Pressable>
             <Pressable
               onPress={() => {
-                if (menuFor) deleteResource.mutate(menuFor.id);
+                const target = menuFor;
                 setMenuFor(null);
+                if (!target) return;
+                confirmDelete({
+                  title: "Delete resource?",
+                  message: `“${target.title ?? target.url ?? "This resource"}” will be deleted on all your devices.${
+                    target.is_archived ? "" : " Mark as used keeps it instead."
+                  }`,
+                  onConfirm: () => deleteResource.mutate(target.id),
+                });
               }}
               className="px-4 py-3"
             >
