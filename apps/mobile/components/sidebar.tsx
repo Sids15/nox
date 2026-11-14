@@ -6,6 +6,7 @@ import { Bookmark, FileText, Lightbulb, Search, SlidersHorizontal, SquareCheckBi
 import { useEffect, useRef, useState } from "react";
 import { Animated, Image, Platform, Pressable, Text, View } from "react-native";
 import { clockLabel, greeting, skyColor, useClock } from "../lib/use-clock";
+import { useSyncLabel } from "../lib/use-sync-label";
 import { CommandPalette } from "./command-palette";
 
 type NavItem = { label: string; icon: LucideIcon; path: string; count: number };
@@ -47,6 +48,7 @@ export function Sidebar() {
   const { session } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const now = useClock();
+  const sync = useSyncLabel();
 
   const { data: ideas = [] } = useIdeas();
   const { data: notes = [] } = useNotes();
@@ -143,9 +145,15 @@ export function Sidebar() {
 
       {/* Sync */}
       <View className="flex-row items-center gap-2 px-[11px] py-2">
-        <BreathingDot color={c.success} />
-        <Text className="text-ink-2 flex-1 text-[12px]">Synced</Text>
-        <Text className="text-ink-3 font-mono text-[9.5px] font-medium">supabase</Text>
+        {sync.settled ? (
+          <BreathingDot color={sync.color} />
+        ) : (
+          <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: sync.color }} />
+        )}
+        <Text className="text-ink-2 flex-1 text-[12px]">{sync.title}</Text>
+        {sync.detail ? (
+          <Text numberOfLines={1} className="text-ink-3 font-mono text-[9.5px] font-medium">{sync.detail}</Text>
+        ) : null}
       </View>
 
       {/* Profile */}
