@@ -15,6 +15,14 @@ import { groupTasks, type GroupedTasks } from "./group-tasks";
 import { shiftReminders, templatesNeedingOccurrence } from "./recurrence";
 import { taskKeys } from "./task-keys";
 
+/** Put one task back to how it was in `previous` (or remove it if it wasn't there). */
+function restoreOne(qc: QueryClient, previous: Task[], id: string) {
+  const before = previous.find((t) => t.id === id);
+  qc.setQueryData<Task[]>(taskKeys.all, (cur = []) =>
+    before ? cur.map((t) => (t.id === id ? before : t)) : cur.filter((t) => t.id !== id),
+  );
+}
+
 /** Read the current tasks cache (defaulting to empty) — shared by the optimistic mutations. */
 function snapshot(qc: QueryClient): Task[] {
   return qc.getQueryData<Task[]>(taskKeys.all) ?? [];
@@ -117,8 +125,10 @@ export function useToggleTask() {
       );
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx) qc.setQueryData(taskKeys.all, ctx.previous);
+    // Undo only this task: a whole-list snapshot would also undo other edits made meanwhile
+    // (a drag right after a failed resize used to snap back too).
+    onError: (_err, { id }, ctx) => {
+      if (ctx) restoreOne(qc, ctx.previous, id);
     },
     onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
   });
@@ -138,8 +148,10 @@ export function useUpdateTask() {
       );
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx) qc.setQueryData(taskKeys.all, ctx.previous);
+    // Undo only this task: a whole-list snapshot would also undo other edits made meanwhile
+    // (a drag right after a failed resize used to snap back too).
+    onError: (_err, { id }, ctx) => {
+      if (ctx) restoreOne(qc, ctx.previous, id);
     },
     onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
   });

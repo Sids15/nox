@@ -9,6 +9,8 @@ export const repeatConfig = z
   .object({
     weekdays: z.array(z.number().int().min(0).max(6)).optional(),
     interval: z.number().int().positive().optional(),
+    /** A task's length in minutes, kept here only on databases without migration 0008's column. */
+    duration: z.number().int().min(5).max(1440).optional(),
   })
   .nullable()
   .default(null);

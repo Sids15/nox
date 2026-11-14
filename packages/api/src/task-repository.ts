@@ -6,14 +6,44 @@ import { task, taskInput, type Task, type TaskInput } from "@nox/types";
 export type ToggleableStatus = "pending" | "complete";
 
 /**
- * Drop `duration_minutes` from a write unless a value is being set. A database that hasn't had
- * migration 0008 yet has no such column, and naming it would fail every create and edit; leaving it
- * out keeps those working, and only setting a duration needs the migration.
+ * Where a task's length is stored. Migration 0008 adds `tasks.duration_minutes`; until a database has
+ * it, the length lives in the existing `repeat_config` jsonb as `duration`, so durations work either
+ * way and nothing waits on the migration. Learned from the rows `list` reads (a missing key means no
+ * column) or from the first write the database rejects; null = not known yet.
  */
-function withoutUnsetDuration<T extends { duration_minutes?: number | null }>(row: T): T {
-  if (row.duration_minutes === undefined || row.duration_minutes === null) {
+let hasDurationColumn: boolean | null = null;
+
+const isMissingDurationColumn = (e: { code?: string; message?: string } | null) =>
+  !!e && (e.code === "PGRST204" || e.code === "42703") && /duration_minutes/.test(e.message ?? "");
+
+/** A row as the app sees it: the length from the column, or from repeat_config on older databases. */
+function readTask(row: unknown): Task {
+  const t = task.parse(row);
+  const fromConfig = t.repeat_config?.duration;
+  return t.duration_minutes == null && fromConfig ? { ...t, duration_minutes: fromConfig } : t;
+}
+
+type Row = Partial<TaskInput>;
+
+/** The write for a database without the column: the length moves into repeat_config, keeping its
+ *  other keys (from the patch, or the task as stored when the patch doesn't touch them). */
+function intoConfig(row: Row, current: Task["repeat_config"] | undefined): Row {
+  const { duration_minutes, ...rest } = row;
+  const touchesDuration = duration_minutes !== undefined;
+  const touchesConfig = row.repeat_config !== undefined;
+  if (!touchesDuration && !touchesConfig) return rest;
+  const base = (touchesConfig ? row.repeat_config : current) ?? null;
+  const keep = touchesDuration ? duration_minutes : current?.duration;
+  const { duration: _old, ...others } = base ?? {};
+  const next = keep ? { ...others, duration: keep } : Object.keys(others).length ? others : null;
+  return { ...rest, repeat_config: next };
+}
+
+/** The write for a database with the column: an unset length is left out entirely. */
+function withColumn(row: Row): Row {
+  if (row.duration_minutes === undefined) {
     const { duration_minutes: _omit, ...rest } = row;
-    return rest as T;
+    return rest;
   }
   return row;
 }
@@ -35,7 +65,8 @@ export const TaskRepository = {
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw error;
-    return task.array().parse(data ?? []);
+    if (data && data.length > 0) hasDurationColumn = "duration_minutes" in data[0];
+    return (data ?? []).map(readTask);
   },
 
   /**
@@ -67,28 +98,39 @@ export const TaskRepository = {
     } = await supabase.auth.getSession();
     if (!session) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase
-      .from("tasks")
-      .insert({ ...withoutUnsetDuration(parsed), id, user_id: session.user.id })
-      .select()
-      .single();
-    if (error) throw error;
-    return task.parse(data);
+    const insert = (row: Row) => supabase.from("tasks").insert({ ...row, id, user_id: session.user.id }).select().single();
+    const clean: Row = { ...parsed, duration_minutes: parsed.duration_minutes ?? undefined };
+    let res = hasDurationColumn === false ? await insert(intoConfig(clean, null)) : await insert(withColumn(clean));
+    if (isMissingDurationColumn(res.error)) {
+      hasDurationColumn = false;
+      res = await insert(intoConfig(clean, null));
+    }
+    if (res.error) throw res.error;
+    return readTask(res.data);
   },
 
   /** Patch an existing task's editable fields (used by the detail editor). */
   async update(id: string, patch: Partial<TaskInput>): Promise<Task> {
-    const parsed = taskInput.partial().parse(patch);
-    // Clearing a duration (null) is only sent when the patch asks for it explicitly.
-    const row = "duration_minutes" in patch && patch.duration_minutes === null ? parsed : withoutUnsetDuration(parsed);
-    const { data, error } = await supabase
-      .from("tasks")
-      .update(row)
-      .eq("id", id)
-      .select()
-      .single();
-    if (error) throw error;
-    return task.parse(data);
+    const parsed: Row = taskInput.partial().parse(patch);
+    const write = (row: Row) => supabase.from("tasks").update(row).eq("id", id).select().single();
+    const viaConfig = async () => {
+      // Merging into repeat_config needs what's stored there now (its weekdays, or a length).
+      const needsCurrent = parsed.duration_minutes !== undefined || parsed.repeat_config !== undefined;
+      let current: Task["repeat_config"] | undefined;
+      if (needsCurrent) {
+        const { data, error } = await supabase.from("tasks").select("repeat_config").eq("id", id).single();
+        if (error) throw error;
+        current = (data?.repeat_config ?? null) as Task["repeat_config"];
+      }
+      return write(intoConfig(parsed, current));
+    };
+    let res = hasDurationColumn === false ? await viaConfig() : await write(withColumn(parsed));
+    if (isMissingDurationColumn(res.error)) {
+      hasDurationColumn = false;
+      res = await viaConfig();
+    }
+    if (res.error) throw res.error;
+    return readTask(res.data);
   },
 
   /** Complete / un-complete a task. */
@@ -100,7 +142,7 @@ export const TaskRepository = {
       .select()
       .single();
     if (error) throw error;
-    return task.parse(data);
+    return readTask(data);
   },
 
   /** Soft-delete (tombstone) so the removal syncs to other devices. */
@@ -151,7 +193,11 @@ export const TaskRepository = {
         notes: template.notes,
         due_date: dueDate,
         due_time: template.due_time,
-        ...(template.duration_minutes ? { duration_minutes: template.duration_minutes } : {}),
+        ...(template.duration_minutes
+          ? hasDurationColumn === false
+            ? { repeat_config: { duration: template.duration_minutes } }
+            : { duration_minutes: template.duration_minutes }
+          : {}),
         reminder_times: reminderTimes,
         priority: template.priority,
         status: "pending",
@@ -166,7 +212,7 @@ export const TaskRepository = {
       if (error.code === "23505") return null; // occurrence already exists
       throw error;
     }
-    return task.parse(data);
+    return readTask(data);
   },
 
   /** Move overdue standalone tasks to today as carried-over (one bulk update). */
