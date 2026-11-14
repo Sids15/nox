@@ -167,7 +167,13 @@ export default function TasksScreen() {
     }
     const activeOnly = filters.status === "active";
     return {
-      overdue: filtered.filter((t) => !done(t) && !isTemplate(t) && t.due_date !== null && t.due_date < focus),
+      // Overdue means overdue NOW — due before today — and it is surfaced on today's view, where it
+      // can be acted on. Measured against the focused day instead, browsing ahead to Saturday listed
+      // every open task between now and then (even ones due today) as overdue, in coral.
+      overdue:
+        focus === today
+          ? filtered.filter((t) => !done(t) && !isTemplate(t) && t.due_date !== null && t.due_date < today)
+          : [],
       dayTasks: filtered.filter((t) => onDay(t) && (activeOnly ? !done(t) : true)),
       upcoming: filtered.filter((t) => !done(t) && t.due_date !== null && t.due_date > focus),
       completedOnly: [] as Task[],
