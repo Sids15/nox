@@ -1,32 +1,32 @@
-import { Text, View } from "react-native";
+import { X } from "lucide-react-native";
+import { Pressable, Text, View } from "react-native";
+import { tagColor } from "../lib/tag-palette";
 
-// Handoff tag palette — tags are user-defined, so detail chips get a deterministic color by name.
-const TAG_PALETTE = ["#4C7FE0", "#2F9D72", "#A66BD9", "#C98A2B", "#D2604A", "#4AB3C4"];
-
-function tagColor(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return TAG_PALETTE[h % TAG_PALETTE.length]!;
-}
-
-/** `#tag` chip. Neutral on list cards; palette-tinted on the detail screen. */
-export function TagChip({ tag, tinted = false }: { tag: string; tinted?: boolean }) {
+/**
+ * A `#tag`, tinted with the tag's own colour (stable by name) on every surface. `size="sm"` for list
+ * rows and cards; with `onRemove` it shows an × that removes it.
+ */
+export function TagChip({ tag, size = "md", onRemove }: { tag: string; size?: "sm" | "md"; onRemove?: () => void }) {
+  const color = tagColor(tag);
   const label = tag.startsWith("#") ? tag : `#${tag}`;
-
-  if (tinted) {
-    const color = tagColor(tag);
+  const body = (
+    <>
+      <Text style={{ color }} className={size === "sm" ? "text-[11px] font-semibold" : "text-[12.5px] font-semibold"}>
+        {label}
+      </Text>
+      {onRemove && <X size={11} color={color} strokeWidth={2.6} />}
+    </>
+  );
+  const cls = `flex-row items-center gap-1 ${size === "sm" ? "rounded-[6px] px-1.5 py-0.5" : "rounded-[7px] px-2 py-1"}`;
+  if (onRemove)
     return (
-      <View style={{ backgroundColor: `${color}22`, borderRadius: 7 }} className="px-2.5 py-1.5">
-        <Text style={{ color }} className="text-[11px] font-medium">
-          {label}
-        </Text>
-      </View>
+      <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={`Remove tag ${tag}`} style={{ backgroundColor: `${color}1f` }} className={cls}>
+        {body}
+      </Pressable>
     );
-  }
-
   return (
-    <View className="bg-chip rounded-[6px] px-2 py-1">
-      <Text className="text-ink-2 text-[10.5px] font-medium">{label}</Text>
+    <View style={{ backgroundColor: `${color}1f` }} className={cls}>
+      {body}
     </View>
   );
 }

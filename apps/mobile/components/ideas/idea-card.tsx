@@ -67,7 +67,7 @@ export function IdeaCard({
         {/* Tags wrap within their own box so the age never gets pushed off the card. */}
         <View className="min-w-0 flex-1 flex-row flex-wrap gap-1.5">
           {idea.tags.slice(0, 3).map((t) => (
-            <TagChip key={t} tag={t} />
+            <TagChip key={t} tag={t} size="sm" />
           ))}
         </View>
         <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[11.5px]">

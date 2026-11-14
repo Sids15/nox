@@ -1,10 +1,11 @@
 import { useThemeColors } from "@nox/features";
 import { priorityLevels, type Idea } from "@nox/types";
 import { capitalize, relativeFromNow, shortDate } from "@nox/utils";
-import { ChevronDown, Flag, Plus, X } from "lucide-react-native";
+import { ChevronDown, Flag } from "lucide-react-native";
 import { useRef, useState, type ReactNode } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { MenuRow, pressScale } from "../menu";
+import { TagEditor, useKnownTags } from "../tag-editor";
 import { Popover } from "../popover";
 
 type Stage = "raw" | "exploring" | "validating" | "complete";
@@ -76,19 +77,14 @@ export function IdeaProperties({
   const statusRef = useRef<View>(null);
   const priorityRef = useRef<View>(null);
   const [menu, setMenu] = useState<"status" | "priority" | null>(null);
-  const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState("");
+  const known = useKnownTags();
 
   const stageTint: Record<Stage, string> = { raw: c.ink3, exploring: c.info, validating: c.success, complete: c.accent };
   const priorityColor: Record<Idea["priority"], string> = { low: c.ink3, medium: c.medium, high: c.high, critical: c.critical };
   const stage = (STAGES.some((s) => s.key === idea.status) ? idea.status : "raw") as Stage;
   const stageIndex = STAGES.findIndex((s) => s.key === stage);
 
-  const commitTag = () => {
-    const name = draft.trim().replace(/^#/, "").toLowerCase().slice(0, 32);
-    if (name && !idea.tags.includes(name)) onTags([...idea.tags, name]);
-    setDraft("");
-  };
+
 
   return (
     <View className="mt-4">
@@ -117,49 +113,12 @@ export function IdeaProperties({
         </Trigger>
       </Row>
 
-      <Row label="Tags">
-        {idea.tags.map((t) => (
-          <Pressable
-            key={t}
-            onPress={() => onTags(idea.tags.filter((x) => x !== t))}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove tag ${t}`}
-            className="bg-chip group flex-row items-center gap-1 rounded-[7px] py-1 pl-2 pr-1.5"
-          >
-            <Text className="text-ink-2 text-[12.5px] font-medium">#{t}</Text>
-            <X size={11} color={c.ink3} strokeWidth={2.4} />
-          </Pressable>
-        ))}
-        {adding ? (
-          <TextInput
-            autoFocus
-            value={draft}
-            onChangeText={setDraft}
-            onSubmitEditing={commitTag}
-            onBlur={() => {
-              commitTag();
-              setAdding(false);
-            }}
-            placeholder="tag name"
-            placeholderTextColor={c.ink3}
-            submitBehavior="submit"
-            autoCapitalize="none"
-            accessibilityLabel="New tag"
-            className="text-ink border-accent h-[26px] min-w-[90px] rounded-[7px] border px-2 text-[12.5px]"
-            style={{ paddingVertical: 0, outlineWidth: 0 } as object}
-          />
-        ) : (
-          <Pressable
-            onPress={() => setAdding(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Add tag"
-            className="hover:bg-chip flex-row items-center gap-1 rounded-[7px] px-1.5 py-1"
-          >
-            <Plus size={12} color={c.ink3} strokeWidth={2.2} />
-            <Text className="text-ink-3 text-[12.5px] font-medium">{idea.tags.length ? "Add" : "Add a tag"}</Text>
-          </Pressable>
-        )}
-      </Row>
+      <View className="flex-row py-1.5">
+        <Text className="text-ink-3 w-[92px] pt-1 text-[13.5px]">Tags</Text>
+        <View className="min-w-0 flex-1">
+          <TagEditor tags={idea.tags} onChange={onTags} known={known} />
+        </View>
+      </View>
 
       <Row label="Created">
         <Text className="text-ink-2 text-[13.5px]">
