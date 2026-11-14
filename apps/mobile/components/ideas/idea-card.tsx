@@ -14,7 +14,18 @@ const PRIORITY_LABEL: Record<Idea["priority"], string> = {
 };
 
 /** An idea list card: priority label + status pill · title · optional description · tags + age. */
-export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPress: () => void; selected?: boolean }) {
+export function IdeaCard({
+  idea,
+  onPress,
+  selected = false,
+  showStatus = true,
+}: {
+  idea: Idea;
+  onPress: () => void;
+  selected?: boolean;
+  /** Off where the surrounding column or section already names the status. */
+  showStatus?: boolean;
+}) {
   const c = useThemeColors();
   const priorityColor = { low: c.ink3, medium: c.medium, high: c.high, critical: c.critical }[
     idea.priority
@@ -32,7 +43,7 @@ export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPr
             {PRIORITY_LABEL[idea.priority]}
           </Text>
         </View>
-        <StatusPill status={idea.status} />
+        {showStatus && <StatusPill status={idea.status} />}
       </View>
 
       <Text
@@ -52,12 +63,16 @@ export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPr
         ) : null;
       })()}
 
-      <View className="flex-row items-center gap-1.5">
-        {idea.tags.slice(0, 3).map((t) => (
-          <TagChip key={t} tag={t} />
-        ))}
-        <View className="flex-1" />
-        <Text className="text-ink-3 text-[10.5px]">{relativeAge(idea.updated_at)}</Text>
+      <View className="flex-row items-end gap-2">
+        {/* Tags wrap within their own box so the age never gets pushed off the card. */}
+        <View className="min-w-0 flex-1 flex-row flex-wrap gap-1.5">
+          {idea.tags.slice(0, 3).map((t) => (
+            <TagChip key={t} tag={t} />
+          ))}
+        </View>
+        <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[11.5px]">
+          {relativeAge(idea.updated_at)}
+        </Text>
       </View>
     </Pressable>
   );

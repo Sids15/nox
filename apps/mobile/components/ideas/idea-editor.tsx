@@ -8,7 +8,7 @@ import {
 } from "@nox/features";
 import { priorityLevels, type ContentBlock, type Idea, type IdeaInput } from "@nox/types";
 import { capitalize as cap, relativeFromNow, shortDate } from "@nox/utils";
-import { ChevronLeft, MoreHorizontal, Plus } from "lucide-react-native";
+import { Archive, ArchiveRestore, ChevronLeft, CircleOff, Plus, Trash2, Undo2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
@@ -16,13 +16,16 @@ import { BlockList } from "../blocks/block-list";
 import { BlockToolbar } from "../blocks/block-toolbar";
 import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
-import { OverflowMenu } from "../overflow-menu";
+import { EditorTopBar } from "../editor-top-bar";
 import { StatusStepper } from "./status-stepper";
 import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { TagChip } from "../tag-chip";
 import { SegmentedControl } from "../tasks/segmented-control";
 import { SectionHeading } from "../section-heading";
+
+/** The placeholder title a new idea is created with; the editor shows it as an empty field. */
+const UNTITLED = "Untitled idea";
 
 function SectionLabel({ children }: { children: string }) {
   return <SectionHeading className="mt-7 px-screen pl-[22px]">{children}</SectionHeading>;
@@ -56,10 +59,9 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
   const [title, setTitle] = useState("");
   const [tagDraft, setTagDraft] = useState("");
   const [addingTag, setAddingTag] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (idea) setTitle(idea.title);
+    if (idea) setTitle(idea.title === UNTITLED ? "" : idea.title);
   }, [idea?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Free-flow block content with debounced auto-save.
@@ -97,15 +99,48 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
     <View className="flex-1">
       {/* maxWidth is a no-op on phones (< 680pt) and keeps the editor a readable column on desktop */}
       <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, paddingBottom: 110, maxWidth: 680, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
-        {/* Nav */}
-        <View className="px-screen flex-row items-center justify-between pt-2">
-          <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="Go back" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-            <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
-          </Pressable>
-          <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} accessibilityLabel="More options" className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-            <MoreHorizontal size={20} color={c.ink2} strokeWidth={1.7} />
-          </Pressable>
-        </View>
+        <EditorTopBar
+          backLabel="Ideas"
+          onBack={onClose}
+          context={idea.is_archived ? "Archived" : idea.status === "dropped" ? "Dropped" : undefined}
+          menu={[
+            idea.is_archived
+              ? { label: "Unarchive", icon: <ArchiveRestore size={15} color={c.ink2} strokeWidth={2} />, onPress: () => archive.mutate({ id: idea.id, isArchived: false }) }
+              : {
+                  label: "Archive",
+                  icon: <Archive size={15} color={c.ink2} strokeWidth={2} />,
+                  onPress: () => {
+                    archive.mutate({ id: idea.id, isArchived: true });
+                    onClose();
+                  },
+                },
+            idea.status === "dropped"
+              ? { label: "Bring back", icon: <Undo2 size={15} color={c.ink2} strokeWidth={2} />, onPress: () => setStatus.mutate({ id: idea.id, status: "raw" }) }
+              : {
+                  label: "Drop idea",
+                  icon: <CircleOff size={15} color={c.ink2} strokeWidth={2} />,
+                  onPress: () => {
+                    setStatus.mutate({ id: idea.id, status: "dropped" });
+                    onClose();
+                  },
+                },
+            {
+              label: "Delete idea",
+              danger: true,
+              divided: true,
+              icon: <Trash2 size={15} color={c.high} strokeWidth={2} />,
+              onPress: () =>
+                confirmDelete({
+                  title: "Delete idea?",
+                  message: `“${idea.title}” will be deleted on all your devices. Archive keeps it out of the way instead.`,
+                  onConfirm: () => {
+                    del.mutate(idea.id);
+                    onClose();
+                  },
+                }),
+            },
+          ]}
+        />
 
         {/* Title */}
         <View className="px-screen mt-[22px]">
@@ -114,10 +149,10 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             onChangeText={setTitle}
             onBlur={() => {
               const t = title.trim();
-              if (t && t !== idea.title) patch({ title: t });
-              else if (!t) setTitle(idea.title);
+              if (t && t !== idea.title) patch({ title: t.slice(0, 200) });
             }}
-            placeholder="Idea title"
+            autoFocus={idea.title === UNTITLED}
+            placeholder="What's the idea?"
             placeholderTextColor={c.ink3}
             minHeight={30}
             className="text-ink font-serif text-[24px] font-bold leading-[30px] tracking-[-0.01em]"
@@ -160,8 +195,8 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
 
           {/* Meta sits up here (as in the note editor) rather than at the end of the document, where
               the floating toolbar covered it until you scrolled. */}
-          <Text className="text-ink-3 mt-3 text-[10.5px]">
-            created {shortDate(idea.created_at).toLowerCase()} · updated {relativeFromNow(idea.updated_at)}
+          <Text className="text-ink-3 mt-3 text-[12px]">
+            Created {shortDate(idea.created_at)} · updated {relativeFromNow(idea.updated_at)}
           </Text>
         </View>
 
@@ -203,39 +238,6 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
         onRecordComplete={media.addAudio}
       />
 
-      <OverflowMenu
-        visible={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        items={[
-          {
-            label: "Archive",
-            onPress: () => {
-              archive.mutate({ id: idea.id, isArchived: true });
-              onClose();
-            },
-          },
-          {
-            label: "Drop idea",
-            onPress: () => {
-              setStatus.mutate({ id: idea.id, status: "dropped" });
-              onClose();
-            },
-          },
-          {
-            label: "Delete",
-            destructive: true,
-            onPress: () =>
-              confirmDelete({
-                title: "Delete idea?",
-                message: `“${idea.title}” will be deleted on all your devices. Archive keeps it out of the way instead.`,
-                onConfirm: () => {
-                  del.mutate(idea.id);
-                  onClose();
-                },
-              }),
-          },
-        ]}
-      />
     </View>
   );
 }
