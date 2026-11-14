@@ -17,6 +17,8 @@ export interface CalendarPrefs {
   showWeekends: boolean;
   showCompleted: boolean;
   density: "compact" | "comfortable";
+  /** When adding a task with a day but no time (or no length), ask once before saving it. */
+  askWhenAdding: boolean;
 }
 
 export const DEFAULT_CALENDAR: CalendarPrefs = {
@@ -27,6 +29,7 @@ export const DEFAULT_CALENDAR: CalendarPrefs = {
   showWeekends: true,
   showCompleted: true,
   density: "comfortable",
+  askWhenAdding: true,
 };
 
 interface PrefsState {

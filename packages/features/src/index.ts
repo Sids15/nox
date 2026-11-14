@@ -15,7 +15,7 @@ export {
 export { groupTasks, type GroupedTasks } from "./tasks/group-tasks";
 export { nextOccurrenceDate, occursOn, shiftReminders, templatesNeedingOccurrence } from "./tasks/recurrence";
 export { carryoverTaskIds } from "./tasks/carryover";
-export { minutesToTime, tasksOnDay, timeToMinutes, type PlannedTask } from "./tasks/day-plan";
+export { autoSchedule, findFreeSlot, minutesToTime, tasksOnDay, timeToMinutes, type PlannedTask, type SlotOptions } from "./tasks/day-plan";
 export { parseQuickAdd, type QuickAddField, type QuickAddResult } from "./tasks/parse-quick-add";
 export { taskKeys } from "./tasks/task-keys";
 export { DEFAULT_CALENDAR, usePrefs, type CalendarPrefs, type NotifKey } from "./prefs/prefs-store";

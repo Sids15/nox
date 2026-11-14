@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Task } from "@nox/types";
-import { minutesToTime, tasksOnDay, timeToMinutes } from "./day-plan";
+import { autoSchedule, findFreeSlot, minutesToTime, tasksOnDay, timeToMinutes } from "./day-plan";
 
 const MON = "2026-07-06"; // a Monday
 const TUE = "2026-07-07";
@@ -76,5 +76,36 @@ describe("time helpers", () => {
     expect(minutesToTime(570)).toBe("09:30");
     expect(minutesToTime(-5)).toBe("00:00");
     expect(minutesToTime(2000)).toBe("23:59");
+  });
+});
+
+describe("findFreeSlot / autoSchedule", () => {
+  const day = (tasks: Task[]) => tasksOnDay(tasks, MON, MON);
+  const opts = { dayStart: 9 * 60, dayEnd: 12 * 60 };
+
+  test("first gap long enough, around busy tasks", () => {
+    const busy = [mk({ id: "a", due_time: "09:00", duration_minutes: 60 }), mk({ id: "b", due_time: "10:30" })];
+    expect(findFreeSlot(day(busy), 30, opts)).toBe("10:00");
+    expect(findFreeSlot(day(busy), 60, opts)).toBe("11:00");
+    expect(findFreeSlot(day(busy), 120, opts)).toBeNull();
+  });
+
+  test("respects notBefore and rounds up to the step", () => {
+    expect(findFreeSlot([], 30, { ...opts, notBefore: 9 * 60 + 7 })).toBe("09:15");
+  });
+
+  test("ignores completed tasks", () => {
+    const done = [mk({ id: "a", due_time: "09:00", duration_minutes: 120, status: "complete" })];
+    expect(findFreeSlot(day(done), 30, opts)).toBe("09:00");
+  });
+
+  test("places high priority first and leaves out what doesn't fit", () => {
+    const low = mk({ id: "low", priority: "low", duration_minutes: 60 });
+    const high = mk({ id: "high", priority: "high", duration_minutes: 120 });
+    const big = mk({ id: "big", duration_minutes: 180 });
+    expect(autoSchedule([], [low, big, high], opts)).toEqual([
+      { id: "high", time: "09:00" },
+      { id: "low", time: "11:00" },
+    ]);
   });
 });
