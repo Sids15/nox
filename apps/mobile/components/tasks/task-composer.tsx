@@ -1,12 +1,19 @@
-import { parseQuickAdd, useCreateTask, useThemeColors, type QuickAddResult } from "@nox/features";
+import {
+  parseQuickAdd,
+  tasksOnDay,
+  timeToMinutes,
+  useCreateTask,
+  useSkippedOccurrences,
+  useTasks,
+  useThemeColors,
+  type QuickAddResult,
+} from "@nox/features";
 import type { TaskInput } from "@nox/types";
-import { todayKey } from "@nox/utils";
+import { formatTime12, todayKey } from "@nox/utils";
 import { ArrowUp, CornerDownLeft, Sparkles, X } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, Text, TextInput, View, type TextStyle } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
-import { DayPreview } from "./day-preview";
-import { WhenPicker } from "./when-picker";
 import { anchorOf, PropertyBar, rebaseReminders, type RepeatValue, type TaskProps } from "./task-properties";
 
 const WEB = Platform.OS === "web";
@@ -20,7 +27,6 @@ const TITLE_FONT: TextStyle = {
   letterSpacing: -0.19,
 };
 
-const TIPS = "Try “tomorrow 6pm”, “every mon”, “!high”";
 
 /** Press feedback (Emil Kowalski): a 0.97 squeeze so the button visibly hears the tap. */
 const press = ({ pressed }: { pressed: boolean }) => ({
@@ -293,12 +299,7 @@ export function TaskComposer({
   const FIELD_NAMES: Record<string, string> = { date: "date", time: "time", priority: "priority", repeat: "repeat" };
   const picked = [...new Set(parsed.matched.map((m) => FIELD_NAMES[m.field]!))];
   const hint =
-    raw.trim().length === 0 ? (
-      <View className="flex-row items-center gap-1.5">
-        <Sparkles size={11} color={c.ink3} strokeWidth={2} />
-        <Text className="text-ink-3 text-[12px]">{TIPS}</Text>
-      </View>
-    ) : picked.length > 0 ? (
+    raw.trim().length === 0 ? null : picked.length > 0 ? (
       <View className="flex-row flex-wrap items-center gap-1.5">
         <Sparkles size={11} color={c.accent} strokeWidth={2.2} />
         <Text className="text-ink-3 text-[12px]">
@@ -316,6 +317,19 @@ export function TaskComposer({
         </Text>
       </Pressable>
     ) : null;
+
+  // A task already within half an hour of the chosen time, to mention once, quietly.
+  const { data: allTasks = [] } = useTasks();
+  const { data: skipped } = useSkippedOccurrences();
+  const clash = useMemo(() => {
+    if (!date || !time) return null;
+    const at = timeToMinutes(time);
+    return (
+      tasksOnDay(allTasks, date, today, skipped).find(
+        (p) => p.task.status !== "complete" && p.task.due_time && Math.abs(timeToMinutes(p.task.due_time) - at) < 30,
+      ) ?? null
+    );
+  }, [allTasks, date, time, today, skipped]);
 
   const form = (
     <View>
@@ -346,11 +360,14 @@ export function TaskComposer({
           style={{ textAlignVertical: "top" }}
         />
         {hint ? <View className="mt-2.5">{hint}</View> : null}
-      </View>
-
-      {/* When — the decision that matters most, one tap away. */}
-      <View className="border-line mx-5 mt-3.5 border-t pt-3.5">
-        <WhenPicker date={date} time={time} today={today} onDate={(d) => onChange({ date: d })} onTime={(t) => onChange({ time: t })} />
+        {clash ? (
+          <View className="mt-2 flex-row items-center gap-1.5">
+            <View className="bg-medium h-1.5 w-1.5 rounded-full" />
+            <Text numberOfLines={1} className="text-ink-3 flex-1 text-[12.5px]">
+              Also at {formatTime12(clash.task.due_time)}: <Text className="text-ink-2 font-medium">{clash.task.title}</Text>
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View className="mt-3">
@@ -369,22 +386,10 @@ export function TaskComposer({
 
   return (
     <View>
-      {compact ? (
-        form
-      ) : (
-        // The form sets the height; the day preview fills it and scrolls inside.
-        <View className="flex-row" style={{ minHeight: 330 }}>
-          <View className="min-w-0 flex-1 pb-4">{form}</View>
-          <View className="border-line bg-bg w-[270px] border-l">
-            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
-              <DayPreview date={date} time={time} title={title} today={today} onPickTime={(t) => onChange({ time: t })} />
-            </View>
-          </View>
-        </View>
-      )}
+      {form}
 
       {/* Footer band */}
-      <View className={`border-line flex-row items-center gap-3 border-t px-4 py-3 ${compact ? "mt-4" : ""}`}>
+      <View className="border-line mt-4 flex-row items-center gap-3 border-t px-4 py-3">
         <Pressable
           onPress={() => setCreateMore((v) => !v)}
           accessibilityRole="switch"
@@ -411,9 +416,6 @@ export function TaskComposer({
         </Pressable>
 
         <View className="flex-1">
-          {!added && !compact && WEB ? (
-            <Text className="text-ink-3 text-[12px]">Enter to add · Esc to close</Text>
-          ) : null}
           {added ? (
             <Text numberOfLines={1} className="text-success text-[12px] font-semibold">
               Added “{added}”

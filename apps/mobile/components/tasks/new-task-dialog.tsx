@@ -50,7 +50,7 @@ export function NewTaskDialog({
           <Pressable className="absolute inset-0 bg-black/40" onPress={onClose} accessibilityLabel="Close" />
           <DialogIn>
           <View
-            className="border-line bg-elev w-full max-w-[860px] overflow-hidden rounded-[16px] border"
+            className="border-line bg-elev w-full max-w-[580px] overflow-hidden rounded-[16px] border"
             style={{ maxHeight: win.height * 0.8, shadowColor: "#1B2131", shadowOpacity: 0.24, shadowRadius: 40, shadowOffset: { width: 0, height: 18 }, elevation: 20 }}
           >
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
