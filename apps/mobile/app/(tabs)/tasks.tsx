@@ -340,7 +340,9 @@ export default function TasksScreen() {
       <View className="flex-row items-start justify-between">
         <CalendarLeaf dateKey={focus} />
         <View className="flex-1 pl-3.5 pr-3 pt-0.5">
-          <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">{title}</Text>
+          <Text numberOfLines={1} className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">
+            {title}
+          </Text>
           {/* Two runs that wrap as wholes — a narrow pane breaks between them, never inside "1 of 12". */}
           <View className="mt-0.5 flex-row flex-wrap">
             <Text className="text-ink-3 mr-2 text-[13.5px] font-medium">
@@ -373,7 +375,7 @@ export default function TasksScreen() {
                   style={on ? { shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
                 >
                   <Icon size={15} color={on ? c.ink : c.ink3} strokeWidth={2} />
-                  {isDesktop && <Text className={`text-[12.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>}
+                  {isDesktop && !detailOpen && <Text className={`text-[12.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>}
                 </Pressable>
               );
             })}
@@ -403,7 +405,8 @@ export default function TasksScreen() {
               className="bg-accent hover:opacity-90 h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-3.5"
             >
               <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
-              <Text className="text-on-accent text-[13.5px] font-semibold">New task</Text>
+              {/* Beside an open task the pane is narrow: the button keeps its icon and loses its label. */}
+              {!detailOpen && <Text className="text-on-accent text-[13.5px] font-semibold">New task</Text>}
             </Pressable>
           ) : (
             <ProfileAvatar />

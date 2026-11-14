@@ -608,7 +608,8 @@ export function TaskCalendar({
                             className="absolute bottom-0 left-0 right-0 items-center justify-end"
                             style={[{ height: 8 }, Platform.OS === "web" ? ({ cursor: "ns-resize" } as object) : null]}
                           >
-                            <View className="mb-[2px] h-[3px] w-6 rounded-full" style={{ backgroundColor: priorityRing[p.task.priority], opacity: 0.45 }} />
+                            {/* The grip shows only when the block is tall enough not to run into the title. */}
+                            {tall && <View className="mb-[2px] h-[3px] w-6 rounded-full" style={{ backgroundColor: priorityRing[p.task.priority], opacity: 0.45 }} />}
                           </View>
                         )}
                       </View>
