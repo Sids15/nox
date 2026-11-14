@@ -17,6 +17,7 @@ import { Fab, useHideOnScroll } from "../../components/fab";
 import { EmptyState } from "../../components/empty-state";
 import { confirmDelete, plural } from "../../lib/confirm";
 import { NoteRow } from "../../components/notes/note-row";
+import { goBack } from "../../lib/go-back";
 
 export default function FolderScreen() {
   const fab = useHideOnScroll();
@@ -41,7 +42,7 @@ export default function FolderScreen() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [name, setName] = useState("");
 
-  const goBack = () => router.back();
+  const back = () => goBack("/notes");
   const createInFolder = () => {
     const newId = createNote.create({
       title: null,
@@ -62,7 +63,7 @@ export default function FolderScreen() {
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       {/* Header */}
       <View className="px-screen flex-row items-center justify-between pt-2">
-        <Pressable onPress={goBack} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
+        <Pressable onPress={back} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
           <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
         </Pressable>
         <Pressable
@@ -141,7 +142,7 @@ export default function FolderScreen() {
                   confirmLabel: "Delete folder",
                   onConfirm: () => {
                     deleteFolder.mutate(id);
-                    goBack();
+                    back();
                   },
                 });
               }}

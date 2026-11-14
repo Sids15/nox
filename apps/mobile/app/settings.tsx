@@ -13,6 +13,7 @@ import { SegmentedControl } from "../components/tasks/segmented-control";
 import { useSyncLabel } from "../lib/use-sync-label";
 import { ensurePermission, sendTestNotification } from "../lib/notifications";
 import { useIsDesktop } from "../lib/use-responsive";
+import { goBack } from "../lib/go-back";
 
 const ACCENT_ORDER: AccentName[] = ["violet", "green", "coral", "blue"];
 const THEMES: ThemeName[] = ["dark", "light"];
@@ -120,7 +121,7 @@ export default function SettingsScreen() {
         {/* Header */}
         <View className="px-screen flex-row items-center gap-3 pt-2">
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack("/tasks")}
             hitSlop={8}
             accessibilityLabel="Go back"
             className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"

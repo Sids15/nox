@@ -1,9 +1,10 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NoteEditor } from "../../components/notes/note-editor";
 import { Sidebar } from "../../components/sidebar";
 import { useIsDesktop } from "../../lib/use-responsive";
+import { goBack } from "../../lib/go-back";
 
 /**
  * Standalone note route — used on mobile (always) and for desktop deep-links. The desktop Notes 3-pane
@@ -12,7 +13,6 @@ import { useIsDesktop } from "../../lib/use-responsive";
  */
 export default function NoteEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const isDesktop = useIsDesktop();
 
   return (
@@ -20,7 +20,7 @@ export default function NoteEditorScreen() {
       <View className="flex-1 flex-row">
         {isDesktop && <Sidebar />}
         <View className="flex-1">
-          <NoteEditor id={id} onClose={() => router.back()} />
+          <NoteEditor id={id} onClose={() => goBack("/notes")} />
         </View>
       </View>
     </SafeAreaView>

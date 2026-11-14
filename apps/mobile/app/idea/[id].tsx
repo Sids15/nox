@@ -1,9 +1,10 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IdeaEditor } from "../../components/ideas/idea-editor";
 import { Sidebar } from "../../components/sidebar";
 import { useIsDesktop } from "../../lib/use-responsive";
+import { goBack } from "../../lib/go-back";
 
 /**
  * Standalone idea route — used on mobile (always) and for desktop deep-links. The desktop master-detail
@@ -12,7 +13,6 @@ import { useIsDesktop } from "../../lib/use-responsive";
  */
 export default function IdeaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const isDesktop = useIsDesktop();
 
   return (
@@ -20,7 +20,7 @@ export default function IdeaDetailScreen() {
       <View className="flex-1 flex-row">
         {isDesktop && <Sidebar />}
         <View className="flex-1">
-          <IdeaEditor id={id} onClose={() => router.back()} />
+          <IdeaEditor id={id} onClose={() => goBack("/")} />
         </View>
       </View>
     </SafeAreaView>

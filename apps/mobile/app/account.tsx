@@ -12,6 +12,7 @@ import { Sidebar } from "../components/sidebar";
 import { authErrorMessage } from "../lib/auth-errors";
 import { CORAL, CORAL_BORDER, CORAL_SOFT } from "../lib/auth-theme";
 import { useIsDesktop } from "../lib/use-responsive";
+import { goBack } from "../lib/go-back";
 
 function memberSince(iso?: string): string | null {
   if (!iso) return null;
@@ -54,7 +55,7 @@ export default function AccountScreen() {
 
   const back = (
     <Pressable
-      onPress={() => router.back()}
+      onPress={() => goBack("/settings")}
       hitSlop={8}
       accessibilityLabel="Go back"
       className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
