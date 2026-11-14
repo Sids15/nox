@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "nox",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0C0C13",
     "newArchEnabled": true,
     "web": {
       "bundler": "metro",

@@ -185,7 +185,11 @@ export function NewResourceSheet({
         style={[{ flex: 1 }, isDesktop ? { justifyContent: "center", alignItems: "center", padding: 24 } : null, vars(themeVars)]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Pressable className={isDesktop ? "absolute inset-0 bg-black/55" : "flex-1 bg-black/55"} onPress={onClose} />
+        {/* The backdrop always fills the whole screen. As flex-1 it stopped at the top of the
+            keyboard avoider's padding, so while typing on iOS the strip between the sheet and the
+            keyboard showed the screen behind, undimmed. A spacer now does the pushing. */}
+        <Pressable className="absolute inset-0 bg-black/55" onPress={onClose} />
+        {!isDesktop && <View className="flex-1" pointerEvents="none" />}
         <View
           className={
             isDesktop

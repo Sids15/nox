@@ -20,6 +20,7 @@ import {
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
 import { colorScheme, vars } from "nativewind";
 import { useEffect, type ReactNode } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -47,10 +48,19 @@ registerMutationDefaults(queryClient);
 function ThemeProvider({ children }: { children: ReactNode }) {
   const theme = usePrefs((s) => s.theme);
   const themeVars = useThemeVars();
+  const { bg } = useThemeColors();
 
   useEffect(() => {
     colorScheme.set(theme);
   }, [theme]);
+
+  // Paint the NATIVE root view (and Android's window) in the theme background. It defaulted to
+  // white, and anything that briefly or permanently uncovers it — the keyboard opening and the
+  // screen resizing above it, a modal sliding in — showed as a white band. app.json's
+  // backgroundColor covers launch; this keeps it right after a theme switch.
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(bg).catch(() => {});
+  }, [bg]);
 
   // bg-bg on the root guarantees the themed backdrop paints behind everything. Without it, the
   // wrapper Views are transparent and any area a screen doesn't cover shows the browser's default
