@@ -64,5 +64,6 @@ export function registerMutationDefaults(qc: QueryClient): void {
 
   // Tags
   def<{ input: TagInput; id: string }>(["tag", "create"], ({ input, id }) => TagRepository.create(input, id));
+  def<{ id: string; patch: Partial<TagInput> }>(["tag", "update"], ({ id, patch }) => TagRepository.update(id, patch));
   def<string>(["tag", "delete"], (id) => TagRepository.softDelete(id));
 }

@@ -29,6 +29,14 @@ export const TagRepository = {
     return tag.parse(data);
   },
 
+  /** Rename or recolour a tag. */
+  async update(id: string, patch: Partial<TagInput>): Promise<Tag> {
+    const parsed = tagInput.partial().parse(patch);
+    const { data, error } = await supabase.from("tags").update(parsed).eq("id", id).select().single();
+    if (error) throw error;
+    return tag.parse(data);
+  },
+
   async softDelete(id: string): Promise<void> {
     const { error } = await supabase.from("tags").update({ deleted: true }).eq("id", id);
     if (error) throw error;

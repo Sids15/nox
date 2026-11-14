@@ -43,6 +43,24 @@ export function useCreateTag() {
   };
 }
 
+/** Rename or recolour a tag, optimistically. Works offline (registered in the mutation registry). */
+export function useUpdateTag() {
+  const qc = useQueryClient();
+  return useMutation<Tag, Error, { id: string; patch: Partial<TagInput> }, { previous: Tag[] }>({
+    mutationKey: ["tag", "update"],
+    onMutate: async ({ id, patch }) => {
+      await qc.cancelQueries({ queryKey: tagKeys.all });
+      const previous = snapshot(qc);
+      qc.setQueryData<Tag[]>(tagKeys.all, previous.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+      return { previous };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx) qc.setQueryData(tagKeys.all, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: tagKeys.all }),
+  });
+}
+
 export function useDeleteTag() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, string, { previous: Tag[] }>({

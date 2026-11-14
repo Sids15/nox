@@ -51,7 +51,7 @@ export {
   useArchiveResource,
   useDeleteResource,
 } from "./resources/use-resources";
-export { useTags, useCreateTag, useDeleteTag } from "./resources/use-tags";
+export { useTags, useCreateTag, useDeleteTag, useUpdateTag } from "./resources/use-tags";
 export { resourceKeys, tagKeys } from "./resources/resource-keys";
 export { useRealtimeSync } from "./sync/use-realtime-sync";
 export { registerMutationDefaults } from "./sync/mutation-registry";
