@@ -1,4 +1,5 @@
 import {
+  autoSchedule,
   minutesToTime,
   tasksOnDay,
   timeToMinutes,
@@ -13,7 +14,7 @@ import {
 } from "@nox/features";
 import type { Task } from "@nox/types";
 import { addDays, dayOfMonth, dayOfWeek, formatTime12, monthShort, weekdayShort } from "@nox/utils";
-import { Check, ChevronLeft, ChevronRight, Minus, Plus, Repeat, Settings2 } from "lucide-react-native";
+import { Check, ChevronLeft, ChevronRight, Minus, Plus, Repeat, Settings2, Sparkles } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Platform, Pressable, ScrollView, Text, View, type GestureResponderEvent } from "react-native";
 import { useIsDesktop } from "../../lib/use-responsive";
@@ -338,6 +339,38 @@ export function TaskCalendar({
 
   // ── Settings ────────────────────────────────────────────────────────────────────────────────────
   const gearRef = useRef<View>(null);
+
+  // ── Plan: fit the visible days' untimed tasks into their free time ──
+  const placeable = (d: string) =>
+    (byDay.get(d) ?? []).filter((p) => !p.projected && !p.task.due_time && p.task.status !== "complete").map((p) => p.task);
+  const toPlan = days.filter((d) => d >= today).reduce((n, d) => n + placeable(d).length, 0);
+  const [planNote, setPlanNote] = useState<string | null>(null);
+  const planDays = () => {
+    let placed = 0;
+    let left = 0;
+    for (const d of days) {
+      if (d < today) continue;
+      const tasksHere = placeable(d);
+      if (tasksHere.length === 0) continue;
+      const nowMin = d === today ? nowMinutes() + 10 : 0;
+      const plan = autoSchedule(byDay.get(d) ?? [], tasksHere, { dayStart: prefs.startHour * 60, dayEnd: prefs.endHour * 60, notBefore: nowMin });
+      for (const { id, time } of plan) {
+        const t = tasksHere.find((x) => x.id === id)!;
+        updateTask.mutate({
+          id,
+          patch: { due_date: d, due_time: time, reminder_times: rebaseReminders(t.reminder_times, anchorOf(t.due_date, t.due_time), anchorOf(d, time)) },
+        });
+      }
+      placed += plan.length;
+      left += tasksHere.length - plan.length;
+    }
+    setPlanNote(
+      placed === 0
+        ? "No free time left in your hours to fit them."
+        : `Scheduled ${placed} task${placed === 1 ? "" : "s"}${left ? `; ${left} didn't fit and stay anytime` : ""}. Drag any to adjust.`,
+    );
+    setTimeout(() => setPlanNote(null), 5000);
+  };
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -374,6 +407,18 @@ export function TaskCalendar({
             </Pressable>
           ))}
         </View>
+        <Pressable
+          onPress={planDays}
+          disabled={toPlan === 0}
+          accessibilityRole="button"
+          accessibilityLabel={toPlan ? `Fit ${toPlan} anytime tasks into free time` : "No anytime tasks to plan"}
+          {...({ title: "Fit anytime tasks into the free time, highest priority first" } as object)}
+          style={pressScale}
+          className={`h-8 flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${toPlan ? "hover:bg-chip" : "opacity-40"}`}
+        >
+          <Sparkles size={14} color={toPlan ? c.accent : c.ink3} strokeWidth={2.2} />
+          {isDesktop && <Text className="text-ink-2 text-[12.5px] font-semibold">{mode === "day" ? "Plan day" : "Plan week"}</Text>}
+        </Pressable>
         <View ref={gearRef} collapsable={false}>
           <Pressable
             onPress={() => setSettingsOpen(true)}
@@ -386,6 +431,13 @@ export function TaskCalendar({
           </Pressable>
         </View>
       </View>
+
+      {planNote && (
+        <View className="bg-accent/[0.08] mx-screen mb-2 flex-row items-center gap-2 rounded-[10px] px-3 py-2">
+          <Sparkles size={13} color={c.accent} strokeWidth={2.2} />
+          <Text className="text-ink-2 flex-1 text-[13px]">{planNote}</Text>
+        </View>
+      )}
 
       {/* Day headers */}
       <View className="border-line flex-row border-b" style={{ paddingLeft: GUTTER }}>

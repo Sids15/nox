@@ -1,7 +1,7 @@
-import { useTasks, useThemeColors, useToggleTask, useUpdateTask } from "@nox/features";
+import { findFreeSlot, tasksOnDay, usePrefs, useSkippedOccurrences, useTasks, useThemeColors, useToggleTask, useUpdateTask } from "@nox/features";
 import type { TaskInput } from "@nox/types";
-import { relativeDayLabel, relativeFromNow, shortDate, todayKey } from "@nox/utils";
-import { Check, ChevronLeft, CircleCheck, CircleDashed, MoreHorizontal, Repeat, RotateCcw, Trash2 } from "lucide-react-native";
+import { formatTime12, relativeDayLabel, relativeFromNow, shortDate, todayKey } from "@nox/utils";
+import { Check, ChevronLeft, CircleCheck, CircleDashed, MoreHorizontal, Repeat, RotateCcw, Sparkles, Trash2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useIsDesktop } from "../../lib/use-responsive";
@@ -28,6 +28,8 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
   const isDesktop = useIsDesktop();
   const today = todayKey();
   const { data: tasks = [] } = useTasks();
+  const { data: skipped } = useSkippedOccurrences();
+  const hours = usePrefs((s) => s.calendar);
   const task = useMemo(() => tasks.find((t) => t.id === id), [tasks, id]);
 
   const toggle = useToggleTask();
@@ -74,6 +76,15 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
   const complete = task.status === "complete";
   const patch = (p: Partial<TaskInput>) => updateTask.mutate({ id: task.id, patch: p });
   const setDone = (done: boolean) => toggle.mutate({ id: task.id, status: done ? "complete" : "pending" });
+
+  const freeSlot =
+    task.due_date && !task.due_time
+      ? findFreeSlot(tasksOnDay(tasks, task.due_date, today, skipped), task.duration_minutes || 30, {
+          dayStart: hours.startHour * 60,
+          dayEnd: hours.endHour * 60,
+          notBefore: task.due_date === today ? new Date().getHours() * 60 + new Date().getMinutes() + 10 : 0,
+        })
+      : null;
 
   const props: TaskProps = {
     date: task.due_date,
@@ -220,6 +231,25 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
 
         <View className="mt-5" style={{ paddingLeft: isDesktop ? TEXT_INDENT : 0 }}>
           <PropertyBar value={props} onChange={onChange} today={today} compact={!isDesktop} />
+          {/* A dated task with no time isn't on the calendar grid yet: offer the next free slot. */}
+          {task.due_date && !task.due_time && !complete && task.due_date >= today && (
+            <View className="mt-3 flex-row flex-wrap items-center gap-2" style={{ paddingHorizontal: 14 }}>
+              <Text className="text-ink-3 text-[13px]">Not on your calendar yet.</Text>
+              {freeSlot ? (
+                <Pressable
+                  onPress={() => onChange({ time: freeSlot })}
+                  accessibilityRole="button"
+                  style={pressScale}
+                  className="bg-accent/[0.1] hover:bg-accent/[0.16] flex-row items-center gap-1.5 rounded-[8px] px-2.5 py-1"
+                >
+                  <Sparkles size={12} color={c.accent} strokeWidth={2.4} />
+                  <Text className="text-accent text-[13px] font-semibold">Schedule at {formatTime12(freeSlot)}</Text>
+                </Pressable>
+              ) : (
+                <Text className="text-ink-3 text-[13px]">No free time left in your calendar hours that day.</Text>
+              )}
+            </View>
+          )}
         </View>
 
         <View className="bg-line mx-[20px] mt-8 h-px" />

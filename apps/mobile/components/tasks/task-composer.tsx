@@ -1,5 +1,7 @@
 import {
+  findFreeSlot,
   parseQuickAdd,
+  usePrefs,
   tasksOnDay,
   timeToMinutes,
   useCreateTask,
@@ -191,6 +193,9 @@ export function TaskComposer({
   const [manRepeat, setManRepeat] = useState<RepeatValue | undefined>(undefined);
   const [reminders, setReminders] = useState<string[]>([]);
   const [duration, setDuration] = useState<number | null>(null);
+  const askWhenAdding = usePrefs((s) => s.calendar.askWhenAdding);
+  const calHours = usePrefs((s) => s.calendar);
+  const [asked, setAsked] = useState(false);
 
   const titleRef = useRef<TextInput>(null);
 
@@ -260,6 +265,11 @@ export function TaskComposer({
       setError("Pick at least one day for the repeat, or set it to Never.");
       return;
     }
+    // Ask once for what the calendar needs (a time, then a length); Enter again adds it as it is.
+    if (askWhenAdding && !asked && date !== null && (!time || !duration)) {
+      setAsked(true);
+      return;
+    }
     const now = Date.now();
     const input: TaskInput = {
       title: title.slice(0, 200),
@@ -280,6 +290,7 @@ export function TaskComposer({
       return;
     }
     // Create more: keep the settings, clear the words, go again.
+    setAsked(false);
     setAdded(title);
     setRaw("");
     setDescription("");
@@ -341,6 +352,17 @@ export function TaskComposer({
     );
   }, [allTasks, date, time, today, skipped]);
 
+  const suggested = useMemo(() => {
+    if (!date) return null;
+    const d = new Date();
+    const notBefore = date === today ? d.getHours() * 60 + d.getMinutes() + 10 : 0;
+    return findFreeSlot(tasksOnDay(allTasks, date, today, skipped), duration ?? 30, {
+      dayStart: calHours.startHour * 60,
+      dayEnd: calHours.endHour * 60,
+      notBefore,
+    });
+  }, [allTasks, date, today, skipped, duration, calHours.startHour, calHours.endHour]);
+
   // The day beside the box only when it has something to show: a time picked, or timed tasks that day.
   const dayHasTimed = useMemo(
     () => !!date && tasksOnDay(allTasks, date, today, skipped).some((p) => p.task.status !== "complete" && p.task.due_time),
@@ -383,6 +405,41 @@ export function TaskComposer({
             <Text numberOfLines={1} className="text-ink-3 flex-1 text-[12.5px]">
               Also at {formatTime12(clash.task.due_time)}: <Text className="text-ink-2 font-medium">{clash.task.title}</Text>
             </Text>
+          </View>
+        ) : null}
+        {asked && date !== null && (!time || !duration) ? (
+          <View className="bg-accent/[0.06] mt-3 gap-2.5 rounded-[12px] px-3 py-3" accessibilityLiveRegion="polite">
+            {!time && (
+              <View>
+                <Text className="text-ink text-[13.5px] font-semibold">When will you do it?</Text>
+                <View className="mt-2 flex-row flex-wrap items-center gap-1.5">
+                  {suggested ? (
+                    <Pressable onPress={() => onChange({ time: suggested })} accessibilityRole="button" style={press} className="bg-accent h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2.5">
+                      <Sparkles size={12} color={c.onAccent} strokeWidth={2.4} />
+                      <Text className="text-on-accent text-[13px] font-semibold">{formatTime12(suggested)}</Text>
+                      <Text className="text-on-accent text-[12px] opacity-80">next free slot</Text>
+                    </Pressable>
+                  ) : (
+                    <Text className="text-ink-3 text-[12.5px]">No free slot left in your hours that day.</Text>
+                  )}
+                  <Text className="text-ink-3 text-[12.5px]">or set Time below, or press Enter to keep it anytime</Text>
+                </View>
+              </View>
+            )}
+            {time && !duration && (
+              <View>
+                <Text className="text-ink text-[13.5px] font-semibold">How long will it take?</Text>
+                <View className="mt-2 flex-row flex-wrap gap-1.5">
+                  {[15, 30, 45, 60, 90, 120].map((m) => (
+                    <Pressable key={m} onPress={() => onChange({ duration: m })} accessibilityRole="button" style={press} className="border-line hover:bg-chip h-[30px] justify-center rounded-[8px] border px-2.5">
+                      <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink text-[13px] font-medium">
+                        {m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} hr ${m % 60}` : `${m / 60} hr`}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         ) : null}
       </View>

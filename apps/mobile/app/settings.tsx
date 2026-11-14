@@ -315,6 +315,9 @@ export default function SettingsScreen() {
         "Tasks & calendar",
         "How Tasks opens and what the calendar shows.",
         <Group>
+          <Row title="Ask when and how long" detail="When you add a task with a day but no time, Nox suggests the next free slot and asks how long it takes. Press Enter to skip.">
+            <Toggle label="Ask when and how long" value={calendar.askWhenAdding} onChange={(v) => cal({ askWhenAdding: v })} />
+          </Row>
           <Row title="Open Tasks as" detail="You can switch any time from the Tasks header.">
             <Segments
               value={calendar.view}
