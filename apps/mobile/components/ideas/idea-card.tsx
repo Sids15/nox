@@ -29,7 +29,7 @@ export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPr
           <View style={{ width: 6, height: 6, borderRadius: 99, backgroundColor: priorityColor }} />
           <Text
             style={{ color: priorityColor }}
-            className="font-mono text-[10px] font-semibold tracking-[0.1em]"
+            className="text-[10px] font-semibold tracking-[0.1em]"
           >
             {PRIORITY_LABEL[idea.priority]}
           </Text>
@@ -59,7 +59,7 @@ export function IdeaCard({ idea, onPress, selected = false }: { idea: Idea; onPr
           <TagChip key={t} tag={t} />
         ))}
         <View className="flex-1" />
-        <Text className="text-ink-3 font-mono text-[10.5px]">{relativeAge(idea.updated_at)}</Text>
+        <Text className="text-ink-3 text-[10.5px]">{relativeAge(idea.updated_at)}</Text>
       </View>
     </Pressable>
   );

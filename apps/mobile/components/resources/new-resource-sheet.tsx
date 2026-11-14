@@ -271,7 +271,7 @@ export function NewResourceSheet({
                 keyboardType="url"
                 placeholder="Paste a URL"
                 placeholderTextColor={c.ink3}
-                className="text-ink flex-1 font-mono text-[12.5px]"
+                className="text-ink flex-1 text-[12.5px]"
                 style={{ paddingVertical: 0 }}
               />
             </View>
@@ -295,7 +295,7 @@ export function NewResourceSheet({
                   className="text-ink text-[13.5px] font-semibold"
                   style={{ paddingVertical: 0 }}
                 />
-                <Text className="text-ink-3 mt-0.5 font-mono text-[10px]">
+                <Text className="text-ink-3 mt-0.5 text-[10px]">
                   {fetched ? "fetched preview · " : ""}{domain}
                 </Text>
               </View>
@@ -305,7 +305,7 @@ export function NewResourceSheet({
 
           {/* Tags */}
           <View className="gap-[9px]">
-            <Text className="text-ink-3 font-mono text-[10px] font-semibold tracking-[0.14em]">TAGS</Text>
+            <Text className="text-ink-3 text-[10px] font-semibold tracking-[0.14em]">TAGS</Text>
             <View className="flex-row flex-wrap items-center gap-[6px]">
               {selectedTags.map((t) => (
                 <Pressable key={t.id} onPress={() => removeTag(t.id)} style={{ backgroundColor: t.color }} className="rounded-pill flex-row items-center gap-1.5 px-3 py-[7px]">

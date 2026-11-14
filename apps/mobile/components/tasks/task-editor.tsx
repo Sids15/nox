@@ -180,7 +180,7 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
               maxLength={200}
               minHeight={34}
               accessibilityLabel="Task name"
-              className={`ml-3 flex-1 text-[24px] font-bold leading-[34px] tracking-[-0.02em] ${complete ? "text-ink-3 line-through" : "text-ink"}`}
+              className={`ml-3 flex-1 font-serif text-[24px] font-bold leading-[34px] tracking-[-0.01em] ${complete ? "text-ink-3 line-through" : "text-ink"}`}
             />
           </View>
 

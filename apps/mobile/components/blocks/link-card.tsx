@@ -27,7 +27,7 @@ export function LinkCard({ block, onRemove }: { block: LinkBlock; onRemove: () =
       </View>
       <View className="flex-1">
         <Text numberOfLines={2} className="text-ink text-[13.5px] font-semibold">{block.title ?? block.url}</Text>
-        <Text numberOfLines={1} className="text-ink-3 mt-0.5 font-mono text-[10px]">{domain}</Text>
+        <Text numberOfLines={1} className="text-ink-3 mt-0.5 text-[10px]">{domain}</Text>
       </View>
     </Pressable>
   );

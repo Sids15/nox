@@ -47,13 +47,13 @@ export function NoteRow({ note, onPress, selected = false }: { note: Note; onPre
         {sub ? (
           <Text
             numberOfLines={1}
-            className={`mt-[3px] ${mono ? "text-ink-3 font-mono text-[10px]" : "text-ink-3 text-[11.5px]"}`}
+            className={`mt-[3px] ${mono ? "text-ink-3 text-[10px]" : "text-ink-3 text-[11.5px]"}`}
           >
             {sub}
           </Text>
         ) : null}
       </View>
-      <Text className="text-ink-3 font-mono text-[10px]">{relativeAge(note.updated_at)}</Text>
+      <Text className="text-ink-3 text-[10px]">{relativeAge(note.updated_at)}</Text>
     </Pressable>
   );
 }

@@ -30,7 +30,7 @@ import { ProfileAvatar } from "../../components/profile-avatar";
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <Text className="text-ink-3 mb-2 mt-4 pl-0.5 font-mono text-[10px] font-semibold tracking-[0.14em]">
+    <Text className="text-ink-3 mb-2 mt-4 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">
       {children}
     </Text>
   );
@@ -64,7 +64,7 @@ function FolderNavRow({
       <Text numberOfLines={1} className={`flex-1 text-[13px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>
         {label}
       </Text>
-      <Text className="text-ink-3 font-mono text-[10.5px] font-medium">{count}</Text>
+      <Text className="text-ink-3 text-[10.5px] font-medium">{count}</Text>
     </Pressable>
   );
 }
@@ -176,7 +176,7 @@ export default function NotesScreen() {
                 <FolderPlus size={15} color={c.ink2} strokeWidth={1.8} />
               </Pressable>
             </View>
-            <Text className="text-ink-3 mb-3 mt-1.5 px-[9px] font-mono text-[10px] font-medium tracking-[0.14em]">
+            <Text className="text-ink-3 mb-3 mt-1.5 px-[9px] text-[10px] font-medium tracking-[0.14em]">
               {active.length} NOTES · {folders.length} FOLDERS
             </Text>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
@@ -383,11 +383,9 @@ export default function NotesScreen() {
       >
         <View className="px-screen flex-row items-start justify-between pt-2">
           <View>
-            <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-              {active.length} NOTES · {folders.length} FOLDERS
-            </Text>
-            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
-              Notes
+            <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Notes</Text>
+            <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+              {plural(active.length, "note")} · {plural(folders.length, "folder")}
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
@@ -467,7 +465,7 @@ export default function NotesScreen() {
                         >
                           <Folder size={17} color={c.ink2} strokeWidth={1.7} />
                           <Text className="text-ink flex-1 text-[14.5px] font-medium">{f.name}</Text>
-                          <Text className="text-ink-3 font-mono text-[11px]">{noteCount(f.id)}</Text>
+                          <Text className="text-ink-3 text-[11px]">{noteCount(f.id)}</Text>
                           <ChevronRight size={14} color={c.ink3} strokeWidth={2} />
                         </Pressable>
                       </View>

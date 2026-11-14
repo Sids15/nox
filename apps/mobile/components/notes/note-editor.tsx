@@ -91,7 +91,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
           <Pressable onPress={onClose} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
             <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
           </Pressable>
-          <Text className="text-ink-3 font-mono text-[11px]">{folderName ?? "Notes"}</Text>
+          <Text className="text-ink-3 text-[11px]">{folderName ?? "Notes"}</Text>
         </View>
         <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
           <MoreHorizontal size={20} color={c.ink2} strokeWidth={1.7} />
@@ -112,11 +112,11 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
             placeholder="Title"
             placeholderTextColor={c.ink3}
             minHeight={30}
-            className="text-ink text-[24px] font-bold leading-[30px] tracking-[-0.02em]"
+            className="text-ink font-serif text-[24px] font-bold leading-[30px] tracking-[-0.01em]"
           />
           <View className="mt-1.5 flex-row items-center gap-[7px]">
             <View className="bg-success h-1.5 w-1.5 rounded-full" />
-            <Text className="text-ink-3 font-mono text-[10.5px]">
+            <Text className="text-ink-3 text-[10.5px]">
               auto-saved · edited {relativeFromNow(note.updated_at)}
             </Text>
           </View>

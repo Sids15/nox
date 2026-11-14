@@ -13,7 +13,7 @@ const MIN_LENGTH = 8;
 /** Uppercase field label (mono, tracked) — matches the login screen. */
 function FieldLabel({ children }: { children: string }) {
   return (
-    <Text className="text-ink-3 mb-1.5 mt-4 font-mono text-[10.5px] font-semibold tracking-[0.16em]">{children}</Text>
+    <Text className="text-ink-3 mb-1.5 mt-4 text-[10.5px] font-semibold tracking-[0.16em]">{children}</Text>
   );
 }
 
@@ -92,7 +92,7 @@ export default function ResetPasswordScreen() {
           keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}
         >
-          <Text className="text-ink text-[30px] font-bold tracking-[-0.02em]">Set a new password</Text>
+          <Text className="text-ink font-serif text-[30px] font-bold tracking-[-0.01em]">Set a new password</Text>
           <Text className="text-ink-2 mt-2 text-[14.5px] leading-[21px]">
             Choose a new password for your account. You'll be signed in once it's saved.
           </Text>
@@ -124,7 +124,7 @@ export default function ResetPasswordScreen() {
               colors={CORAL_GRADIENT}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 14, paddingVertical: 16, alignItems: "center", shadowColor: CORAL, shadowOpacity: 0.45, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}
+              style={{ borderRadius: 12, paddingVertical: 15, alignItems: "center", shadowColor: "#1B2131", shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 }}
             >
               <Text className="text-[15.5px] font-bold text-white">{busy ? "Saving…" : "Save password"}</Text>
             </LinearGradient>

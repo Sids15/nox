@@ -105,7 +105,7 @@ export function Sidebar() {
           resizeMode="contain"
           accessibilityLabel="Nox"
         />
-        <Text className="text-ink-3 font-mono text-[11px] font-medium">{clockLabel(now)}</Text>
+        <Text className="text-ink-3 text-[11px] font-medium">{clockLabel(now)}</Text>
       </View>
       <Text className="text-ink-2 px-2 pb-3.5 text-[12px]">{greeting(now, firstName)}</Text>
 
@@ -117,7 +117,7 @@ export function Sidebar() {
         <Search size={13} color={c.ink3} strokeWidth={1.8} />
         <Text className="text-ink-3 flex-1 text-[12.5px]">Search</Text>
         <View className="bg-bg border-line rounded-[5px] border px-[5px] py-[3px]">
-          <Text className="text-ink-3 font-mono text-[10px] font-semibold">{SEARCH_CHORD}</Text>
+          <Text className="text-ink-3 text-[10px] font-semibold">{SEARCH_CHORD}</Text>
         </View>
       </Pressable>
 
@@ -133,7 +133,7 @@ export function Sidebar() {
             >
               <item.icon size={17} color={active ? c.accent : c.ink2} strokeWidth={1.7} />
               <Text className={`flex-1 text-[13.5px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>{item.label}</Text>
-              <Text className="text-ink-3 font-mono text-[10.5px] font-medium">{item.count}</Text>
+              <Text className="text-ink-3 text-[10.5px] font-medium">{item.count}</Text>
             </Pressable>
           );
         })}
@@ -150,7 +150,7 @@ export function Sidebar() {
         )}
         <Text className="text-ink-2 flex-1 text-[12px]">{sync.title}</Text>
         {sync.detail ? (
-          <Text numberOfLines={1} className="text-ink-3 font-mono text-[9.5px] font-medium">{sync.detail}</Text>
+          <Text numberOfLines={1} className="text-ink-3 text-[9.5px] font-medium">{sync.detail}</Text>
         ) : null}
       </View>
 

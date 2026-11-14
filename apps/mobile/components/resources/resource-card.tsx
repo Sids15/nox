@@ -26,7 +26,7 @@ function TagsRow({ tags }: { tags: Tag[] }) {
     <View className="flex-row flex-wrap gap-[5px]">
       {tags.map((t) => (
         <View key={t.id} style={{ backgroundColor: `${t.color}1f`, borderRadius: 5 }} className="px-[7px] py-1">
-          <Text style={{ color: t.color }} className="font-mono text-[9.5px] font-semibold">
+          <Text style={{ color: t.color }} className="text-[9.5px] font-semibold">
             {t.name}
           </Text>
         </View>
@@ -63,13 +63,13 @@ export function ResourceCard({
           </View>
           {resource.duration ? (
             <View className="absolute bottom-[7px] right-[7px] rounded-[5px] px-1.5 py-1" style={{ backgroundColor: "rgba(10,10,16,0.72)" }}>
-              <Text className="font-mono text-[9.5px] font-semibold text-white">{resource.duration}</Text>
+              <Text className="text-[9.5px] font-semibold text-white">{resource.duration}</Text>
             </View>
           ) : null}
         </View>
         <View className="gap-[7px] p-3">
           <Text numberOfLines={3} className="text-ink text-[13.5px] font-semibold" style={{ lineHeight: 18 }}>{title}</Text>
-          {resource.domain ? <Text className="text-ink-3 font-mono text-[10px]">{resource.domain}</Text> : null}
+          {resource.domain ? <Text className="text-ink-3 text-[10px]">{resource.domain}</Text> : null}
           <TagsRow tags={tags} />
         </View>
       </Pressable>
@@ -83,7 +83,7 @@ export function ResourceCard({
           {resource.thumbnail_url ? (
             <Thumb value={resource.thumbnail_url} style={{ width: "100%", height: "100%" }} />
           ) : (
-            <Text className="text-ink-3 font-mono text-[9.5px]">image</Text>
+            <Text className="text-ink-3 text-[9.5px]">image</Text>
           )}
         </View>
         <View className="gap-[7px] p-3">
@@ -101,7 +101,7 @@ export function ResourceCard({
           <Text numberOfLines={6} className="text-ink-2 text-[13px]" style={{ fontFamily: "Georgia", lineHeight: 20 }}>
             {resource.body ? `“${resource.body}”` : title}
           </Text>
-          {resource.title ? <Text className="text-ink-3 font-mono text-[10px]">— {resource.title}</Text> : null}
+          {resource.title ? <Text className="text-ink-3 text-[10px]">— {resource.title}</Text> : null}
           <TagsRow tags={tags} />
         </View>
       </Pressable>
@@ -118,7 +118,7 @@ export function ResourceCard({
           <View className="h-[18px] w-[18px] items-center justify-center rounded-[5px]" style={{ backgroundColor: `${color}2e` }}>
             <Text style={{ color }} className="text-[9px] font-bold">{initial}</Text>
           </View>
-          {resource.domain ? <Text className="text-ink-3 font-mono text-[10px]">{resource.domain}</Text> : null}
+          {resource.domain ? <Text className="text-ink-3 text-[10px]">{resource.domain}</Text> : null}
         </View>
         <Text className="text-ink text-[13.5px] font-semibold" style={{ lineHeight: 18 }}>{title}</Text>
         <TagsRow tags={tags} />

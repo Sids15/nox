@@ -76,7 +76,7 @@ export function BlockToolbar({
           <View className="flex-1 flex-row items-center justify-between px-3">
             <View className="flex-row items-center gap-2.5">
               <View className="bg-high h-2.5 w-2.5 rounded-full" />
-              <Text className="text-ink font-mono text-[13px]">{fmt(rec.durationMs)}</Text>
+              <Text className="text-ink text-[13px]">{fmt(rec.durationMs)}</Text>
               <Text className="text-ink-3 text-[12px]">recording…</Text>
             </View>
             <Pressable onPress={stopRec} className="bg-high flex-row items-center gap-1.5 rounded-pill px-4 py-1.5">
@@ -121,7 +121,7 @@ export function BlockToolbar({
               returnKeyType="done"
               placeholder="Paste a URL"
               placeholderTextColor={c.ink3}
-              className="bg-chip rounded-input text-ink mb-3 h-11 px-3 font-mono text-[13px]"
+              className="bg-chip rounded-input text-ink mb-3 h-11 px-3 text-[13px]"
               style={{ paddingVertical: 0 }}
             />
             <View className="flex-row justify-end gap-2">

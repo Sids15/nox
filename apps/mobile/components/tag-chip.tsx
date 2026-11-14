@@ -17,7 +17,7 @@ export function TagChip({ tag, tinted = false }: { tag: string; tinted?: boolean
     const color = tagColor(tag);
     return (
       <View style={{ backgroundColor: `${color}22`, borderRadius: 7 }} className="px-2.5 py-1.5">
-        <Text style={{ color }} className="font-mono text-[11px] font-medium">
+        <Text style={{ color }} className="text-[11px] font-medium">
           {label}
         </Text>
       </View>
@@ -26,7 +26,7 @@ export function TagChip({ tag, tinted = false }: { tag: string; tinted?: boolean
 
   return (
     <View className="bg-chip rounded-[6px] px-2 py-1">
-      <Text className="text-ink-2 font-mono text-[10.5px] font-medium">{label}</Text>
+      <Text className="text-ink-2 text-[10.5px] font-medium">{label}</Text>
     </View>
   );
 }

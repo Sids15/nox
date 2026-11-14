@@ -25,7 +25,7 @@ import { SegmentedControl } from "../tasks/segmented-control";
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">
+    <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] text-[10px] font-semibold tracking-[0.14em]">
       {children}
     </Text>
   );
@@ -123,7 +123,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             placeholder="Idea title"
             placeholderTextColor={c.ink3}
             minHeight={30}
-            className="text-ink text-[24px] font-bold leading-[30px] tracking-[-0.02em]"
+            className="text-ink font-serif text-[24px] font-bold leading-[30px] tracking-[-0.01em]"
           />
 
           {/* Tags */}
@@ -147,7 +147,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
                   placeholder="tag"
                   placeholderTextColor={c.ink3}
                   submitBehavior="submit"
-                  className="text-ink min-w-[48px] font-mono text-[11px]"
+                  className="text-ink min-w-[48px] text-[11px]"
                 />
               </View>
             ) : (
@@ -156,14 +156,14 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
                 className="border-line flex-row items-center gap-1 rounded-[7px] border border-dashed px-2.5 py-1.5"
               >
                 <Plus size={11} color={c.ink3} strokeWidth={2} />
-                <Text className="text-ink-3 font-mono text-[11px]">tag</Text>
+                <Text className="text-ink-3 text-[11px]">tag</Text>
               </Pressable>
             )}
           </View>
 
           {/* Meta sits up here (as in the note editor) rather than at the end of the document, where
               the floating toolbar covered it until you scrolled. */}
-          <Text className="text-ink-3 mt-3 font-mono text-[10.5px]">
+          <Text className="text-ink-3 mt-3 text-[10.5px]">
             created {shortDate(idea.created_at).toLowerCase()} · updated {relativeFromNow(idea.updated_at)}
           </Text>
         </View>

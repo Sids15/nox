@@ -24,7 +24,7 @@ export function ImageBlock({ block, onRemove }: { block: ImgBlock; onRemove: () 
         <Image source={{ uri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
       ) : (
         <View className="h-[150px] items-center justify-center">
-          <Text className="text-ink-3 font-mono text-[10px]">image</Text>
+          <Text className="text-ink-3 text-[10px]">image</Text>
         </View>
       )}
     </Pressable>

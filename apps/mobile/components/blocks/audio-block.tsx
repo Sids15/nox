@@ -45,7 +45,7 @@ export function AudioBlock({ block, onRemove }: { block: AudioB; onRemove: () =>
           />
         ))}
       </View>
-      <Text className="text-ink-2 font-mono text-[11px]">{fmtDur(block.durationMs)}</Text>
+      <Text className="text-ink-2 text-[11px]">{fmtDur(block.durationMs)}</Text>
     </Pressable>
   );
 }

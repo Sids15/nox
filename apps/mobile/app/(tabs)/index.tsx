@@ -13,6 +13,7 @@ import { ProfileAvatar } from "../../components/profile-avatar";
 import { IdeaCard } from "../../components/ideas/idea-card";
 import { IdeaEditor } from "../../components/ideas/idea-editor";
 import { useIsDesktop } from "../../lib/use-responsive";
+import { plural } from "../../lib/confirm";
 import {
   DEFAULT_IDEA_FILTERS,
   IdeaFilters,
@@ -100,7 +101,7 @@ export default function IdeasScreen() {
       {/* Header — desktop: 26px title + "New idea" pill; mobile: 30px title + filter toggle */}
       {isDesktop ? (
         <DesktopHeader
-          eyebrow={`${ideas.filter((i) => !i.is_archived && i.status !== "dropped").length} IDEAS`}
+          eyebrow={plural(ideas.filter((i) => !i.is_archived && i.status !== "dropped").length, "idea")}
           title="Ideas"
           actionLabel="New idea"
           onAction={onCreate}
@@ -108,11 +109,9 @@ export default function IdeasScreen() {
       ) : (
         <View className="px-screen flex-row items-start justify-between pt-2">
           <View>
-            <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-              {ideas.filter((i) => !i.is_archived && i.status !== "dropped").length} IDEAS
-            </Text>
-            <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">
-              Ideas
+            <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Ideas</Text>
+            <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+              {plural(ideas.filter((i) => !i.is_archived && i.status !== "dropped").length, "idea")}
             </Text>
           </View>
           <View className="flex-row items-center gap-2">

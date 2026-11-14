@@ -75,10 +75,10 @@ export default function FolderScreen() {
         </Pressable>
       </View>
       <View className="px-screen mt-3">
-        <Text className="text-ink text-[26px] font-bold tracking-[-0.02em]">
+        <Text className="text-ink font-serif text-[26px] font-bold tracking-[-0.01em]">
           {folder?.name ?? "Folder"}
         </Text>
-        <Text className="text-ink-3 mt-1 font-mono text-[10.5px] tracking-[0.14em]">
+        <Text className="text-ink-3 mt-1 text-[10.5px] tracking-[0.14em]">
           {folderNotes.length} NOTES
         </Text>
       </View>

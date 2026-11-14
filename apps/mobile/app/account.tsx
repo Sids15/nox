@@ -72,8 +72,8 @@ export default function AccountScreen() {
       <View className="flex-row items-center gap-3.5">
         {back}
         <View>
-          <Text className="text-ink-3 font-mono text-[10px] font-semibold tracking-[0.16em]">SETTINGS</Text>
-          <Text className="text-ink mt-0.5 text-[22px] font-bold tracking-[-0.02em]">Account</Text>
+          <Text className="text-ink-3 text-[10px] font-semibold tracking-[0.16em]">SETTINGS</Text>
+          <Text className="text-ink mt-0.5 font-serif text-[22px] font-bold tracking-[-0.01em]">Account</Text>
         </View>
       </View>
 
@@ -88,19 +88,19 @@ export default function AccountScreen() {
         </View>
         {joined ? (
           <View className="bg-chip rounded-pill px-3 py-1.5">
-            <Text className="text-ink-3 font-mono text-[9.5px] font-semibold tracking-[0.12em]">MEMBER SINCE {joined.toUpperCase()}</Text>
+            <Text className="text-ink-3 text-[9.5px] font-semibold tracking-[0.12em]">MEMBER SINCE {joined.toUpperCase()}</Text>
           </View>
         ) : null}
       </View>
 
       {/* Security */}
-      <Text className="text-ink-3 mb-2 mt-7 pl-0.5 font-mono text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
+      <Text className="text-ink-3 mb-2 mt-7 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
       <View className="border-line bg-surface rounded-card overflow-hidden border">
         <View className="border-line flex-row items-center gap-3 border-b px-4 py-[15px]">
           <Lock size={16} color={c.ink3} strokeWidth={1.8} />
           <View className="flex-1">
             <Text className="text-ink text-[14.5px] font-medium">Password</Text>
-            <Text className="text-ink-3 mt-1 font-mono text-[11px] tracking-[0.14em]">••••••••••</Text>
+            <Text className="text-ink-3 mt-1 text-[11px] tracking-[0.14em]">••••••••••</Text>
           </View>
           <Pressable onPress={() => setPwOpen(true)} className="bg-chip border-line rounded-[9px] border px-3 py-[7px]">
             <Text className="text-ink-2 text-[12.5px] font-semibold">Change…</Text>
@@ -110,7 +110,7 @@ export default function AccountScreen() {
           <Mail size={16} color={c.ink3} strokeWidth={1.8} />
           <View className="flex-1">
             <Text className="text-ink text-[14.5px] font-medium">Email</Text>
-            <Text className="text-ink-3 mt-1 font-mono text-[11px]">{email || "—"}</Text>
+            <Text className="text-ink-3 mt-1 text-[11px]">{email || "—"}</Text>
           </View>
           <Pressable onPress={() => setEmailOpen(true)} className="bg-chip border-line rounded-[9px] border px-3 py-[7px]">
             <Text className="text-ink-2 text-[12.5px] font-semibold">Change…</Text>
@@ -118,7 +118,7 @@ export default function AccountScreen() {
         </View>
       </View>
 
-      <Text className="text-ink-3 mb-2 mt-7 pl-0.5 font-mono text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
+      <Text className="text-ink-3 mb-2 mt-7 pl-0.5 text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
       <View className="rounded-card overflow-hidden border" style={{ borderColor: `${c.high}30` }}>
         <View className="flex-row items-center gap-3 px-4 py-[15px]">
           <Trash2 size={16} color={c.high} strokeWidth={1.8} />
@@ -143,7 +143,7 @@ export default function AccountScreen() {
     <ScrollView contentContainerStyle={{ paddingBottom: 40, maxWidth: 680, width: "100%", alignSelf: "center" }} showsVerticalScrollIndicator={false}>
       <View className="px-screen flex-row items-center gap-3 pt-2">
         {back}
-        <Text className="text-ink text-2xl font-bold tracking-[-0.02em]">Account</Text>
+        <Text className="text-ink font-serif text-2xl font-bold tracking-[-0.01em]">Account</Text>
       </View>
 
       <View className="mt-6 items-center">
@@ -154,14 +154,14 @@ export default function AccountScreen() {
         <Text className="text-ink-3 mt-0.5 text-[13px]">{email || "not signed in"}</Text>
         {joined ? (
           <View className="bg-chip rounded-pill mt-2.5 px-3 py-1.5">
-            <Text className="text-ink-3 font-mono text-[9.5px] font-semibold tracking-[0.12em]">MEMBER SINCE {joined.toUpperCase()}</Text>
+            <Text className="text-ink-3 text-[9.5px] font-semibold tracking-[0.12em]">MEMBER SINCE {joined.toUpperCase()}</Text>
           </View>
         ) : null}
       </View>
 
       {/* pl-[22px] not pl-0.5: px-screen's 20px is overridden by the pl-* that follows it, and the
           card below is mx-[20px] — matches the SCHEDULE/PRIORITY labels in task-editor. */}
-      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
+      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] text-[10px] font-semibold tracking-[0.14em]">SECURITY</Text>
       <View className="mx-[20px] border-line bg-surface rounded-card overflow-hidden border">
         <Pressable onPress={() => setPwOpen(true)} className="border-line flex-row items-center gap-3 border-b px-[14px] py-[14px]">
           <Lock size={17} color={c.ink3} strokeWidth={1.8} />
@@ -178,7 +178,7 @@ export default function AccountScreen() {
         </Pressable>
       </View>
 
-      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] font-mono text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
+      <Text className="px-screen text-ink-3 mb-2 mt-7 pl-[22px] text-[10px] font-semibold tracking-[0.14em]">DANGER ZONE</Text>
       <Pressable
         onPress={() => setDeleteOpen(true)}
         className="rounded-card mx-[20px] flex-row items-center gap-3 border px-[14px] py-[14px]"
@@ -255,7 +255,7 @@ function FieldLabel({ children, desktop }: { children: string; desktop: boolean 
   return (
     <Text
       style={desktop ? undefined : { color: CORAL }}
-      className={`mb-1.5 font-mono text-[10px] font-semibold tracking-[0.16em] ${desktop ? "text-ink-3" : ""}`}
+      className={`mb-1.5 text-[10px] font-semibold tracking-[0.16em] ${desktop ? "text-ink-3" : ""}`}
     >
       {children}
     </Text>
@@ -428,7 +428,7 @@ function ChangePasswordModal({
         />
         <View className="mb-3.5 mt-2 flex-row items-center gap-1.5">
           <Check size={12} color={longEnough ? c.success : c.ink3} strokeWidth={2.6} />
-          <Text style={{ color: longEnough ? c.success : c.ink3 }} className="font-mono text-[10.5px]">at least 8 characters</Text>
+          <Text style={{ color: longEnough ? c.success : c.ink3 }} className="text-[10.5px]">at least 8 characters</Text>
         </View>
 
         <FieldLabel desktop={desktop}>CONFIRM PASSWORD</FieldLabel>
@@ -607,8 +607,8 @@ function ChangeEmailModal({
     <Modal transparent visible={visible} animationType="fade" onRequestClose={close}>
       <ModalCard desktop={desktop} themeVars={themeVars} onClose={close} title="Change email">
         <View className="bg-chip mb-3.5 h-[42px] flex-row items-center gap-2.5 rounded-[11px] px-3.5">
-          <Text className="text-ink-3 font-mono text-[10px] font-semibold tracking-[0.16em]">CURRENT</Text>
-          <Text className="text-ink-2 font-mono text-[12.5px]">{currentEmail || "—"}</Text>
+          <Text className="text-ink-3 text-[10px] font-semibold tracking-[0.16em]">CURRENT</Text>
+          <Text className="text-ink-2 text-[12.5px]">{currentEmail || "—"}</Text>
         </View>
 
         <FieldLabel desktop={desktop}>NEW EMAIL</FieldLabel>

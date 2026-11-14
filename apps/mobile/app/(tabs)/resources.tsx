@@ -24,7 +24,7 @@ import { MasonrySkeleton } from "../../components/skeleton";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { ResourceCard } from "../../components/resources/resource-card";
 import { NewResourceSheet } from "../../components/resources/new-resource-sheet";
-import { confirmDelete } from "../../lib/confirm";
+import { confirmDelete, plural } from "../../lib/confirm";
 import { nextTagColor } from "../../lib/tag-palette";
 import { useIsDesktop } from "../../lib/use-responsive";
 
@@ -195,7 +195,7 @@ export default function ResourcesScreen() {
         {/* Header — desktop: 26px title + "New resource" pill; mobile: 30px title + tag toggle */}
         {isDesktop ? (
           <DesktopHeader
-            eyebrow={`${resources.filter((r) => !r.is_archived).length} SAVED · ${tags.length} TAGS`}
+            eyebrow={`${resources.filter((r) => !r.is_archived).length} saved · ${plural(tags.length, "tag")}`}
             title="Resources"
             actionLabel="New resource"
             onAction={() => {
@@ -206,10 +206,10 @@ export default function ResourcesScreen() {
         ) : (
           <View className="px-screen flex-row items-start justify-between pt-2">
             <View>
-              <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-                {resources.filter((r) => !r.is_archived).length} SAVED · {tags.length} TAGS
+              <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Resources</Text>
+              <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+                {resources.filter((r) => !r.is_archived).length} saved · {plural(tags.length, "tag")}
               </Text>
-              <Text className="text-ink mt-2 text-[30px] font-bold leading-[33px] tracking-[-0.02em]">Resources</Text>
             </View>
             <View className="flex-row items-center gap-2">
               <Pressable

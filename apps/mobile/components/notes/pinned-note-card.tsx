@@ -20,7 +20,7 @@ export function PinnedNoteCard({ note, onPress }: { note: Note; onPress: () => v
       <Text numberOfLines={2} className="text-ink-2 text-[11.5px]" style={{ lineHeight: 16 }}>
         {notePreview(note)}
       </Text>
-      <Text className="text-ink-3 font-mono text-[10px]">{relativeAge(note.updated_at)}</Text>
+      <Text className="text-ink-3 text-[10px]">{relativeAge(note.updated_at)}</Text>
     </Pressable>
   );
 }

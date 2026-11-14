@@ -23,7 +23,7 @@ const emailValid = (v: string) => credentials.shape.email.safeParse(v).success;
 /** Uppercase field label (mono, tracked) matching the section labels used across the app. */
 function FieldLabel({ children }: { children: string }) {
   return (
-    <Text className="text-ink-3 mb-1.5 mt-4 font-mono text-[10.5px] font-semibold tracking-[0.16em]">{children}</Text>
+    <Text className="text-ink-3 mb-1.5 mt-4 text-[10.5px] font-semibold tracking-[0.16em]">{children}</Text>
   );
 }
 
@@ -160,7 +160,7 @@ export default function LoginScreen() {
           <View className="mb-6 h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: `${CORAL}24` }}>
             <MailCheck size={28} color={CORAL} strokeWidth={1.8} />
           </View>
-          <Text className="text-ink text-[22px] font-bold tracking-[-0.02em]">Check your email</Text>
+          <Text className="text-ink font-serif text-[22px] font-bold tracking-[-0.01em]">Check your email</Text>
           <Text className="text-ink-2 mt-2 text-center text-[14.5px] leading-[21px]">
             We sent a confirmation link to{"\n"}
             <Text className="text-ink font-semibold">{sentTo}</Text>. Tap it to finish setting up.
@@ -220,7 +220,7 @@ export default function LoginScreen() {
             </View>
           ) : (
             <View className="mb-5">
-              <Text className="text-ink text-[30px] font-bold tracking-[-0.02em]">Create your account</Text>
+              <Text className="text-ink font-serif text-[30px] font-bold tracking-[-0.01em]">Create your account</Text>
               <Text className="text-ink-2 mt-2 text-[14.5px] leading-[21px]">
                 Syncs instantly between iPhone and Windows.
               </Text>
@@ -295,7 +295,7 @@ export default function LoginScreen() {
               colors={CORAL_GRADIENT}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ borderRadius: 14, paddingVertical: 16, alignItems: "center", shadowColor: CORAL, shadowOpacity: 0.45, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}
+              style={{ borderRadius: 12, paddingVertical: 15, alignItems: "center", shadowColor: "#1B2131", shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 }}
             >
               <Text className="text-[15.5px] font-bold text-white">
                 {isSubmitting ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
@@ -315,7 +315,7 @@ export default function LoginScreen() {
             <>
               <View className="my-6 flex-row items-center gap-3">
                 <View className="bg-line h-px flex-1" />
-                <Text className="text-ink-3 font-mono text-[10.5px] font-semibold tracking-[0.16em]">OR</Text>
+                <Text className="text-ink-3 text-[10.5px] font-semibold tracking-[0.16em]">OR</Text>
                 <View className="bg-line h-px flex-1" />
               </View>
               <View className="flex-row gap-3">
