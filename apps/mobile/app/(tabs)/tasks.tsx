@@ -9,16 +9,16 @@ import {
 import type { Task } from "@nox/types";
 import { addDays, capitalize, relativeDayLabel, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronRight, ListChecks, Plus, SlidersHorizontal, Sparkles, X } from "lucide-react-native";
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Circle } from "react-native-svg";
 import { EmptyState } from "../../components/empty-state";
 import { Fab, useHideOnScroll } from "../../components/fab";
+import { MenuDivider, MenuLabel, MenuRow, pressScale, TABULAR } from "../../components/menu";
+import { Popover } from "../../components/popover";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { ListSkeleton } from "../../components/skeleton";
-import { DEFAULT_FILTERS, FilterChips, type TaskFilters } from "../../components/tasks/filter-chips";
 import { NewTaskDialog } from "../../components/tasks/new-task-dialog";
 import { SwipeableTaskRow } from "../../components/tasks/swipeable-task-row";
 import { dateLabel } from "../../components/tasks/task-properties";
@@ -45,33 +45,34 @@ const byOrder = (a: Task, b: Task) =>
 
 /* ─────────────────────────────── pieces ─────────────────────────────── */
 
-/** A small progress ring with "done/total" beside the title — Things' project pie, for the day. */
-function DayProgress({ done, total }: { done: number; total: number }) {
-  const c = useThemeColors();
-  if (total === 0) return null;
-  const r = 9;
-  const circ = 2 * Math.PI * r;
-  const all = done === total;
+interface TaskFilters {
+  status: "all" | "active" | "completed";
+  priority: "all" | "high" | "medium" | "low";
+  time: "all" | "timed" | "allday";
+}
+const DEFAULT_FILTERS: TaskFilters = { status: "all", priority: "all", time: "all" };
+
+/** The filter as one anchored menu of three single-choice groups, rather than three dropdown chips in
+ *  a box that each opened another menu. */
+function FilterMenu({ filters, onChange }: { filters: TaskFilters; onChange: (f: TaskFilters) => void }) {
+  const set = <K extends keyof TaskFilters>(k: K, v: TaskFilters[K]) => onChange({ ...filters, [k]: v });
   return (
-    <View className="flex-row items-center gap-1.5" accessibilityLabel={`${done} of ${total} done`}>
-      <Svg width={22} height={22} viewBox="0 0 22 22">
-        <Circle cx={11} cy={11} r={r} stroke={c.line} strokeWidth={2.5} fill="none" />
-        <Circle
-          cx={11}
-          cy={11}
-          r={r}
-          stroke={all ? c.success : c.accent}
-          strokeWidth={2.5}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circ} ${circ}`}
-          strokeDashoffset={circ * (1 - done / total)}
-          transform="rotate(-90 11 11)"
-        />
-      </Svg>
-      <Text className="text-ink-3 font-mono text-[11.5px] font-semibold">
-        {done}/{total}
-      </Text>
+    <View className="p-1.5">
+      <MenuLabel>Show</MenuLabel>
+      <MenuRow label="All tasks" selected={filters.status === "all"} onPress={() => set("status", "all")} />
+      <MenuRow label="Open only" selected={filters.status === "active"} onPress={() => set("status", "active")} />
+      <MenuRow label="Completed only" selected={filters.status === "completed"} onPress={() => set("status", "completed")} />
+      <MenuDivider />
+      <MenuLabel>Priority</MenuLabel>
+      <MenuRow label="Any priority" selected={filters.priority === "all"} onPress={() => set("priority", "all")} />
+      {(["high", "medium", "low"] as const).map((p) => (
+        <MenuRow key={p} label={capitalize(p)} selected={filters.priority === p} onPress={() => set("priority", p)} />
+      ))}
+      <MenuDivider />
+      <MenuLabel>Time</MenuLabel>
+      <MenuRow label="Any time" selected={filters.time === "all"} onPress={() => set("time", "all")} />
+      <MenuRow label="With a time" selected={filters.time === "timed"} onPress={() => set("time", "timed")} />
+      <MenuRow label="All-day" selected={filters.time === "allday"} onPress={() => set("time", "allday")} />
     </View>
   );
 }
@@ -95,7 +96,7 @@ function Section({
       <View className="border-line mb-0.5 flex-row items-center justify-between border-b pb-2 pl-1">
         <Text className={`text-[13.5px] font-bold tracking-[-0.01em] ${tone === "overdue" ? "text-high" : "text-ink"}`}>
           {title}
-          {count != null ? <Text className="text-ink-3 font-semibold">{`  ${count}`}</Text> : null}
+          {count != null ? <Text style={TABULAR} className="text-ink-3 font-semibold">{`  ${count}`}</Text> : null}
         </Text>
         {action}
       </View>
@@ -127,12 +128,12 @@ function Fold({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`${title}, ${count}`}
-        className="border-line flex-row items-center gap-1.5 border-b pb-2 pl-1"
+        className="border-line hover:bg-surface flex-row items-center gap-1.5 rounded-t-[6px] border-b pb-2 pl-1 pt-1"
       >
         <Chevron size={15} color={c.ink3} strokeWidth={2.2} />
         <Text className="text-ink-2 text-[13.5px] font-bold tracking-[-0.01em]">
           {title}
-          <Text className="text-ink-3 font-semibold">{`  ${count}`}</Text>
+          <Text style={TABULAR} className="text-ink-3 font-semibold">{`  ${count}`}</Text>
         </Text>
       </Pressable>
       {open && children}
@@ -163,6 +164,7 @@ export default function TasksScreen() {
   const [focus, setFocus] = useState(today);
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterRef = useRef<View>(null);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   const [doneOpen, setDoneOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -268,7 +270,7 @@ export default function TasksScreen() {
   const rows = (list: Task[], opts: { overdue?: boolean; showDate?: boolean; timeGutter?: boolean } = {}) =>
     list.map((t, i) => (
       <Fragment key={t.id}>
-        {i > 0 && <View className="bg-line h-px" style={{ marginLeft: opts.timeGutter ? 97 : 38 }} />}
+        {i > 0 && <View className="bg-line h-px" style={{ marginLeft: opts.timeGutter ? 101 : 38 }} />}
         <SwipeableTaskRow completed={t.status === "complete"} onComplete={() => onToggle(t)} onDelete={() => onDelete(t)}>
           <TaskRow
             task={t}
@@ -289,36 +291,54 @@ export default function TasksScreen() {
     filters.time !== "all" && (filters.time === "timed" ? "With a time" : "All-day"),
   ].filter(Boolean) as string[];
 
+  const dayWord = focus === today ? "today" : dateLabel(focus, today).replace(/^(Tomorrow|Yesterday)$/, (w) => w.toLowerCase());
+  const progressText =
+    progress.total > 0 ? (progress.done === progress.total ? "all done" : `${progress.done} of ${progress.total} done`) : null;
+
   const header = (
     <View className="px-screen pt-2">
+      {/* Title with one plain line under it — no label above, no progress ring. */}
       <View className="flex-row items-start justify-between">
-        <View className="flex-1">
-          <Text className="text-ink-3 font-mono text-[10.5px] font-medium tracking-[0.14em]">
-            {longDate(focus).toUpperCase()}
-          </Text>
-          <View className="mt-1.5 flex-row items-center gap-3">
-            <Text className="text-ink text-[30px] font-bold leading-[34px] tracking-[-0.02em]">{title}</Text>
-            <DayProgress done={progress.done} total={progress.total} />
+        <View className="flex-1 pr-3">
+          <Text className="text-ink text-[30px] font-bold leading-[36px] tracking-[-0.02em]">{title}</Text>
+          {/* Two runs that wrap as wholes — a narrow pane breaks between them, never inside "1 of 12". */}
+          <View className="mt-0.5 flex-row flex-wrap">
+            <Text className="text-ink-3 mr-2 text-[13.5px] font-medium">
+              {longDate(focus)}
+              {progressText ? "  ·" : ""}
+            </Text>
+            {progressText && (
+              <Text style={TABULAR} className="text-ink-3 text-[13.5px] font-medium">
+                {progressText}
+              </Text>
+            )}
           </View>
         </View>
-        <View className="flex-row items-center gap-2 pt-1">
-          <Pressable
-            onPress={() => setFiltersOpen((v) => !v)}
-            accessibilityLabel="Filters"
-            accessibilityState={{ expanded: filtersOpen }}
-            className={`rounded-pill h-[34px] w-[34px] items-center justify-center ${filtersOpen || filtersActive ? "bg-accent-soft" : "bg-chip hover:bg-elev"}`}
-          >
-            <SlidersHorizontal size={15} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={1.9} />
-          </Pressable>
+        <View className="flex-row items-center gap-1.5 pt-1">
+          <View ref={filterRef} collapsable={false}>
+            <Pressable
+              onPress={() => setFiltersOpen((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel="Filters"
+              accessibilityState={{ expanded: filtersOpen }}
+              style={pressScale}
+              className={`h-[34px] w-[34px] items-center justify-center rounded-[10px] ${
+                filtersOpen || filtersActive ? "bg-accent/[0.14]" : "hover:bg-chip"
+              }`}
+            >
+              <ListFilter size={17} color={filtersOpen || filtersActive ? c.accent : c.ink2} strokeWidth={2} />
+            </Pressable>
+          </View>
           {isDesktop ? (
             <Pressable
               onPress={createAndOpen}
               accessibilityRole="button"
               accessibilityLabel="New task"
+              style={pressScale}
               className="bg-accent hover:opacity-90 h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-3.5"
             >
-              <Plus size={14} color={c.onAccent} strokeWidth={2.4} />
-              <Text className="text-on-accent text-[13px] font-semibold">New task</Text>
+              <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
+              <Text className="text-on-accent text-[13.5px] font-semibold">New task</Text>
             </Pressable>
           ) : (
             <ProfileAvatar />
@@ -326,53 +346,45 @@ export default function TasksScreen() {
         </View>
       </View>
 
-      <View className="mt-5">
-        <WeekStrip selected={focus} today={today} onSelect={setFocus} marked={openDays} />
-      </View>
+      <Popover anchorRef={filterRef} open={filtersOpen} onClose={() => setFiltersOpen(false)} width={240} accessibilityLabel="Filters">
+        <FilterMenu filters={filters} onChange={setFilters} />
+      </Popover>
 
-      {filtersOpen && (
-        <View className="border-line bg-surface mt-4 rounded-[12px] border p-3">
-          <View className="mb-2 flex-row items-center justify-between">
-            <Text className="text-ink-3 font-mono text-[10px] font-semibold tracking-[0.14em]">FILTER</Text>
-            {filtersActive && (
-              <Pressable onPress={() => setFilters(DEFAULT_FILTERS)} hitSlop={6}>
-                <Text className="text-accent text-[12px] font-semibold">Reset</Text>
-              </Pressable>
-            )}
-          </View>
-          <FilterChips filters={filters} onChange={setFilters} />
-        </View>
-      )}
-      {!filtersOpen && filtersActive && (
+      {filtersActive && (
         <View className="mt-3 flex-row flex-wrap items-center gap-1.5">
           {filterSummary.map((f) => (
-            <View key={f} className="bg-accent-soft rounded-pill px-2.5 py-1">
-              <Text className="text-accent text-[11.5px] font-semibold">{f}</Text>
+            <View key={f} className="bg-accent/[0.12] rounded-pill px-2.5 py-1">
+              <Text className="text-accent text-[12px] font-semibold">{f}</Text>
             </View>
           ))}
-          <Pressable onPress={() => setFilters(DEFAULT_FILTERS)} hitSlop={6} accessibilityLabel="Clear filters" className="ml-0.5">
-            <X size={14} color={c.ink3} strokeWidth={2.2} />
+          <Pressable
+            onPress={() => setFilters(DEFAULT_FILTERS)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Clear filters"
+            className="hover:bg-chip ml-0.5 h-6 w-6 items-center justify-center rounded-full"
+          >
+            <X size={13} color={c.ink3} strokeWidth={2.4} />
           </Pressable>
         </View>
       )}
 
-      {/* Quick add — opens the dialog, where "tomorrow 6pm" style dates are understood. */}
+      <View className="mt-5">
+        <WeekStrip selected={focus} today={today} onSelect={setFocus} marked={openDays} />
+      </View>
+
+      {/* Add — shaped like a task row, so it reads as "the next task goes here". The tip about
+          typing dates lives in the dialog it opens, not here too. */}
       <Pressable
         onPress={createAndOpen}
         accessibilityRole="button"
-        accessibilityLabel={`Add a task to ${title}`}
-        className="border-line hover:bg-surface mt-4 flex-row items-center gap-3 rounded-[12px] border border-dashed px-3.5 py-3"
+        accessibilityLabel={`Add a task for ${dayWord}`}
+        className="hover:bg-surface mt-3 min-h-[48px] flex-row items-center rounded-[10px] pl-1 pr-3"
       >
-        <View className="border-accent h-[21px] w-[21px] items-center justify-center rounded-full border-[1.5px] border-dashed">
-          <Plus size={12} color={c.accent} strokeWidth={2.6} />
+        <View className="bg-accent/[0.14] h-[21px] w-[21px] items-center justify-center rounded-full">
+          <Plus size={13} color={c.accent} strokeWidth={2.6} />
         </View>
-        <Text className="text-ink-3 flex-1 text-[14.5px]">
-          Add a task{focus === today ? "" : ` for ${dateLabel(focus, today).replace(/^(Tomorrow|Yesterday)$/, (w) => w.toLowerCase())}`}
-        </Text>
-        <View className="flex-row items-center gap-1">
-          <Sparkles size={11} color={c.ink3} strokeWidth={2} />
-          <Text className="text-ink-3 font-mono text-[10.5px]">try “tomorrow 6pm”</Text>
-        </View>
+        <Text className="text-ink-3 ml-3 text-[15px]">Add a task{focus === today ? "" : ` for ${dayWord}`}</Text>
       </Pressable>
     </View>
   );
