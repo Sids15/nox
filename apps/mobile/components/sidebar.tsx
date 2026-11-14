@@ -1,7 +1,9 @@
 import { useIdeas, useNotes, useResources, useTasks, useThemeColors } from "@nox/features";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, FileText, Lightbulb, Search, SlidersHorizontal, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, FileText, Lightbulb, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { formatTime12, toDateKey } from "@nox/utils";
+import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Image, Platform, Pressable, Text, View } from "react-native";
 import { clockLabel, greeting, skyColor, useClock } from "../lib/use-clock";
@@ -84,11 +86,19 @@ export function Sidebar() {
     { label: "Resources", icon: Bookmark, path: "/resources", count: resources.filter((r) => !r.is_archived).length },
   ];
 
-  const { name, firstName, initials, email } = useIdentity();
+  const { name, firstName, initials } = useIdentity();
+  const today = toDateKey(now);
+  const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const todays = tasks.filter((t) => t.status !== "complete" && (t.due_date === today || t.due_date === null));
+  const leftToday = todays.length;
+  const upNext = todays
+    .filter((t) => t.due_date === today && t.due_time && t.due_time.slice(0, 5) >= nowHHMM)
+    .sort((a, b) => a.due_time!.localeCompare(b.due_time!))
+    .slice(0, 4);
   const sky = skyColor(now, c.accent);
 
   return (
-    <View className="bg-surface border-line w-[232px] border-r px-3 pb-3.5 pt-4">
+    <View className="bg-surface border-line w-[232px] border-r px-3 pb-3 pt-4">
       {/* The sky faintly colors the sidebar's crown — dawn, day, dusk, night. */}
       <LinearGradient
         colors={[`${sky}17`, "transparent"]}
@@ -107,66 +117,107 @@ export function Sidebar() {
         />
         <Text className="text-ink-3 text-[11px] font-medium">{clockLabel(now)}</Text>
       </View>
-      <Text className="text-ink-2 px-2 pb-3.5 text-[12px]">{greeting(now, firstName)}</Text>
+      <Text numberOfLines={1} className="text-ink-2 px-2 pb-4 text-[13px]">
+        {greeting(now, firstName)}
+      </Text>
 
       {/* Search */}
       <Pressable
         onPress={() => setSearchOpen(true)}
-        className="bg-chip border-line hover:bg-elev mb-2.5 h-[34px] flex-row items-center gap-2.5 rounded-[9px] border px-[11px]"
+        accessibilityRole="button"
+        accessibilityLabel="Search"
+        className="bg-bg border-line hover:border-ink-3 mb-3 h-[34px] flex-row items-center gap-2.5 rounded-[9px] border px-2.5"
       >
-        <Search size={13} color={c.ink3} strokeWidth={1.8} />
-        <Text className="text-ink-3 flex-1 text-[12.5px]">Search</Text>
+        <Search size={14} color={c.ink3} strokeWidth={2} />
+        <Text className="text-ink-3 flex-1 text-[13px]">Search</Text>
         <View className="bg-bg border-line rounded-[5px] border px-[5px] py-[3px]">
           <Text className="text-ink-3 text-[10px] font-semibold">{SEARCH_CHORD}</Text>
         </View>
       </Pressable>
 
       {/* Nav */}
-      <View className="gap-1">
-        {nav.map((item) => {
+      <View className="gap-0.5">
+        {nav.map((item, i) => {
           const active = pathname === item.path;
           return (
             <Pressable
               key={item.path}
               onPress={() => router.navigate(item.path)}
-              className={`flex-row items-center gap-2.5 rounded-[10px] px-[11px] py-2 ${active ? "bg-accent/[0.12]" : "hover:bg-chip"}`}
+              accessibilityRole="link"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${item.label}, ${item.count}`}
+              {...({ title: `${item.label} (${MODULE_CHORD.split(" ")[0]} ${i + 1})` } as object)}
+              className={`h-[36px] flex-row items-center gap-3 rounded-[9px] px-2.5 ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
             >
-              <item.icon size={17} color={active ? c.accent : c.ink2} strokeWidth={1.7} />
-              <Text className={`flex-1 text-[13.5px] font-semibold ${active ? "text-accent" : "text-ink-2"}`}>{item.label}</Text>
-              <Text className="text-ink-3 text-[10.5px] font-medium">{item.count}</Text>
+              <item.icon size={16} color={active ? c.accent : c.ink3} strokeWidth={active ? 2.1 : 1.9} />
+              <Text className={`flex-1 text-[14px] ${active ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{item.label}</Text>
+              {item.count > 0 && (
+                <Text style={TABULAR} className={`text-[12px] ${active ? "text-accent font-semibold" : "text-ink-3"}`}>
+                  {item.count}
+                </Text>
+              )}
             </Pressable>
           );
         })}
       </View>
 
-      <View className="flex-1" />
-
-      {/* Sync */}
-      <View className="flex-row items-center gap-2 px-[11px] py-2">
-        {sync.settled ? (
-          <BreathingDot color={sync.color} />
+      {/* Up next: today's next timed tasks, so the rail is useful and not just empty space */}
+      <View className="border-line mt-5 border-t pt-4">
+        <View className="flex-row items-center justify-between px-2.5 pb-1.5">
+          <Text className="text-ink-2 text-[12.5px] font-semibold">Up next</Text>
+          {upNext.length > 0 && (
+            <Text style={TABULAR} className="text-ink-3 text-[11.5px]">
+              {leftToday} left today
+            </Text>
+          )}
+        </View>
+        {upNext.length === 0 ? (
+          <Text className="text-ink-3 px-2.5 text-[12.5px] leading-[18px]">
+            {leftToday > 0 ? `${leftToday} to do today, none at a set time.` : "Nothing else scheduled today."}
+          </Text>
         ) : (
-          <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: sync.color }} />
+          upNext.map((t) => (
+            <Pressable
+              key={t.id}
+              onPress={() => router.navigate("/tasks")}
+              accessibilityRole="link"
+              className="hover:bg-chip flex-row items-baseline gap-2.5 rounded-[8px] px-2.5 py-1.5"
+            >
+              <Text style={TABULAR} className="text-ink-3 w-[52px] text-[11.5px]">
+                {formatTime12(t.due_time)}
+              </Text>
+              <Text numberOfLines={1} className="text-ink flex-1 text-[13px]">
+                {t.title}
+              </Text>
+            </Pressable>
+          ))
         )}
-        <Text className="text-ink-2 flex-1 text-[12px]">{sync.title}</Text>
-        {sync.detail ? (
-          <Text numberOfLines={1} className="text-ink-3 text-[9.5px] font-medium">{sync.detail}</Text>
-        ) : null}
       </View>
 
-      {/* Profile */}
+      <View className="flex-1" />
+
+      {/* Profile, with sync state under the name */}
       <Pressable
         onPress={() => router.push("/settings")}
-        className="bg-chip border-line hover:bg-elev flex-row items-center gap-2.5 rounded-[10px] border px-[11px] py-[9px]"
+        accessibilityRole="button"
+        accessibilityLabel={`Settings. ${name}, ${sync.title}`}
+        className="hover:bg-chip flex-row items-center gap-2.5 rounded-[10px] px-2 py-2"
       >
-        <View className="bg-accent/[0.18] h-7 w-7 items-center justify-center rounded-full">
-          <Text className="text-accent text-[10.5px] font-bold">{initials}</Text>
+        <View className="bg-accent/[0.14] h-8 w-8 items-center justify-center rounded-full">
+          <Text className="text-accent text-[11.5px] font-semibold">{initials}</Text>
         </View>
-        <View className="flex-1">
-          <Text className="text-ink text-[12.5px] font-semibold">{name}</Text>
-          <Text className="text-ink-3 text-[10.5px]">{email || "not signed in"}</Text>
+        <View className="min-w-0 flex-1">
+          <Text numberOfLines={1} className="text-ink text-[13px] font-medium">
+            {name}
+          </Text>
+          <View className="mt-0.5 flex-row items-center gap-1.5">
+            {sync.settled ? <BreathingDot color={sync.color} /> : <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: sync.color }} />}
+            <Text numberOfLines={1} className="text-ink-3 flex-1 text-[11.5px]">
+              {sync.detail ? `${sync.title} · ${sync.detail}` : sync.title}
+            </Text>
+          </View>
         </View>
-        <SlidersHorizontal size={14} color={c.ink3} strokeWidth={1.7} />
+        <Settings2 size={15} color={c.ink3} strokeWidth={1.9} />
       </Pressable>
 
       <CommandPalette visible={searchOpen} onClose={() => setSearchOpen(false)} />
