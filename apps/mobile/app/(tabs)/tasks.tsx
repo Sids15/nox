@@ -13,6 +13,7 @@ import { ChevronDown, ChevronRight, ListChecks, Plus, SlidersHorizontal } from "
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fab, useHideOnScroll } from "../../components/fab";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
@@ -112,6 +113,7 @@ function SectionLabel({ text, count, tone }: { text: string; count?: number; ton
 }
 
 export default function TasksScreen() {
+  const fab = useHideOnScroll();
   const router = useRouter();
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
@@ -235,6 +237,9 @@ export default function TasksScreen() {
 
   const list = (
       <ScrollView
+        onScroll={fab.onScroll}
+        scrollEventThrottle={16}
+       
         className="flex-1"
         contentContainerStyle={{
           paddingBottom: 150,
@@ -408,23 +413,7 @@ export default function TasksScreen() {
       {list}
 
       {/* FAB */}
-      <Pressable
-        onPress={createAndOpen}
-        accessibilityRole="button"
-        accessibilityLabel="Add task"
-        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-        style={{
-          right: 20,
-          bottom: 112,
-          shadowColor: c.accent,
-          shadowOpacity: 0.4,
-          shadowRadius: 13,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        }}
-      >
-        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-      </Pressable>
+      <Fab onPress={createAndOpen} label="Add task" bottom={112} visible={fab.visible} />
     </SafeAreaView>
   );
 }

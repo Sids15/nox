@@ -16,6 +16,7 @@ import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fab, useHideOnScroll } from "../../components/fab";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
@@ -68,6 +69,7 @@ function FolderNavRow({
 }
 
 export default function NotesScreen() {
+  const fab = useHideOnScroll();
   const router = useRouter();
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
@@ -357,6 +359,9 @@ export default function NotesScreen() {
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       <ScrollView
+        onScroll={fab.onScroll}
+        scrollEventThrottle={16}
+       
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 150 }}
         keyboardShouldPersistTaps="handled"
@@ -479,23 +484,7 @@ export default function NotesScreen() {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable
-        onPress={createAndOpen}
-        accessibilityRole="button"
-        accessibilityLabel="New note"
-        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-        style={{
-          right: 20,
-          bottom: 112,
-          shadowColor: c.accent,
-          shadowOpacity: 0.4,
-          shadowRadius: 13,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 8,
-        }}
-      >
-        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-      </Pressable>
+      <Fab onPress={createAndOpen} label="New note" bottom={112} visible={fab.visible} />
 
       {/* New folder modal */}
       <FolderNameModal

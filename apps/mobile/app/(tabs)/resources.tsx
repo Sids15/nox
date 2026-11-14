@@ -9,7 +9,7 @@ import {
   useThemeVars,
 } from "@nox/features";
 import type { Resource, Tag } from "@nox/types";
-import { Bookmark, Plus, Search, SlidersHorizontal, X } from "lucide-react-native";
+import { Bookmark, Search, SlidersHorizontal, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -17,6 +17,7 @@ import { classifySource } from "@nox/utils";
 import { openExternal } from "../../lib/open-external";
 import { VideoPlayer } from "../../components/resources/video-player";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fab, useHideOnScroll } from "../../components/fab";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { MasonrySkeleton } from "../../components/skeleton";
@@ -100,6 +101,7 @@ function TagFilterPill({
 }
 
 export default function ResourcesScreen() {
+  const fab = useHideOnScroll();
   const c = useThemeColors();
   const themeVars = useThemeVars();
   const isDesktop = useIsDesktop();
@@ -185,7 +187,10 @@ export default function ResourcesScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 28, maxWidth: 1020, width: "100%", alignSelf: "center" } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        onScroll={fab.onScroll}
+        scrollEventThrottle={16}
+        className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingHorizontal: 10, paddingTop: 28, maxWidth: 1020, width: "100%", alignSelf: "center" } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
         {/* Header — desktop: 26px title + "New resource" pill; mobile: 30px title + tag toggle */}
         {isDesktop ? (
           <DesktopHeader
@@ -335,17 +340,10 @@ export default function ResourcesScreen() {
 
       {/* FAB (mobile; desktop creates from the header +) */}
       {!isDesktop && (
-        <Pressable
-          onPress={() => {
+        <Fab onPress={() => {
             setEditing(null);
             setSheetOpen(true);
-          }}
-          accessibilityLabel="New resource"
-          className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-          style={{ right: 20, bottom: 112, shadowColor: c.accent, shadowOpacity: 0.4, shadowRadius: 13, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}
-        >
-          <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-        </Pressable>
+          }} label="New resource" bottom={112} visible={fab.visible} />
       )}
 
       {/* New / edit resource sheet */}

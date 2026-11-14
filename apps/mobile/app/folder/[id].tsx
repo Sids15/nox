@@ -8,15 +8,17 @@ import {
   useThemeVars,
 } from "@nox/features";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, FolderOpen, MoreHorizontal, Plus } from "lucide-react-native";
+import { ChevronLeft, FolderOpen, MoreHorizontal } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fab, useHideOnScroll } from "../../components/fab";
 import { EmptyState } from "../../components/empty-state";
 import { NoteRow } from "../../components/notes/note-row";
 
 export default function FolderScreen() {
+  const fab = useHideOnScroll();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const c = useThemeColors();
@@ -79,7 +81,10 @@ export default function FolderScreen() {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        onScroll={fab.onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
         <View className="px-screen mt-4">
           {folderNotes.length > 0 ? (
             <View className="border-line bg-surface rounded-card overflow-hidden border">
@@ -103,14 +108,7 @@ export default function FolderScreen() {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable
-        onPress={createInFolder}
-        accessibilityLabel="New note in folder"
-        className="bg-accent rounded-fab absolute h-[54px] w-[54px] items-center justify-center"
-        style={{ right: 20, bottom: 40, shadowColor: c.accent, shadowOpacity: 0.4, shadowRadius: 13, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}
-      >
-        <Plus size={22} color={c.onAccent} strokeWidth={2.2} />
-      </Pressable>
+      <Fab onPress={createInFolder} label="New note in folder" bottom={40} visible={fab.visible} />
 
       {/* Overflow menu */}
       <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
