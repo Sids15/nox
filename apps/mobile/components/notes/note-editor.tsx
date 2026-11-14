@@ -4,21 +4,20 @@ import {
   useNotes,
   useSetNotePinned,
   useThemeColors,
-  useThemeVars,
   useUpdateNote,
 } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
-import { Check, ChevronLeft, Folder, Inbox, MoreHorizontal } from "lucide-react-native";
-import { vars } from "nativewind";
+import { ChevronLeft, Folder, FolderInput, Inbox, Pin, PinOff, Trash2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
 import { BlockList } from "../blocks/block-list";
 import { BlockToolbar } from "../blocks/block-toolbar";
 import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
-import { OverflowMenu } from "../overflow-menu";
+import { EditorTopBar } from "../editor-top-bar";
+import { MenuLabel, MenuRow } from "../menu";
 import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { noteTitle } from "./note-utils";
@@ -31,7 +30,6 @@ import { noteTitle } from "./note-utils";
  */
 export function NoteEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const c = useThemeColors();
-  const themeVars = useThemeVars();
   const isDesktop = useIsDesktop();
 
   const { data: notes = [] } = useNotes();
@@ -43,8 +41,8 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
   const del = useDeleteNote();
 
   const [title, setTitle] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [moveOpen, setMoveOpen] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const closeMenu = useRef<(() => void) | null>(null);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -85,17 +83,61 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
 
   return (
     <View className="flex-1">
-      {/* Nav */}
-      <View className="px-screen flex-row items-center justify-between pt-2" style={isDesktop ? { maxWidth: 680, width: "100%", alignSelf: "center", paddingTop: 20 } : undefined}>
-        <View className="flex-row items-center gap-2.5">
-          <Pressable onPress={onClose} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-            <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
-          </Pressable>
-          <Text className="text-ink-3 text-[11px]">{folderName ?? "Notes"}</Text>
-        </View>
-        <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center">
-          <MoreHorizontal size={20} color={c.ink2} strokeWidth={1.7} />
-        </Pressable>
+      <View style={isDesktop ? { maxWidth: 680, width: "100%", alignSelf: "center", paddingTop: 20 } : undefined}>
+        <EditorTopBar
+          backLabel="Notes"
+          onBack={onClose}
+          context={folderName}
+          closeRef={closeMenu}
+          onMenuClose={() => setMoving(false)}
+          menuView={
+            moving ? (
+              <View className="p-1.5">
+                <MenuLabel>Move to</MenuLabel>
+                {[{ id: null as string | null, name: "No folder" }, ...folders].map((row) => (
+                  <MenuRow
+                    key={row.id ?? "none"}
+                    label={row.name}
+                    selected={note.folder_id === row.id}
+                    icon={row.id === null ? <Inbox size={15} color={c.ink2} strokeWidth={2} /> : <Folder size={15} color={c.ink2} strokeWidth={2} />}
+                    onPress={() => {
+                      if (note.folder_id !== row.id) updateNote.mutate({ id: note.id, patch: { folder_id: row.id } });
+                      closeMenu.current?.();
+                    }}
+                  />
+                ))}
+              </View>
+            ) : undefined
+          }
+          menu={[
+            {
+              label: note.is_pinned ? "Unpin" : "Pin to top",
+              icon: note.is_pinned ? <PinOff size={15} color={c.ink2} strokeWidth={2} /> : <Pin size={15} color={c.ink2} strokeWidth={2} />,
+              onPress: () => setPinned.mutate({ id: note.id, isPinned: !note.is_pinned }),
+            },
+            {
+              label: "Move to folder…",
+              keepOpen: true,
+              icon: <FolderInput size={15} color={c.ink2} strokeWidth={2} />,
+              onPress: () => setMoving(true),
+            },
+            {
+              label: "Delete note",
+              danger: true,
+              divided: true,
+              icon: <Trash2 size={15} color={c.high} strokeWidth={2} />,
+              onPress: () =>
+                confirmDelete({
+                  title: "Delete note?",
+                  message: `“${noteTitle(note)}” will be deleted on all your devices.`,
+                  onConfirm: () => {
+                    del.mutate(note.id);
+                    onClose();
+                  },
+                }),
+            },
+          ]}
+        />
       </View>
 
       <ScrollView
@@ -109,17 +151,12 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
           <AutoGrowInput
             value={title}
             onChangeText={onTitle}
-            placeholder="Title"
+            placeholder="Untitled note"
             placeholderTextColor={c.ink3}
             minHeight={30}
             className="text-ink font-serif text-[24px] font-bold leading-[30px] tracking-[-0.01em]"
           />
-          <View className="mt-1.5 flex-row items-center gap-[7px]">
-            <View className="bg-success h-1.5 w-1.5 rounded-full" />
-            <Text className="text-ink-3 text-[10.5px]">
-              auto-saved · edited {relativeFromNow(note.updated_at)}
-            </Text>
-          </View>
+          <Text className="text-ink-3 mt-1.5 text-[12px]">Saved · edited {relativeFromNow(note.updated_at)}</Text>
         </View>
 
         {/* Blocks */}
@@ -136,76 +173,6 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
         onRecordComplete={media.addAudio}
       />
 
-      {/* Overflow menu */}
-      <OverflowMenu
-        visible={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        items={[
-          {
-            label: note.is_pinned ? "Unpin" : "Pin",
-            onPress: () => setPinned.mutate({ id: note.id, isPinned: !note.is_pinned }),
-          },
-          { label: "Move to folder", onPress: () => setMoveOpen(true) },
-          {
-            label: "Delete note",
-            destructive: true,
-            onPress: () =>
-              confirmDelete({
-                title: "Delete note?",
-                message: `“${noteTitle(note)}” will be deleted on all your devices.`,
-                onConfirm: () => {
-                  del.mutate(note.id);
-                  onClose();
-                },
-              }),
-          },
-        ]}
-      />
-
-      {/* Move-to-folder */}
-      <Modal transparent visible={moveOpen} animationType="fade" onRequestClose={() => setMoveOpen(false)}>
-        <Pressable onPress={() => setMoveOpen(false)} style={vars(themeVars)} className="flex-1 items-center justify-center bg-black/60 px-6">
-          <Pressable
-            onPress={() => {}}
-            className="border-line bg-elev rounded-card max-h-[70%] w-full max-w-[420px] overflow-hidden border"
-            style={{ shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 24, shadowOffset: { width: 0, height: 14 }, elevation: 14 }}
-          >
-            <Text className="text-ink border-line border-b px-[18px] py-[14px] text-[15px] font-semibold">
-              Move to folder
-            </Text>
-            <ScrollView>
-              {(() => {
-                const rows = [{ id: null as string | null, name: "No folder" }, ...folders];
-                return rows.map((row, i) => {
-                  const selected = note.folder_id === row.id;
-                  return (
-                    <View key={row.id ?? "none"}>
-                      {i > 0 && <View className="bg-line ml-[52px] h-px" />}
-                      <Pressable
-                        onPress={() => {
-                          updateNote.mutate({ id: note.id, patch: { folder_id: row.id } });
-                          setMoveOpen(false);
-                        }}
-                        className="flex-row items-center gap-3 px-[18px] py-[13px]"
-                      >
-                        {row.id === null ? (
-                          <Inbox size={18} color={selected ? c.accent : c.ink2} strokeWidth={1.8} />
-                        ) : (
-                          <Folder size={18} color={selected ? c.accent : c.ink2} strokeWidth={1.8} />
-                        )}
-                        <Text className={`flex-1 text-[14.5px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>
-                          {row.name}
-                        </Text>
-                        {selected && <Check size={16} color={c.accent} strokeWidth={2.5} />}
-                      </Pressable>
-                    </View>
-                  );
-                });
-              })()}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }

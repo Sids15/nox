@@ -28,6 +28,7 @@ import { PinnedNoteCard } from "../../components/notes/pinned-note-card";
 import { noteMatches } from "../../components/notes/note-utils";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { SectionHeading } from "../../components/section-heading";
+import { pressScale } from "../../components/menu";
 
 function SectionLabel({ children }: { children: string }) {
   return <SectionHeading className="mt-4">{children}</SectionHeading>;
@@ -165,7 +166,7 @@ export default function NotesScreen() {
           {/* Pane 1 — folders */}
           <View className="border-line w-[248px] border-r px-2 pt-6">
             <View className="flex-row items-center justify-between px-[9px]">
-              <Text className="text-ink text-[17px] font-bold tracking-[-0.02em]">Notes</Text>
+              <Text className="text-ink font-serif text-[20px] font-bold">Notes</Text>
               <Pressable
                 onPress={() => setNewFolderOpen(true)}
                 accessibilityLabel="New folder"
@@ -205,21 +206,31 @@ export default function NotesScreen() {
             <View className="px-3">
               {/* Scope header — folder name + rename/delete (act on the selected folder) */}
               <View className="mb-3 flex-row items-center justify-between">
-                <Text numberOfLines={1} className="text-ink flex-1 text-[15px] font-bold tracking-[-0.02em]">
+                <Text numberOfLines={1} className="text-ink font-serif flex-1 text-[20px] font-bold">
                   {scopeLabel}
                 </Text>
                 {selectedFolder && (
                   <Pressable
                     onPress={() => setFolderMenuOpen((v) => !v)}
                     accessibilityLabel="Folder options"
-                    className="bg-chip rounded-pill hover:bg-elev ml-2 h-[28px] w-[28px] items-center justify-center"
+                    className="hover:bg-chip ml-1 h-[30px] w-[30px] items-center justify-center rounded-[9px]"
                   >
-                    <MoreHorizontal size={15} color={c.ink2} strokeWidth={1.8} />
+                    <MoreHorizontal size={16} color={c.ink2} strokeWidth={2} />
                   </Pressable>
                 )}
+                <Pressable
+                  onPress={createAndOpen}
+                  accessibilityRole="button"
+                  accessibilityLabel="New note"
+                  style={pressScale}
+                  className="bg-accent hover:opacity-90 ml-1.5 h-[30px] flex-row items-center gap-1 rounded-[9px] px-2.5"
+                >
+                  <Plus size={14} color={c.onAccent} strokeWidth={2.4} />
+                  <Text className="text-on-accent text-[13px] font-semibold">New</Text>
+                </Pressable>
               </View>
-              <View className="bg-chip border-line rounded-input h-10 flex-row items-center gap-2.5 border px-3">
-                <Search size={14} color={c.ink3} strokeWidth={1.8} />
+              <View className="bg-surface border-line h-10 flex-row items-center gap-2.5 rounded-[10px] border px-3">
+                <Search size={14} color={c.ink3} strokeWidth={2} />
                 <TextInput
                   value={search}
                   onChangeText={setSearch}
@@ -229,13 +240,6 @@ export default function NotesScreen() {
                   style={{ paddingVertical: 0 }}
                 />
               </View>
-              <Pressable
-                onPress={createAndOpen}
-                className="bg-accent/[0.12] rounded-input mt-2.5 h-10 flex-row items-center justify-center gap-2"
-              >
-                <Plus size={15} color={c.accent} strokeWidth={2.2} />
-                <Text className="text-accent text-[13.5px] font-semibold">New note</Text>
-              </Pressable>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
