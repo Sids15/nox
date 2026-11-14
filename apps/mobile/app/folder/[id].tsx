@@ -15,6 +15,7 @@ import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fab, useHideOnScroll } from "../../components/fab";
 import { EmptyState } from "../../components/empty-state";
+import { confirmDelete, plural } from "../../lib/confirm";
 import { NoteRow } from "../../components/notes/note-row";
 
 export default function FolderScreen() {
@@ -130,8 +131,19 @@ export default function FolderScreen() {
             <Pressable
               onPress={() => {
                 setMenuOpen(false);
-                if (id) deleteFolder.mutate(id);
-                goBack();
+                if (!id) return;
+                confirmDelete({
+                  title: `Delete “${folder?.name ?? "this folder"}”?`,
+                  message:
+                    folderNotes.length > 0
+                      ? `Its ${plural(folderNotes.length, "note")} won't be deleted — ${folderNotes.length === 1 ? "it moves" : "they move"} to All notes.`
+                      : "This folder is empty.",
+                  confirmLabel: "Delete folder",
+                  onConfirm: () => {
+                    deleteFolder.mutate(id);
+                    goBack();
+                  },
+                });
               }}
               className="px-4 py-2.5"
             >

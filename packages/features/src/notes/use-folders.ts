@@ -1,8 +1,8 @@
 import { FolderRepository } from "@nox/api";
 import { newId } from "@nox/db";
-import type { Folder, FolderInput } from "@nox/types";
+import type { Folder, FolderInput, Note } from "@nox/types";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { folderKeys } from "./note-keys";
+import { folderKeys, noteKeys } from "./note-keys";
 
 // FolderRepository is still the sole Supabase touchpoint via useFolders' list query; the write
 // functions now live in the mutation registry (keyed by ["folder", …]) for offline durability.
@@ -59,22 +59,38 @@ export function useRenameFolder() {
   });
 }
 
+/** Delete a folder; its notes move to "no folder" (in the cache immediately, and on the server). */
 export function useDeleteFolder() {
   const qc = useQueryClient();
-  return useMutation<unknown, Error, string, { previous: Folder[] }>({
+  return useMutation<unknown, Error, string, { previous: Folder[]; previousNotes: Note[] | undefined }>({
     mutationKey: ["folder", "delete"],
     onMutate: async (id: string) => {
-      await qc.cancelQueries({ queryKey: folderKeys.all });
+      await Promise.all([
+        qc.cancelQueries({ queryKey: folderKeys.all }),
+        qc.cancelQueries({ queryKey: noteKeys.all }),
+      ]);
       const previous = snapshot(qc);
+      const previousNotes = qc.getQueryData<Note[]>(noteKeys.all);
       qc.setQueryData<Folder[]>(
         folderKeys.all,
         previous.filter((f) => f.id !== id),
       );
-      return { previous };
+      if (previousNotes) {
+        qc.setQueryData<Note[]>(
+          noteKeys.all,
+          previousNotes.map((n) => (n.folder_id === id ? { ...n, folder_id: null } : n)),
+        );
+      }
+      return { previous, previousNotes };
     },
     onError: (_e, _id, ctx) => {
-      if (ctx) qc.setQueryData(folderKeys.all, ctx.previous);
+      if (!ctx) return;
+      qc.setQueryData(folderKeys.all, ctx.previous);
+      if (ctx.previousNotes) qc.setQueryData(noteKeys.all, ctx.previousNotes);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: folderKeys.all }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: folderKeys.all });
+      void qc.invalidateQueries({ queryKey: noteKeys.all });
+    },
   });
 }

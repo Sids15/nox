@@ -20,6 +20,7 @@ import { Fab, useHideOnScroll } from "../../components/fab";
 import { DesktopHeader } from "../../components/desktop-header";
 import { EmptyState } from "../../components/empty-state";
 import { ListSkeleton } from "../../components/skeleton";
+import { confirmDelete, plural } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { NoteEditor } from "../../components/notes/note-editor";
 import { NoteRow } from "../../components/notes/note-row";
@@ -135,8 +136,20 @@ export default function NotesScreen() {
     setRenameId(null);
   };
   const removeFolder = (fid: string) => {
-    deleteFolder.mutate(fid);
-    if (selectedFolderId === fid) setSelectedFolderId(null);
+    const name = folders.find((f) => f.id === fid)?.name ?? "this folder";
+    const count = noteCount(fid);
+    confirmDelete({
+      title: `Delete “${name}”?`,
+      message:
+        count > 0
+          ? `Its ${plural(count, "note")} won't be deleted — ${count === 1 ? "it moves" : "they move"} to All notes.`
+          : "This folder is empty.",
+      confirmLabel: "Delete folder",
+      onConfirm: () => {
+        deleteFolder.mutate(fid);
+        if (selectedFolderId === fid) setSelectedFolderId(null);
+      },
+    });
   };
 
   // ── Desktop: folders · note list · editor ─────────────────────────────────────────────────────
