@@ -14,17 +14,23 @@ import { ArrowUp, CornerDownLeft, Sparkles, X } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, Text, TextInput, View, type TextStyle } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
+import { DayPreview } from "./day-preview";
 import { anchorOf, PropertyBar, rebaseReminders, type RepeatValue, type TaskProps } from "./task-properties";
 
 const WEB = Platform.OS === "web";
 
 /** The same font everywhere the title is drawn, so the web highlight layer lines up glyph for glyph. */
 const TITLE_FONT: TextStyle = {
-  fontFamily: 'System, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  fontSize: 19,
-  lineHeight: 26,
-  fontWeight: "600",
-  letterSpacing: -0.19,
+  // The serif, like every other title in the app (task, note and idea editors, page headings).
+  fontFamily: Platform.select({
+    web: 'Georgia, "Iowan Old Style", ui-serif, "Times New Roman", serif',
+    ios: "Georgia",
+    default: "serif",
+  }),
+  fontSize: 21,
+  lineHeight: 28,
+  fontWeight: "700",
+  letterSpacing: -0.1,
 };
 
 
@@ -183,6 +189,7 @@ export function TaskComposer({
   const [manPriority, setManPriority] = useState<TaskProps["priority"] | undefined>(undefined);
   const [manRepeat, setManRepeat] = useState<RepeatValue | undefined>(undefined);
   const [reminders, setReminders] = useState<string[]>([]);
+  const [duration, setDuration] = useState<number | null>(null);
 
   const titleRef = useRef<TextInput>(null);
 
@@ -198,7 +205,7 @@ export function TaskComposer({
   if (repeat.kind !== "none" && date === null) date = today;
   const time = date === null ? null : manTime !== undefined ? manTime : (parsed.time ?? initialTime);
   const priority = manPriority ?? parsed.priority ?? "medium";
-  const props: TaskProps = { date, time, reminders, repeat, priority };
+  const props: TaskProps = { date, time, reminders, repeat, priority, duration };
 
   // Which buttons show a value that came from the text (and wasn't overridden by hand).
   const autoFields = useMemo(() => {
@@ -240,6 +247,7 @@ export function TaskComposer({
     if (patch.priority) setManPriority(patch.priority);
     if (patch.repeat) setManRepeat(patch.repeat);
     if (patch.reminders) setReminders(patch.reminders);
+    if ("duration" in patch) setDuration(patch.duration ?? null);
   };
 
   const submit = () => {
@@ -257,6 +265,7 @@ export function TaskComposer({
       notes: description.trim() ? description.trim().slice(0, 2000) : null,
       due_date: date,
       due_time: time,
+      ...(time && duration ? { duration_minutes: duration } : {}),
       // A reminder already in the past would never fire.
       reminder_times: reminders.filter((iso) => new Date(iso).getTime() > now).sort(),
       priority,
@@ -386,7 +395,19 @@ export function TaskComposer({
 
   return (
     <View>
-      {form}
+      {compact ? (
+        form
+      ) : (
+        // The form sets the height; the day beside it fills that and scrolls inside.
+        <View className="flex-row" style={{ minHeight: 300 }}>
+          <View className="min-w-0 flex-1 pb-4">{form}</View>
+          <View className="border-line bg-bg w-[260px] border-l">
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+              <DayPreview date={date} time={time} title={title} today={today} duration={duration} onPickTime={(t) => onChange({ time: t })} />
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Footer band */}
       <View className="border-line mt-4 flex-row items-center gap-3 border-t px-4 py-3">
