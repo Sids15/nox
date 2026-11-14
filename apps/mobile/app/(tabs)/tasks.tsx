@@ -10,7 +10,7 @@ import type { Task } from "@nox/types";
 import { capitalize, dayOfMonth, monthShort, relativeDayLabel, todayKey, weekdayShort } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, ListChecks, Plus, SlidersHorizontal } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DesktopHeader } from "../../components/desktop-header";
@@ -60,6 +60,44 @@ function GroupCard({
   );
 }
 
+/** A collapsed-by-default group below the day's list (Done, Upcoming): a header row with a count
+ *  that expands to show its rows. */
+function CollapsibleGroup({
+  label,
+  count,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const c = useThemeColors();
+  const Chevron = open ? ChevronDown : ChevronRight;
+  return (
+    <>
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        className="border-line bg-surface rounded-card hover:bg-elev mt-2 flex-row items-center justify-between border px-[14px] py-[13px]"
+      >
+        <Text className="text-ink-2 text-[14px] font-semibold">{label}</Text>
+        <View className="flex-row items-center gap-2">
+          <View className="bg-chip rounded-pill px-[9px] py-[5px]">
+            <Text className="text-ink-3 font-mono text-[11px] font-semibold">{count}</Text>
+          </View>
+          <Chevron size={18} color={c.ink3} strokeWidth={1.7} />
+        </View>
+      </Pressable>
+      {open && <View className="mt-2">{children}</View>}
+    </>
+  );
+}
+
 function SectionLabel({ text, count, tone }: { text: string; count?: number; tone?: "overdue" }) {
   return (
     <Text
@@ -82,6 +120,7 @@ export default function TasksScreen() {
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
+  const [doneOpen, setDoneOpen] = useState(false);
   // Desktop master-detail: the task currently open in the right-hand editor pane.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIsNew, setSelectedIsNew] = useState(false);
@@ -134,6 +173,19 @@ export default function TasksScreen() {
       completedOnly: [] as Task[],
     };
   }, [filtered, focus, today, filters.status]);
+
+  // The day's list leads with what is still open; finished tasks drop into a "Done" group below
+  // rather than sitting struck-through between the things you still have to do.
+  const dayOpen = useMemo(() => dayTasks.filter((t) => t.status !== "complete"), [dayTasks]);
+  const dayDone = useMemo(() => dayTasks.filter((t) => t.status === "complete"), [dayTasks]);
+  const dayTotal = dayOpen.length + dayDone.length;
+
+  // Days with something still open get a dot in the week strip.
+  const openDays = useMemo(() => {
+    const days = new Set<string>();
+    for (const t of tasks) if (t.status !== "complete" && t.due_date !== null) days.add(t.due_date);
+    return days;
+  }, [tasks]);
 
   const onToggle = (t: Task) =>
     toggleTask.mutate({ id: t.id, status: t.status === "complete" ? "pending" : "complete" });
@@ -212,8 +264,24 @@ export default function TasksScreen() {
 
         {/* Week strip */}
         <View className="px-screen mt-5">
-          <WeekStrip selected={focus} onSelect={setFocus} />
+          <WeekStrip selected={focus} today={today} onSelect={setFocus} marked={openDays} />
         </View>
+
+        {/* Day progress — how much of the focused day is done. Hidden for an empty day and for the
+            "Active" filter, which drops finished tasks from the count it would be measured against. */}
+        {filters.status === "all" && dayTotal > 0 && (
+          <View className="px-screen mt-4 flex-row items-center gap-3">
+            <View className="bg-chip h-[5px] flex-1 overflow-hidden rounded-full">
+              <View
+                className={`h-full rounded-full ${dayDone.length === dayTotal ? "bg-success" : "bg-accent"}`}
+                style={{ width: `${Math.round((dayDone.length / dayTotal) * 100)}%` }}
+              />
+            </View>
+            <Text className="text-ink-3 font-mono text-[10.5px] font-medium">
+              {dayDone.length === dayTotal ? "all done" : `${dayDone.length} of ${dayTotal} done`}
+            </Text>
+          </View>
+        )}
 
         {/* Filters (always on desktop; collapsed behind the header toggle on mobile) */}
         {(isDesktop || filtersOpen) && (
@@ -256,9 +324,9 @@ export default function TasksScreen() {
                 </>
               ) : (
                 <>
-                  <SectionLabel text={title.toUpperCase()} count={dayTasks.length} />
-                  {dayTasks.length > 0 && (
-                    <GroupCard rows={dayTasks} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
+                  <SectionLabel text={title.toUpperCase()} count={dayOpen.length} />
+                  {dayOpen.length > 0 && (
+                    <GroupCard rows={dayOpen} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
                   )}
                   <Pressable
                     onPress={createAndOpen}
@@ -275,30 +343,16 @@ export default function TasksScreen() {
                     </View>
                   )}
 
+                  {dayDone.length > 0 && (
+                    <CollapsibleGroup label="Done" count={dayDone.length} open={doneOpen} onToggle={() => setDoneOpen((o) => !o)}>
+                      <GroupCard rows={dayDone} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
+                    </CollapsibleGroup>
+                  )}
+
                   {upcoming.length > 0 && (
-                    <>
-                      <Pressable
-                        onPress={() => setUpcomingOpen((o) => !o)}
-                        className="border-line bg-surface rounded-card mt-2 flex-row items-center justify-between border px-[14px] py-[13px]"
-                      >
-                        <Text className="text-ink-2 text-[14px] font-semibold">Upcoming</Text>
-                        <View className="flex-row items-center gap-2">
-                          <View className="bg-chip rounded-pill px-[9px] py-[5px]">
-                            <Text className="text-ink-3 font-mono text-[11px] font-semibold">{upcoming.length}</Text>
-                          </View>
-                          {upcomingOpen ? (
-                            <ChevronDown size={18} color={c.ink3} strokeWidth={1.7} />
-                          ) : (
-                            <ChevronRight size={18} color={c.ink3} strokeWidth={1.7} />
-                          )}
-                        </View>
-                      </Pressable>
-                      {upcomingOpen && (
-                        <View className="mt-2">
-                          <GroupCard rows={upcoming} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
-                        </View>
-                      )}
-                    </>
+                    <CollapsibleGroup label="Upcoming" count={upcoming.length} open={upcomingOpen} onToggle={() => setUpcomingOpen((o) => !o)}>
+                      <GroupCard rows={upcoming} onToggle={onToggle} onDelete={onDelete} onOpen={onOpen} selectedId={selectedId} />
+                    </CollapsibleGroup>
                   )}
                 </>
               )}

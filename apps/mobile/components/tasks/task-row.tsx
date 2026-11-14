@@ -4,14 +4,10 @@ import { formatTime12, relativeDayLabel } from "@nox/utils";
 import { Bell, Check, Repeat, RotateCcw } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 
-const PRIORITY_DOT: Record<Task["priority"], string> = {
-  high: "bg-high",
-  medium: "bg-medium",
-  low: "bg-ink-3",
-};
-
-/** A single task row: completion circle · title (+ meta) · priority dot. Opaque background so the
- *  swipe-action panels behind it stay hidden until the row is dragged. */
+/** A single task row: completion circle · title (+ meta). Priority is the colour of the circle's
+ *  ring — coral high, amber medium, neutral low — so it reads down the left edge where the eye
+ *  already is, instead of a 6px dot at the far right. Opaque background so the swipe-action panels
+ *  behind it stay hidden until the row is dragged. */
 export function TaskRow({
   task,
   onToggle,
@@ -33,17 +29,31 @@ export function TaskRow({
   const reminders = task.reminder_times.length;
   const carried = task.status === "carried_over";
   const recurring = task.repeat !== "none" || task.origin_task_id !== null;
+  const ring = { high: c.high, medium: c.medium, low: c.ink3 }[task.priority];
 
   return (
     <Pressable onPress={onPress} className={`min-h-[58px] flex-row items-center px-[14px] ${selected ? "bg-elev" : "bg-surface hover:bg-elev"}`}>
       {selected && <View className="bg-accent absolute bottom-0 left-0 top-0 w-[2px]" />}
-      <Pressable onPress={onToggle} hitSlop={10} accessibilityRole="checkbox" accessibilityState={{ checked: complete }}>
+      <Pressable
+        onPress={onToggle}
+        hitSlop={10}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: complete }}
+        accessibilityLabel={`${task.title}, ${task.priority} priority`}
+      >
         {complete ? (
           <View className="bg-accent h-[22px] w-[22px] items-center justify-center rounded-full">
             <Check size={11} color={c.onAccent} strokeWidth={3} />
           </View>
         ) : (
-          <View className="border-ink-3 h-[22px] w-[22px] rounded-full border-[1.5px]" />
+          <View
+            className="h-[22px] w-[22px] rounded-full"
+            style={{
+              borderWidth: task.priority === "low" ? 1.5 : 2,
+              borderColor: ring,
+              backgroundColor: task.priority === "low" ? "transparent" : `${ring}1f`,
+            }}
+          />
         )}
       </Pressable>
 
@@ -81,7 +91,6 @@ export function TaskRow({
         )}
       </View>
 
-      {!complete && <View className={`ml-3 h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[task.priority]}`} />}
     </Pressable>
   );
 }
