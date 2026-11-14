@@ -252,8 +252,17 @@ export default function ResourcesScreen() {
         </View>
 
         {/* Tag filter (always on desktop; collapsed behind the header toggle on mobile) */}
+        {/* Desktop wraps; a phone scrolls the row sideways so a handful of tags doesn't strand
+            "+ new tag" alone on a second line. */}
         {(isDesktop || tagsOpen) && (
-          <View className="px-screen mt-3.5 flex-row flex-wrap gap-1.5">
+          <ScrollView
+            horizontal={!isDesktop}
+            scrollEnabled={!isDesktop}
+            showsHorizontalScrollIndicator={false}
+            className="mt-3.5"
+            contentContainerStyle={isDesktop ? undefined : { paddingHorizontal: 20 }}
+          >
+          <View className={`flex-row gap-1.5 ${isDesktop ? "px-screen flex-1 flex-wrap" : ""}`}>
             <Pressable
               onPress={() => setSelected([])}
               className={`rounded-pill px-3 py-[7px] ${selected.length === 0 ? "bg-accent" : "bg-chip border-line border"}`}
@@ -274,6 +283,7 @@ export default function ResourcesScreen() {
               <Text className="text-ink-3 text-[12px] font-semibold">+ new tag</Text>
             </Pressable>
           </View>
+          </ScrollView>
         )}
 
         {/* Masonry */}

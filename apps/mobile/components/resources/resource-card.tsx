@@ -53,7 +53,8 @@ export function ResourceCard({
   if (resource.type === "video") {
     return (
       <Pressable onPress={onPress} onLongPress={onLongPress} className={shell}>
-        <View className="bg-chip relative h-[88px] items-center justify-center">
+        {/* 16:9 like the video itself — a fixed 88px strip cropped wide desktop cards to a sliver. */}
+        <View className="bg-chip relative items-center justify-center" style={{ aspectRatio: 16 / 9 }}>
           {resource.thumbnail_url ? (
             <Thumb value={resource.thumbnail_url} style={{ position: "absolute", inset: 0 }} />
           ) : null}
