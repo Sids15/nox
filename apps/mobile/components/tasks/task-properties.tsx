@@ -1,4 +1,4 @@
-import { usePrefs, useThemeColors } from "@nox/features";
+import { useThemeColors } from "@nox/features";
 import type { Task } from "@nox/types";
 import {
   addDays,
@@ -14,8 +14,8 @@ import {
 import { Bell, BellPlus, Calendar, Check, Clock, Flag, Plus, Repeat, Sparkles, X, type LucideIcon } from "lucide-react-native";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
-import { NoxDateTimePicker } from "../date-time-picker";
 import { MiniCalendar } from "./mini-calendar";
+import { TimePicker } from "./time-picker";
 
 /**
  * The task property bar — Date · Time · Remind · Repeat · Priority — shared by the new-task dialog and
@@ -289,7 +289,6 @@ function RemindPanel({
   onChange: (next: string[]) => void;
 }) {
   const c = useThemeColors();
-  const theme = usePrefs((s) => s.theme);
   const now = Date.now();
   const anchor = anchorOf(date, time);
   const presets = reminderPresets(date, time);
@@ -380,31 +379,7 @@ function RemindPanel({
               <MiniCalendar selected={cDate} today={today} onSelect={setCDate} />
             </View>
             <View className="flex-1 justify-between gap-3">
-              <View>
-                <PanelTitle>TIME</PanelTitle>
-                <View className="flex-row flex-wrap gap-1.5">
-                  {["09:00", "12:00", "15:00", "18:00", "21:00"].map((t) => (
-                    <Pressable
-                      key={t}
-                      onPress={() => setCTime(t)}
-                      className={`rounded-pill px-3 py-[6px] ${cTime === t ? "bg-accent" : "bg-chip hover:bg-elev"}`}
-                    >
-                      <Text className={`text-[12.5px] font-semibold ${cTime === t ? "text-on-accent" : "text-ink-2"}`}>
-                        {formatTime12(t)}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={{ alignItems: Platform.OS === "web" ? "flex-start" : undefined }}>
-                  <NoxDateTimePicker
-                    value={customAt}
-                    mode="time"
-                    theme={theme}
-                    textColor={c.ink}
-                    onChange={(d) => setCTime(hhmm(d))}
-                  />
-                </View>
-              </View>
+              <TimePicker value={cTime} onChange={(t) => t && setCTime(t)} compact allowNone={false} />
               <View>
                 <Pressable
                   onPress={() => onChange([...reminders, customAt.toISOString()])}
@@ -435,13 +410,6 @@ function RemindPanel({
 
 /* ─────────────────────────────── the bar ─────────────────────────────── */
 
-const TIME_PRESETS: { label: string; value: string }[] = [
-  { label: "Morning", value: "09:00" },
-  { label: "Midday", value: "12:00" },
-  { label: "Afternoon", value: "15:00" },
-  { label: "Evening", value: "18:00" },
-  { label: "Night", value: "21:00" },
-];
 
 export function PropertyBar({
   value,
@@ -464,9 +432,7 @@ export function PropertyBar({
   trailing?: ReactNode;
 }) {
   const c = useThemeColors();
-  const theme = usePrefs((s) => s.theme);
   const [panel, setPanel] = useState<Panel | null>(null);
-  const [customTime, setCustomTime] = useState(false);
   const { date, time, reminders, repeat, priority } = value;
   const toggle = (p: Panel) => setPanel((cur) => (cur === p ? null : p));
 
@@ -543,54 +509,15 @@ export function PropertyBar({
     </View>
   );
 
-  const isPresetTime = time !== null && TIME_PRESETS.some((t) => t.value === time);
   const timePanel = (
-    <View>
-      <View className="flex-row flex-wrap gap-1.5">
-        {TIME_PRESETS.map((t) => (
-          <PresetCard
-            key={t.value}
-            title={t.label}
-            sub={formatTime12(t.value)!}
-            selected={time === t.value}
-            onPress={() => {
-              onChange({ time: t.value });
-              setCustomTime(false);
-              setPanel(null);
-            }}
-          />
-        ))}
-      </View>
-      <View className="mt-2">
-        <OptionRow
-          label="Custom time…"
-          selected={customTime || (time !== null && !isPresetTime)}
-          hint={time && !isPresetTime ? formatTime12(time)! : ""}
-          onPress={() => {
-            setCustomTime(true);
-            if (time === null) onChange({ time: "09:00" });
-          }}
-        />
-        {customTime && date && (
-          <NoxDateTimePicker
-            value={localDate(date, time ?? "09:00")}
-            mode="time"
-            theme={theme}
-            textColor={c.ink}
-            onChange={(d) => onChange({ time: hhmm(d) })}
-          />
-        )}
-        <OptionRow
-          label="All day (no time)"
-          selected={time === null}
-          onPress={() => {
-            onChange({ time: null });
-            setCustomTime(false);
-            setPanel(null);
-          }}
-        />
-      </View>
-    </View>
+    <TimePicker
+      value={time}
+      compact={compact}
+      onChange={(t) => {
+        onChange({ time: t });
+        setPanel(null);
+      }}
+    />
   );
 
   const anchorDow = dayOfWeek(date ?? today);
