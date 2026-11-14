@@ -1,10 +1,10 @@
-import { useCreateIdea, useIdeas, useThemeColors } from "@nox/features";
+import { useCreateIdea, useIdeas, useSetIdeaStatus, useThemeColors } from "@nox/features";
 import type { Idea } from "@nox/types";
 import { capitalize } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { Lightbulb, ListFilter, Plus, Search, X } from "lucide-react-native";
 import { Fragment, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View, type GestureResponderEvent } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
 import { Fab, useHideOnScroll } from "../../components/fab";
@@ -26,6 +26,7 @@ const STAGES: { key: Stage; label: string; hint: string }[] = [
 ];
 
 type Show = "active" | "dropped" | "archived";
+const WEB_GRAB = Platform.OS === "web" ? ({ cursor: "grab", userSelect: "none" } as object) : null;
 type PriorityFilter = "all" | Idea["priority"];
 
 function matchesSearch(idea: Idea, q: string): boolean {
@@ -73,6 +74,8 @@ export default function IdeasScreen() {
   const byStage = useMemo(() => {
     const m = new Map<Stage, Idea[]>(STAGES.map((s) => [s.key, []]));
     for (const i of visible) m.get(i.status as Stage)?.push(i);
+    const rank: Record<Idea["priority"], number> = { critical: 0, high: 1, medium: 2, low: 3 };
+    for (const list of m.values()) list.sort((a, b) => rank[a.priority] - rank[b.priority] || b.updated_at.localeCompare(a.updated_at));
     return m;
   }, [visible]);
 
@@ -85,10 +88,62 @@ export default function IdeasScreen() {
     if (isDesktop) setSelectedId(id);
     else router.push(`/idea/${id}`);
   };
-  const onCreate = () => {
-    const id = createIdea.create({ title: "Untitled idea", description: null, content: [], priority: "medium", status: "raw", tags: [] });
+  const onCreate = (status: Stage = "raw") => {
+    const id = createIdea.create({ title: "Untitled idea", description: null, content: [], priority: "medium", status, tags: [] });
     openIdea(id);
   };
+  // Catch an idea without leaving the board: type, Enter, it lands in Raw.
+  const [capture, setCapture] = useState("");
+  const [caught, setCaught] = useState<string | null>(null);
+  const quickCapture = () => {
+    const title = capture.trim().slice(0, 200);
+    if (!title) return;
+    createIdea.create({ title, description: null, content: [], priority: "medium", status: "raw", tags: [] });
+    setCapture("");
+    setCaught(title);
+    setTimeout(() => setCaught(null), 2500);
+  };
+
+  // ── Drag a card to another column (desktop board) ──
+  const setStatus = useSetIdeaStatus();
+  const boardRef = useRef<View>(null);
+  const boardRect = useRef<{ x: number; y: number; width: number } | null>(null);
+  const gesture = useRef<{ idea: Idea; x0: number; y0: number; moved: boolean } | null>(null);
+  const [drag, setDrag] = useState<{ idea: Idea; x: number; y: number; to: Stage | null } | null>(null);
+  const stageAt = (x: number): Stage | null => {
+    const r = boardRect.current;
+    if (!r || x < r.x || x > r.x + r.width) return null;
+    return STAGES[Math.min(STAGES.length - 1, Math.floor(((x - r.x) / r.width) * STAGES.length))]!.key;
+  };
+  const dragHandlers = (idea: Idea) => ({
+    onStartShouldSetResponder: () => true,
+    onResponderTerminationRequest: () => !gesture.current?.moved,
+    onResponderGrant: (e: GestureResponderEvent) => {
+      gesture.current = { idea, x0: e.nativeEvent.pageX, y0: e.nativeEvent.pageY, moved: false };
+      boardRef.current?.measureInWindow((x, y, width) => (boardRect.current = { x, y, width }));
+    },
+    onResponderMove: (e: GestureResponderEvent) => {
+      const g = gesture.current;
+      if (!g) return;
+      const { pageX: x, pageY: y } = e.nativeEvent;
+      if (!g.moved && Math.hypot(x - g.x0, y - g.y0) < 6) return;
+      g.moved = true;
+      setDrag({ idea: g.idea, x, y, to: stageAt(x) });
+    },
+    onResponderRelease: (e: GestureResponderEvent) => {
+      const g = gesture.current;
+      gesture.current = null;
+      setDrag(null);
+      if (!g) return;
+      if (!g.moved) return openIdea(g.idea.id);
+      const to = stageAt(e.nativeEvent.pageX);
+      if (to && to !== g.idea.status) setStatus.mutate({ id: g.idea.id, status: to });
+    },
+    onResponderTerminate: () => {
+      gesture.current = null;
+      setDrag(null);
+    },
+  });
 
   const selectedIdea = selectedId ? ideas.find((i) => i.id === selectedId) : undefined;
   const detailOpen = isDesktop && !!selectedIdea;
@@ -122,7 +177,7 @@ export default function IdeasScreen() {
           </View>
           {isDesktop ? (
             <Pressable
-              onPress={onCreate}
+              onPress={() => onCreate()}
               accessibilityRole="button"
               accessibilityLabel="New idea"
               style={pressScale}
@@ -170,6 +225,33 @@ export default function IdeasScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      {show === "active" && (
+        <View className="mt-2.5 flex-row items-center gap-2.5 px-1">
+          <Lightbulb size={15} color={capture.trim() ? c.accent : c.ink3} strokeWidth={2} />
+          <TextInput
+            value={capture}
+            onChangeText={setCapture}
+            onSubmitEditing={quickCapture}
+            submitBehavior="submit"
+            placeholder="Catch an idea: type it and press Enter"
+            placeholderTextColor={c.ink3}
+            accessibilityLabel="Catch an idea"
+            maxLength={200}
+            className="text-ink flex-1 text-[14.5px]"
+            style={{ paddingVertical: 6, outlineWidth: 0 } as object}
+          />
+          {caught ? (
+            <Text numberOfLines={1} className="text-success max-w-[200px] text-[12.5px] font-semibold">
+              Added to Raw
+            </Text>
+          ) : capture.trim() ? (
+            <Pressable onPress={quickCapture} accessibilityRole="button" style={pressScale} className="bg-accent h-7 justify-center rounded-[8px] px-2.5">
+              <Text className="text-on-accent text-[12.5px] font-semibold">Add</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
 
       {filtersActive && (
         <View className="mt-3 flex-row flex-wrap items-center gap-1.5">
@@ -224,7 +306,7 @@ export default function IdeasScreen() {
         title="Catch your first idea"
         subtitle="Jot down a spark, then grow it with notes, links and voice as it moves from raw to done."
         actionLabel="New idea"
-        onAction={onCreate}
+        onAction={() => onCreate()}
       />
     );
   } else if (visible.length === 0) {
@@ -239,21 +321,54 @@ export default function IdeasScreen() {
       </View>
     );
   } else if (board) {
-    // Desktop board: one column per stage.
+    // Desktop board: one column per stage. Drag a card to another column to move it on.
     body = (
-      <View className="flex-row gap-3.5">
+      <View ref={boardRef} collapsable={false} className="flex-row gap-3.5">
         {STAGES.map((s) => {
           const list = byStage.get(s.key) ?? [];
+          const hot = drag?.to === s.key && drag.idea.status !== s.key;
           return (
-            <View key={s.key} className="min-w-0 flex-1">
-              {stageTitle(s, list.length)}
+            <View key={s.key} className={`min-w-0 flex-1 rounded-[14px] ${hot ? "bg-accent/[0.06]" : ""}`} style={{ minHeight: 320 }}>
+              <View className="flex-row items-center">
+                <View className="flex-1">{stageTitle(s, list.length)}</View>
+                <Pressable
+                  onPress={() => onCreate(s.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`New idea in ${s.label}`}
+                  className="hover:bg-chip -mt-2.5 h-7 w-7 items-center justify-center rounded-[8px]"
+                >
+                  <Plus size={14} color={c.ink3} strokeWidth={2.2} />
+                </Pressable>
+              </View>
               <View className="gap-2.5">
                 {list.map((idea) => (
-                  <IdeaCard key={idea.id} idea={idea} showStatus={false} onPress={() => openIdea(idea.id)} />
+                  <View
+                    key={idea.id}
+                    {...dragHandlers(idea)}
+                    style={[{ opacity: drag?.idea.id === idea.id ? 0.35 : 1 }, WEB_GRAB]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${idea.title}. Drag to another stage, or open.`}
+                    // Keyboard: Tab to a card, Enter or Space opens it (the drag handlers need a pointer).
+                    {...(Platform.OS === "web"
+                      ? ({
+                          tabIndex: 0,
+                          onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              openIdea(idea.id);
+                            }
+                          },
+                        } as object)
+                      : null)}
+                  >
+                    <View pointerEvents="box-only">
+                      <IdeaCard idea={idea} showStatus={false} onPress={() => {}} />
+                    </View>
+                  </View>
                 ))}
                 {list.length === 0 && (
-                  <View className="border-line items-center rounded-[14px] border border-dashed px-3 py-6">
-                    <Text className="text-ink-3 text-[12.5px]">{s.hint}</Text>
+                  <View className={`items-center rounded-[14px] border border-dashed px-3 py-6 ${hot ? "border-accent" : "border-line"}`}>
+                    <Text className="text-ink-3 text-[12.5px]">{hot ? `Move to ${s.label}` : s.hint}</Text>
                   </View>
                 )}
               </View>
@@ -332,7 +447,20 @@ export default function IdeasScreen() {
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
       {list}
-      {!isDesktop && <Fab onPress={onCreate} label="New idea" bottom={112} visible={fab.visible} />}
+      {!isDesktop && <Fab onPress={() => onCreate()} label="New idea" bottom={112} visible={fab.visible} />}
+      {drag && (
+        <View
+          pointerEvents="none"
+          className="bg-ink absolute flex-row items-center gap-2 rounded-[9px] px-2.5 py-1.5"
+          // Page coordinates: pinned to the window on the web (the pane starts after the sidebar).
+          style={{ left: drag.x + 12, top: drag.y + 8, maxWidth: 280, ...(Platform.OS === "web" ? ({ position: "fixed" } as object) : null) }}
+        >
+          <Text numberOfLines={1} className="text-bg text-[12.5px] font-semibold">
+            {drag.idea.title}
+          </Text>
+          <Text className="text-bg text-[12px] opacity-70">→ {drag.to ? STAGES.find((x) => x.key === drag.to)!.label : "—"}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

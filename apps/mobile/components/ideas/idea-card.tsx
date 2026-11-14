@@ -1,7 +1,7 @@
 import { useThemeColors } from "@nox/features";
 import type { Idea } from "@nox/types";
 import { relativeAge } from "@nox/utils";
-import { Flag } from "lucide-react-native";
+import { Flag, Image as ImageIcon, Link2, Mic } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { TagChip } from "../tag-chip";
 import { StatusPill } from "./status-pill";
@@ -70,9 +70,19 @@ export function IdeaCard({
             <TagChip key={t} tag={t} size="sm" />
           ))}
         </View>
-        <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[11.5px]">
-          {relativeAge(idea.updated_at)}
-        </Text>
+        {(() => {
+          const has = (t: string) => (idea.content ?? []).some((b) => b.type === t);
+          return (
+            <View className="flex-row items-center gap-1.5">
+              {has("audio") && <Mic size={12} color={c.ink3} strokeWidth={2} />}
+              {has("image") && <ImageIcon size={12} color={c.ink3} strokeWidth={2} />}
+              {has("link") && <Link2 size={12} color={c.ink3} strokeWidth={2} />}
+              <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[11.5px]">
+                {relativeAge(idea.updated_at)}
+              </Text>
+            </View>
+          );
+        })()}
       </View>
     </Pressable>
   );
