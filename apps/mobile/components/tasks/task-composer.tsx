@@ -5,6 +5,8 @@ import { ArrowUp, CornerDownLeft, Sparkles, X } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, Text, TextInput, View, type TextStyle } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
+import { DayPreview } from "./day-preview";
+import { WhenPicker } from "./when-picker";
 import { anchorOf, PropertyBar, rebaseReminders, type RepeatValue, type TaskProps } from "./task-properties";
 
 const WEB = Platform.OS === "web";
@@ -312,7 +314,7 @@ export function TaskComposer({
       </Pressable>
     ) : null;
 
-  return (
+  const form = (
     <View>
       <View className={`pb-1 pl-5 ${compact ? "pr-5 pt-4" : "pr-12 pt-5"}`}>
         {/* No label above the title — the placeholder already says what this is. */}
@@ -343,6 +345,11 @@ export function TaskComposer({
         {hint ? <View className="mt-2.5">{hint}</View> : null}
       </View>
 
+      {/* When — the decision that matters most, one tap away. */}
+      <View className="border-line mx-5 mt-3.5 border-t pt-3.5">
+        <WhenPicker date={date} time={time} today={today} onDate={(d) => onChange({ date: d })} onTime={(t) => onChange({ time: t })} />
+      </View>
+
       <View className="mt-3">
         <PropertyBar
           value={props}
@@ -354,9 +361,27 @@ export function TaskComposer({
       </View>
 
       {error ? <Text className="text-high mt-3 px-5 text-[12.5px]">{error}</Text> : null}
+    </View>
+  );
+
+  return (
+    <View>
+      {compact ? (
+        form
+      ) : (
+        // The form sets the height; the day preview fills it and scrolls inside.
+        <View className="flex-row" style={{ minHeight: 330 }}>
+          <View className="min-w-0 flex-1 pb-4">{form}</View>
+          <View className="border-line bg-bg w-[270px] border-l">
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+              <DayPreview date={date} time={time} title={title} today={today} onPickTime={(t) => onChange({ time: t })} />
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Footer band */}
-      <View className="border-line mt-4 flex-row items-center gap-3 border-t px-4 py-3">
+      <View className={`border-line flex-row items-center gap-3 border-t px-4 py-3 ${compact ? "mt-4" : ""}`}>
         <Pressable
           onPress={() => setCreateMore((v) => !v)}
           accessibilityRole="switch"
@@ -383,6 +408,9 @@ export function TaskComposer({
         </Pressable>
 
         <View className="flex-1">
+          {!added && !compact && WEB ? (
+            <Text className="text-ink-3 text-[12px]">Enter to add · Esc to close</Text>
+          ) : null}
           {added ? (
             <Text numberOfLines={1} className="text-success text-[12px] font-semibold">
               Added “{added}”

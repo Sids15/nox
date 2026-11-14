@@ -44,12 +44,12 @@ export function NewTaskDialog({
   if (isDesktop) {
     return (
       <Modal transparent visible animationType="fade" onRequestClose={onClose}>
-        <View style={vars(themeVars)} className="flex-1 items-center px-6 pt-[14vh]">
-          <Pressable className="absolute inset-0 bg-black/55" onPress={onClose} accessibilityLabel="Close" />
+        <View style={vars(themeVars)} className="flex-1 items-center px-6 pt-[10vh]">
+          <Pressable className="absolute inset-0 bg-black/40" onPress={onClose} accessibilityLabel="Close" />
           <DialogIn>
           <View
-            className="border-line bg-elev w-full max-w-[600px] overflow-hidden rounded-[16px] border"
-            style={{ maxHeight: win.height * 0.8, shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 60, shadowOffset: { width: 0, height: 24 }, elevation: 20 }}
+            className="border-line bg-elev w-full max-w-[860px] overflow-hidden rounded-[16px] border"
+            style={{ maxHeight: win.height * 0.8, shadowColor: "#1B2131", shadowOpacity: 0.24, shadowRadius: 40, shadowOffset: { width: 0, height: 18 }, elevation: 20 }}
           >
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <TaskComposer initialDate={initialDate} onClose={onClose} compact={false} />
