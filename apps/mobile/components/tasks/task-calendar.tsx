@@ -19,10 +19,11 @@ import { Platform, Pressable, ScrollView, Text, View, type GestureResponderEvent
 import { useIsDesktop } from "../../lib/use-responsive";
 import { MenuDivider, MenuLabel, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
-import { anchorOf, rebaseReminders } from "./task-properties";
+import { anchorOf, durationLabel, rebaseReminders } from "./task-properties";
 
-/** Minutes a task covers on the grid. Tasks have a start time, not a length. */
+/** Minutes a task covers when it has no duration set. */
 const BLOCK = 30;
+const lengthOf = (t: Task) => t.duration_minutes || BLOCK;
 /** Drags snap to this many minutes. */
 const SNAP = 15;
 const GUTTER = 52;
@@ -48,7 +49,7 @@ const measure = (v: View | null) =>
 const inside = (r: Rect | null, x: number, y: number) => !!r && x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height;
 
 /** Side-by-side lanes for tasks whose blocks overlap. */
-function layoutDay(items: PlannedTask[]): { p: PlannedTask; start: number; lane: number; lanes: number }[] {
+export function layoutDay(items: PlannedTask[]): { p: PlannedTask; start: number; lane: number; lanes: number }[] {
   const timed = items
     .filter((p) => p.task.due_time)
     .map((p) => ({ p, start: timeToMinutes(p.task.due_time!) }))
@@ -71,8 +72,8 @@ function layoutDay(items: PlannedTask[]): { p: PlannedTask; start: number; lane:
       lane = laneEnds.length;
       laneEnds.push(0);
     }
-    laneEnds[lane] = t.start + BLOCK;
-    clusterEnd = Math.max(clusterEnd, t.start + BLOCK);
+    laneEnds[lane] = t.start + lengthOf(t.p.task);
+    clusterEnd = Math.max(clusterEnd, t.start + lengthOf(t.p.task));
     cluster.push({ p: t.p, start: t.start, lane, lanes: 0 });
   }
   if (cluster.length) flush();
@@ -153,7 +154,7 @@ export function TaskCalendar({
         if (p.task.due_time) {
           const m = timeToMinutes(p.task.due_time);
           s = Math.min(s, Math.floor(m / 60));
-          e = Math.max(e, Math.min(24, Math.floor((m + BLOCK) / 60) + 1));
+          e = Math.max(e, Math.min(24, Math.ceil((m + lengthOf(p.task)) / 60)));
         }
     return [s, Math.max(e, s + 1)];
   }, [byDay, prefs.startHour, prefs.endHour]);
@@ -182,6 +183,34 @@ export function TaskCalendar({
   const geom = useRef<{ root: Rect | null; grid: Rect | null; tray: Rect | null }>({ root: null, grid: null, tray: null });
   const gesture = useRef<{ task: Task; startX: number; startY: number; fromMin: number | null; moved: boolean } | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  /** A block being stretched by its bottom edge: the task and its length so far (minutes). */
+  const [resize, setResize] = useState<{ id: string; minutes: number } | null>(null);
+  const resizeG = useRef<{ task: Task; y0: number; from: number; now: number } | null>(null);
+  const resizeHandlers = (task: Task) => ({
+    onStartShouldSetResponder: () => true,
+    onResponderTerminationRequest: () => false,
+    onResponderGrant: (e: GestureResponderEvent) => {
+      resizeG.current = { task, y0: e.nativeEvent.pageY, from: lengthOf(task), now: lengthOf(task) };
+      setResize({ id: task.id, minutes: lengthOf(task) });
+    },
+    onResponderMove: (e: GestureResponderEvent) => {
+      const g = resizeG.current;
+      if (!g) return;
+      const raw = g.from + ((e.nativeEvent.pageY - g.y0) / ROW) * 60;
+      g.now = Math.max(SNAP, Math.min(12 * 60, Math.round(raw / SNAP) * SNAP));
+      setResize({ id: g.task.id, minutes: g.now });
+    },
+    onResponderRelease: () => {
+      const g = resizeG.current;
+      resizeG.current = null;
+      setResize(null);
+      if (g && g.now !== lengthOf(g.task)) updateTask.mutate({ id: g.task.id, patch: { duration_minutes: g.now } });
+    },
+    onResponderTerminate: () => {
+      resizeG.current = null;
+      setResize(null);
+    },
+  });
   /** The day view's Anytime row, expanded to show every task. */
   const [trayOpen, setTrayOpen] = useState(false);
 
@@ -469,15 +498,17 @@ export function TaskCalendar({
                   {/* Tasks */}
                   {placed.map(({ p, start, lane, lanes }) => {
                     const done = p.task.status === "complete";
-                    const h = Math.max(22, (BLOCK / 60) * ROW - 3);
+                    const minutes = resize?.id === p.task.id ? resize.minutes : lengthOf(p.task);
+                    const h = Math.max(22, (minutes / 60) * ROW - 3);
+                    const tall = h >= 44;
                     const dragging = drag?.task.id === p.task.id;
                     return (
                       <View
                         key={p.task.id + (p.projected ? "p" : "")}
                         {...handlers(p, start)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${p.task.title}, ${formatTime12(p.task.due_time)}`}
-                        className="absolute flex-row items-center gap-1.5 overflow-hidden rounded-[7px] px-1.5"
+                        accessibilityLabel={`${p.task.title}, ${formatTime12(p.task.due_time)}, ${durationLabel(minutes)}`}
+                        className={`absolute flex-row gap-1.5 overflow-hidden rounded-[7px] px-1.5 ${tall ? "items-start pt-1.5" : "items-center"}`}
                         style={[
                           {
                             top: yOf(start) + 1,
@@ -495,13 +526,37 @@ export function TaskCalendar({
                         ]}
                       >
                         {checkbox(p, 14)}
-                        <Text numberOfLines={1} className={`flex-1 text-[12px] font-semibold ${done ? "text-ink-3 line-through" : "text-ink"}`}>
-                          {p.task.title}
-                        </Text>
-                        {isDesktop && lanes === 1 && (
-                          <Text style={TABULAR} className="text-ink-3 text-[11px]">
-                            {formatTime12(p.task.due_time)}
+                        <View className="min-w-0 flex-1">
+                          <Text numberOfLines={tall ? 2 : 1} className={`text-[12px] font-semibold ${done ? "text-ink-3 line-through" : "text-ink"}`}>
+                            {p.task.title}
                           </Text>
+                          {tall && (
+                            <Text numberOfLines={1} style={TABULAR} className="text-ink-3 mt-0.5 text-[11px]">
+                              {formatTime12(p.task.due_time)} – {formatTime12(minutesToTime(start + minutes))}
+                            </Text>
+                          )}
+                        </View>
+                        {!tall && isDesktop && lanes === 1 && (
+                          <Text style={TABULAR} className="text-ink-3 text-[11px]">
+                            {resize?.id === p.task.id ? durationLabel(minutes) : formatTime12(p.task.due_time)}
+                          </Text>
+                        )}
+                        {tall && resize?.id === p.task.id && (
+                          <Text style={TABULAR} className="text-ink-2 text-[11px] font-semibold">
+                            {durationLabel(minutes)}
+                          </Text>
+                        )}
+                        {/* Bottom edge: drag to change how long it takes */}
+                        {!p.projected && !done && (
+                          <View
+                            {...resizeHandlers(p.task)}
+                            accessibilityRole="adjustable"
+                            accessibilityLabel={`Duration of ${p.task.title}: ${durationLabel(minutes)}. Drag to change.`}
+                            className="absolute bottom-0 left-0 right-0 items-center justify-end"
+                            style={[{ height: 8 }, Platform.OS === "web" ? ({ cursor: "ns-resize" } as object) : null]}
+                          >
+                            <View className="mb-[2px] h-[3px] w-6 rounded-full" style={{ backgroundColor: priorityRing[p.task.priority], opacity: 0.45 }} />
+                          </View>
                         )}
                       </View>
                     );
@@ -512,7 +567,7 @@ export function TaskCalendar({
                     <View
                       pointerEvents="none"
                       className="border-accent absolute left-0.5 right-0.5 rounded-[7px] border-2 border-dashed"
-                      style={{ top: yOf(timeToMinutes(drag.target.time)) + 1, height: Math.max(22, (BLOCK / 60) * ROW - 3) }}
+                      style={{ top: yOf(timeToMinutes(drag.target.time)) + 1, height: Math.max(22, (lengthOf(drag.task) / 60) * ROW - 3) }}
                     />
                   )}
                 </View>

@@ -81,6 +81,7 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
     reminders: task.reminder_times,
     repeat: { kind: task.repeat, weekdays: task.repeat_config?.weekdays ?? [] },
     priority: task.priority,
+    duration: task.duration_minutes ?? null,
   };
 
   const onChange = (p: Partial<TaskProps>) => {
@@ -88,6 +89,7 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
     if ("date" in p) out.due_date = p.date ?? null;
     if ("time" in p) out.due_time = p.time ?? null;
     if (p.priority) out.priority = p.priority;
+    if ("duration" in p) out.duration_minutes = p.duration ?? null;
     if (p.repeat) {
       out.repeat = p.repeat.kind;
       out.repeat_config = p.repeat.kind === "custom" ? { ...(task.repeat_config ?? {}), weekdays: p.repeat.weekdays } : null;

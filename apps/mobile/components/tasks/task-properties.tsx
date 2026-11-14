@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Clock,
   Flag,
+  Hourglass,
   Plus,
   Repeat,
   Sparkles,
@@ -54,8 +55,18 @@ export interface TaskProps {
   reminders: string[];
   repeat: RepeatValue;
   priority: Task["priority"];
+  /** Minutes, or null when not set (the calendar draws 30). */
+  duration?: number | null;
 }
-type Panel = "date" | "time" | "remind" | "repeat" | "priority";
+type Panel = "date" | "time" | "duration" | "remind" | "repeat" | "priority";
+
+export const DURATIONS = [15, 30, 45, 60, 90, 120, 180];
+/** 45 → "45 min", 60 → "1 hr", 90 → "1 hr 30 min". */
+export function durationLabel(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h === 0 ? `${m} min` : m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+}
 
 const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -205,7 +216,7 @@ function PropButton({
         }`}
       >
         <Icon size={14} color={active ? tint : c.ink3} strokeWidth={2} />
-        <Text style={{ color: active ? tint : c.ink2 }} className="text-[13px] font-semibold">
+        <Text style={{ color: active ? tint : c.ink2 }} className={`text-[13px] ${active ? "font-semibold" : "font-medium"}`}>
           {label}
         </Text>
         {auto && <Sparkles size={11} color={tint} strokeWidth={2.2} />}
@@ -381,7 +392,7 @@ function RemindMenu({
 
 /* ─────────────────────────────── the bar ─────────────────────────────── */
 
-const MENU_WIDTH: Record<Panel, number> = { date: 500, time: 470, remind: 340, repeat: 280, priority: 220 };
+const MENU_WIDTH: Record<Panel, number> = { date: 500, time: 470, duration: 220, remind: 340, repeat: 280, priority: 220 };
 
 export function PropertyBar({
   value,
@@ -409,6 +420,7 @@ export function PropertyBar({
   const refs = {
     date: useRef<View>(null),
     time: useRef<View>(null),
+    duration: useRef<View>(null),
     remind: useRef<View>(null),
     repeat: useRef<View>(null),
     priority: useRef<View>(null),
@@ -575,16 +587,43 @@ export function PropertyBar({
     </View>
   );
 
+  const durationMenu = (
+    <View className="p-1.5">
+      {DURATIONS.map((m) => (
+        <MenuRow
+          key={m}
+          label={durationLabel(m)}
+          selected={value.duration === m}
+          onPress={() => {
+            onChange({ duration: m });
+            close();
+          }}
+        />
+      ))}
+      <MenuDivider />
+      <MenuRow
+        label="Not set"
+        hint="Shows as 30 min"
+        selected={!value.duration}
+        onPress={() => {
+          onChange({ duration: null });
+          close();
+        }}
+      />
+    </View>
+  );
+
   const menus: Record<Panel, ReactNode> = {
     date: dateMenu,
     time: timeMenu,
+    duration: durationMenu,
     remind: (
       <RemindMenu date={date} time={time} reminders={reminders} today={today} onChange={(next) => onChange({ reminders: next })} />
     ),
     repeat: repeatMenu,
     priority: priorityMenu,
   };
-  const menuNames: Record<Panel, string> = { date: "Date", time: "Time", remind: "Reminders", repeat: "Repeat", priority: "Priority" };
+  const menuNames: Record<Panel, string> = { date: "Date", time: "Time", duration: "Duration", remind: "Reminders", repeat: "Repeat", priority: "Priority" };
 
   const remindLabel = reminders.length === 0 ? "Remind" : reminders.length === 1 ? "1 reminder" : `${reminders.length} reminders`;
 
@@ -611,6 +650,17 @@ export function PropertyBar({
             open={panel === "time"}
             onPress={() => toggle("time")}
             onClear={() => onChange({ time: null })}
+          />
+        )}
+        {time !== null && value.duration !== undefined && (
+          <PropButton
+            anchorRef={refs.duration}
+            icon={Hourglass}
+            label={value.duration ? durationLabel(value.duration) : "Duration"}
+            set={!!value.duration}
+            open={panel === "duration"}
+            onPress={() => toggle("duration")}
+            onClear={() => onChange({ duration: null })}
           />
         )}
         <PropButton
