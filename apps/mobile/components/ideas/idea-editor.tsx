@@ -6,30 +6,22 @@ import {
   useThemeColors,
   useUpdateIdea,
 } from "@nox/features";
-import { priorityLevels, type ContentBlock, type Idea, type IdeaInput } from "@nox/types";
-import { capitalize as cap, relativeFromNow, shortDate } from "@nox/utils";
-import { Archive, ArchiveRestore, ChevronLeft, CircleOff, Plus, Trash2, Undo2 } from "lucide-react-native";
+import type { ContentBlock, IdeaInput } from "@nox/types";
+import { Archive, ArchiveRestore, ChevronLeft, CircleOff, Trash2, Undo2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
 import { BlockList } from "../blocks/block-list";
 import { BlockToolbar } from "../blocks/block-toolbar";
 import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { EditorTopBar } from "../editor-top-bar";
-import { StatusStepper } from "./status-stepper";
+import { IdeaProperties } from "./idea-properties";
 import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
-import { TagChip } from "../tag-chip";
-import { SegmentedControl } from "../tasks/segmented-control";
-import { SectionHeading } from "../section-heading";
 
 /** The placeholder title a new idea is created with; the editor shows it as an empty field. */
 const UNTITLED = "Untitled idea";
-
-function SectionLabel({ children }: { children: string }) {
-  return <SectionHeading className="mt-7 px-screen pl-[22px]">{children}</SectionHeading>;
-}
 
 /**
  * The idea editor body — driven by an `id` (not the route params) so it works both as the standalone
@@ -40,12 +32,6 @@ function SectionLabel({ children }: { children: string }) {
 export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
-  const priorityColor: Record<Idea["priority"], string> = {
-    low: c.ink3,
-    medium: c.medium,
-    high: c.high,
-    critical: c.critical,
-  };
 
   const { data: ideas = [] } = useIdeas();
   const idea = useMemo(() => ideas.find((i) => i.id === id), [ideas, id]);
@@ -57,8 +43,6 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
   const patch = (p: Partial<IdeaInput>) => idea && updateIdea.mutate({ id: idea.id, patch: p });
 
   const [title, setTitle] = useState("");
-  const [tagDraft, setTagDraft] = useState("");
-  const [addingTag, setAddingTag] = useState(false);
 
   useEffect(() => {
     if (idea) setTitle(idea.title === UNTITLED ? "" : idea.title);
@@ -88,17 +72,11 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
     );
   }
 
-  const addTag = () => {
-    const name = tagDraft.trim().replace(/^#/, "").toLowerCase();
-    if (name && !idea.tags.includes(name)) patch({ tags: [...idea.tags, name] });
-    setTagDraft("");
-  };
-  const removeTag = (t: string) => patch({ tags: idea.tags.filter((x) => x !== t) });
 
   return (
     <View className="flex-1">
       {/* maxWidth is a no-op on phones (< 680pt) and keeps the editor a readable column on desktop */}
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, paddingBottom: 110, maxWidth: 680, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, paddingBottom: 48, maxWidth: 680, width: "100%", alignSelf: "center", ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <EditorTopBar
           backLabel="Ideas"
           onBack={onClose}
@@ -158,74 +136,24 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             className="text-ink font-serif text-[24px] font-bold leading-[30px] tracking-[-0.01em]"
           />
 
-          {/* Tags */}
-          <View className="mt-3 flex-row flex-wrap items-center gap-1.5">
-            {idea.tags.map((t) => (
-              <Pressable key={t} onPress={() => removeTag(t)}>
-                <TagChip tag={t} tinted />
-              </Pressable>
-            ))}
-            {addingTag ? (
-              <View className="border-line rounded-[7px] border border-dashed px-2.5 py-1.5">
-                <TextInput
-                  autoFocus
-                  value={tagDraft}
-                  onChangeText={setTagDraft}
-                  onSubmitEditing={addTag}
-                  onBlur={() => {
-                    addTag();
-                    setAddingTag(false);
-                  }}
-                  placeholder="tag"
-                  placeholderTextColor={c.ink3}
-                  submitBehavior="submit"
-                  className="text-ink min-w-[48px] text-[11px]"
-                />
-              </View>
-            ) : (
-              <Pressable
-                onPress={() => setAddingTag(true)}
-                className="border-line flex-row items-center gap-1 rounded-[7px] border border-dashed px-2.5 py-1.5"
-              >
-                <Plus size={11} color={c.ink3} strokeWidth={2} />
-                <Text className="text-ink-3 text-[11px]">tag</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {/* Meta sits up here (as in the note editor) rather than at the end of the document, where
-              the floating toolbar covered it until you scrolled. */}
-          <Text className="text-ink-3 mt-3 text-[12px]">
-            Created {shortDate(idea.created_at)} · updated {relativeFromNow(idea.updated_at)}
-          </Text>
-        </View>
-
-        {/* Status */}
-        <SectionLabel>STATUS</SectionLabel>
-        <View className="px-screen">
-          <StatusStepper status={idea.status} onSelect={(status) => setStatus.mutate({ id: idea.id, status })} />
-        </View>
-
-        {/* Priority */}
-        <SectionLabel>PRIORITY</SectionLabel>
-        <View className="px-screen">
-          <SegmentedControl
-            value={idea.priority}
-            onChange={(priority) => patch({ priority })}
-            options={priorityLevels.map((p) => ({ value: p, label: cap(p), color: priorityColor[p] }))}
+          <IdeaProperties
+            idea={idea}
+            onStatus={(status) => setStatus.mutate({ id: idea.id, status })}
+            onPriority={(priority) => patch({ priority })}
+            onTags={(tags) => patch({ tags })}
           />
         </View>
 
         {/* Writing canvas — the idea's free-flow body (controls above, document below). flex-1 lets it
             absorb spare height (paired with the ScrollView's flexGrow) so the meta line below always
             clears the floating toolbar instead of hiding under it when the idea is short. */}
-        <View className="mx-screen border-line mt-7 border-t" />
-        <View className="px-screen mt-5 flex-1" style={{ minHeight: 360 }}>
+        <View className="mx-screen border-line mt-4 border-t" />
+        <View className="px-screen mt-5 flex-1" style={{ minHeight: 280 }}>
           <BlockList
             blocks={editor.blocks}
             setText={editor.setText}
             removeBlock={editor.removeBlock}
-            firstPlaceholder="Write freely — add headings, links, photos, or a voice note from the bar below."
+            firstPlaceholder="Write it out: what is it, why it matters, what you'd try first…"
           />
         </View>
       </ScrollView>
