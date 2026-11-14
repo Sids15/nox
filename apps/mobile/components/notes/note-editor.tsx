@@ -141,7 +141,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 120, maxWidth: 680, width: "100%", alignSelf: "center" }}
+        contentContainerStyle={{ paddingBottom: 48, maxWidth: 680, width: "100%", alignSelf: "center" }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}

@@ -13,7 +13,7 @@ const fmt = (ms: number) => {
 };
 
 /**
- * Floating formatting toolbar for the block editor. Aa adds a heading, ¶ a paragraph, the link
+ * The block editor's toolbar, docked under the writing. Aa adds a heading, ¶ a paragraph, the link
  * button opens a URL entry, the image button picks a photo, and the mic records a voice note inline
  * (the pill becomes a recording bar). Image/voice are enabled only when the screen wires them.
  */
@@ -56,54 +56,51 @@ export function BlockToolbar({
 
   return (
     <>
-      {/* Full-width pill on a phone; on desktop a compact pill centred under the text column — a
-          bar spanning the whole pane read as a footer, not a tool, and sat on top of the content. */}
-      <View pointerEvents="box-none" className="absolute inset-x-0 items-center" style={{ bottom: isDesktop ? 20 : 24 }}>
-      <View
-        className="border-line bg-tabbar h-[56px] flex-row items-center rounded-[28px] border px-2"
-        style={{
-          width: isDesktop ? 340 : undefined,
-          alignSelf: isDesktop ? "center" : "stretch",
-          marginHorizontal: isDesktop ? 0 : 20,
-          shadowColor: "rgb(6,6,14)",
-          shadowOpacity: 0.25,
-          shadowRadius: 22,
-          shadowOffset: { width: 0, height: 18 },
-          elevation: 12,
-        }}
-      >
-        {rec.isRecording ? (
-          <View className="flex-1 flex-row items-center justify-between px-3">
-            <View className="flex-row items-center gap-2.5">
-              <View className="bg-high h-2.5 w-2.5 rounded-full" />
-              <Text className="text-ink text-[13px]">{fmt(rec.durationMs)}</Text>
-              <Text className="text-ink-3 text-[12px]">recording…</Text>
+      {/* Docked under the writing, on paper with a hairline above — it never covers the text the
+          way the old floating pill did. Desktop labels each tool; phones show icons only. */}
+      <View className="border-line bg-bg border-t" style={{ paddingBottom: isDesktop ? 0 : 6 }}>
+        <View className="h-[50px] flex-row items-center px-3" style={{ maxWidth: 680, width: "100%", alignSelf: "center" }}>
+          {rec.isRecording ? (
+            <View className="flex-1 flex-row items-center justify-between px-2">
+              <View className="flex-row items-center gap-2.5">
+                <View className="bg-high h-2.5 w-2.5 rounded-full" />
+                <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink text-[14px] font-semibold">
+                  {fmt(rec.durationMs)}
+                </Text>
+                <Text className="text-ink-3 text-[13px]">Recording…</Text>
+              </View>
+              <Pressable onPress={stopRec} accessibilityRole="button" className="bg-high flex-row items-center gap-1.5 rounded-[9px] px-3.5 py-1.5">
+                <Square size={11} color="#fff" fill="#fff" />
+                <Text className="text-[13px] font-semibold text-white">Stop</Text>
+              </Pressable>
             </View>
-            <Pressable onPress={stopRec} className="bg-high flex-row items-center gap-1.5 rounded-pill px-4 py-1.5">
-              <Square size={11} color="#fff" fill="#fff" />
-              <Text className="text-[13px] font-semibold text-white">Stop</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View className="flex-1 flex-row items-center justify-around">
-            <Pressable onPress={onAddHeading} hitSlop={6} accessibilityLabel="Add heading" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
-              <Heading size={19} color={c.ink2} strokeWidth={1.9} />
-            </Pressable>
-            <Pressable onPress={onAddParagraph} hitSlop={6} accessibilityLabel="Add paragraph" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
-              <Pilcrow size={19} color={c.ink2} strokeWidth={1.9} />
-            </Pressable>
-            <Pressable onPress={() => setLinkOpen(true)} hitSlop={6} accessibilityLabel="Add link" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
-              <Link2 size={19} color={c.ink2} strokeWidth={1.9} />
-            </Pressable>
-            <Pressable onPress={onAddImage} disabled={!onAddImage} hitSlop={6} accessibilityLabel="Add image" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
-              <ImageIcon size={19} color={onAddImage ? c.ink2 : c.ink3} strokeWidth={1.9} />
-            </Pressable>
-            <Pressable onPress={() => void startRec()} disabled={!onRecordComplete} hitSlop={6} accessibilityLabel="Record voice note" className="hover:bg-chip rounded-[10px] px-2.5 py-2">
-              <Mic size={19} color={onRecordComplete ? c.ink2 : c.ink3} strokeWidth={1.9} />
-            </Pressable>
-          </View>
-        )}
-      </View>
+          ) : (
+            <View className={`flex-1 flex-row items-center ${isDesktop ? "gap-1" : "justify-around"}`}>
+              {isDesktop && <Text className="text-ink-3 mr-2 pl-2 text-[12.5px] font-medium">Add</Text>}
+              {[
+              { key: "h", label: "Heading", Icon: Heading, onPress: onAddHeading, on: true },
+              { key: "p", label: "Text", Icon: Pilcrow, onPress: onAddParagraph, on: true },
+              { key: "l", label: "Link", Icon: Link2, onPress: () => setLinkOpen(true), on: true },
+              { key: "i", label: "Image", Icon: ImageIcon, onPress: () => onAddImage?.(), on: !!onAddImage },
+              { key: "v", label: "Voice", Icon: Mic, onPress: () => void startRec(), on: !!onRecordComplete },
+            ].map(({ key, label, Icon, onPress, on }) => (
+                <Pressable
+                  key={key}
+                  onPress={onPress}
+                  disabled={!on}
+                  hitSlop={4}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add ${label.toLowerCase()}`}
+                  className="hover:bg-chip h-[34px] flex-row items-center gap-1.5 rounded-[9px] px-2.5"
+                  style={{ opacity: on ? 1 : 0.4 }}
+                >
+                  <Icon size={isDesktop ? 15 : 19} color={c.ink2} strokeWidth={2} />
+                  {isDesktop && <Text className="text-ink-2 text-[13px] font-medium">{label}</Text>}
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
 
       <Modal transparent visible={linkOpen} animationType="fade" onRequestClose={() => setLinkOpen(false)}>
