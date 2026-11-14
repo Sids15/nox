@@ -136,6 +136,18 @@ export const AuthRepository = {
     if (error) throw error;
   },
 
+  /**
+   * Update the signed-in user's profile metadata: the display name (shown in greetings and the
+   * avatar) and when onboarding was finished, which keeps it from showing again on other devices.
+   */
+  async updateProfile(data: { display_name?: string; onboarded_at?: string }): Promise<void> {
+    const clean: Record<string, string> = {};
+    if (data.display_name !== undefined) clean.display_name = data.display_name.trim().slice(0, 80);
+    if (data.onboarded_at !== undefined) clean.onboarded_at = data.onboarded_at;
+    const { error } = await supabase.auth.updateUser({ data: clean });
+    if (error) throw error;
+  },
+
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;

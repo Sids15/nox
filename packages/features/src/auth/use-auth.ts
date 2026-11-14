@@ -54,6 +54,7 @@ export function useAuth() {
     setSessionFromTokens: AuthRepository.setSessionFromTokens,
     updatePassword: AuthRepository.updatePassword,
     updateEmail: AuthRepository.updateEmail,
+    updateProfile: AuthRepository.updateProfile,
     signOut: AuthRepository.signOut,
     deleteAccount: AuthRepository.deleteAccount,
   };

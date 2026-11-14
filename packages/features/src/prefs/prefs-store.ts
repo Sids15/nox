@@ -13,6 +13,8 @@ interface PrefsState {
   taskReminders: boolean;
   /** Date key (YYYY-MM-DD) the daily carryover job last ran for — gates it to once per day. */
   lastCarryoverOn: string | null;
+  /** Onboarding finished on this device (the account also records it — see useOnboarded). */
+  onboarded: boolean;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -21,6 +23,7 @@ interface PrefsState {
   setNotif: (key: NotifKey, value: boolean) => void;
   setLastCarryover: (dateKey: string) => void;
   setHydrated: () => void;
+  setOnboarded: (v: boolean) => void;
 }
 
 /**
@@ -38,6 +41,7 @@ export const usePrefs = create<PrefsState>()(
       endOfDayPrompt: true,
       taskReminders: true,
       lastCarryoverOn: null,
+      onboarded: false,
       hydrated: false,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -45,6 +49,7 @@ export const usePrefs = create<PrefsState>()(
       setNotif: (key, value) => set({ [key]: value } as Pick<PrefsState, NotifKey>),
       setLastCarryover: (dateKey) => set({ lastCarryoverOn: dateKey }),
       setHydrated: () => set({ hydrated: true }),
+      setOnboarded: (onboarded) => set({ onboarded }),
     }),
     {
       name: "nox:prefs",
@@ -69,6 +74,7 @@ export const usePrefs = create<PrefsState>()(
         endOfDayPrompt: s.endOfDayPrompt,
         taskReminders: s.taskReminders,
         lastCarryoverOn: s.lastCarryoverOn,
+        onboarded: s.onboarded,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first
