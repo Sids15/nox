@@ -535,25 +535,45 @@ export default function NotesScreen() {
               {/* Pinned notes as the same rows as the rest — all of them, not only the first two. */}
               {pinned.length > 0 && <NoteList notes={pinned} onOpen={openNote} folderNameOf={folderNameOf} />}
 
+              {/* Folders as a row of tiles that scrolls sideways: as a list they filled the first screen. */}
               {folders.length > 0 && !selectedTag && !search && (
                 <>
-                  <SectionLabel>FOLDERS</SectionLabel>
-                  <Card>
-                    {folders.map((f, i) => (
-                      <View key={f.id}>
-                        {i > 0 && <View className="bg-line ml-[56px] h-px" />}
-                        <Pressable
-                          onPress={() => router.push(`/folder/${f.id}`)}
-                          className="min-h-[50px] flex-row items-center gap-3 px-[14px]"
-                        >
-                          <Folder size={17} color={c.ink2} strokeWidth={1.7} />
-                          <Text className="text-ink flex-1 text-[14.5px] font-medium">{f.name}</Text>
-                          <Text className="text-ink-3 text-[11px]">{noteCount(f.id)}</Text>
-                          <ChevronRight size={14} color={c.ink3} strokeWidth={2} />
-                        </Pressable>
-                      </View>
+                  <SectionLabel>Folders</SectionLabel>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginHorizontal: -20 }}
+                    contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+                  >
+                    {folders.map((f) => (
+                      <Pressable
+                        key={f.id}
+                        onPress={() => router.push(`/folder/${f.id}`)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${f.name}, ${plural(noteCount(f.id), "note")}`}
+                        style={pressScale}
+                        className="border-line bg-surface w-[128px] rounded-[14px] border px-3 py-3"
+                      >
+                        <Folder size={18} color={c.accent} strokeWidth={1.9} />
+                        <Text numberOfLines={1} className="text-ink mt-2.5 text-[14.5px] font-semibold">
+                          {f.name}
+                        </Text>
+                        <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 mt-0.5 text-[12.5px]">
+                          {plural(noteCount(f.id), "note")}
+                        </Text>
+                      </Pressable>
                     ))}
-                  </Card>
+                    <Pressable
+                      onPress={() => setNewFolderOpen(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel="New folder"
+                      style={pressScale}
+                      className="border-line w-[96px] items-center justify-center rounded-[14px] border border-dashed"
+                    >
+                      <FolderPlus size={18} color={c.ink3} strokeWidth={1.9} />
+                      <Text className="text-ink-3 mt-1.5 text-[12.5px] font-semibold">New</Text>
+                    </Pressable>
+                  </ScrollView>
                 </>
               )}
 

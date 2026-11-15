@@ -332,7 +332,14 @@ export default function TasksScreen() {
 
   const dayWord = focus === today ? "today" : dateLabel(focus, today).replace(/^(Tomorrow|Yesterday)$/, (w) => w.toLowerCase());
   const progressText =
-    progress.total > 0 ? (progress.done === progress.total ? "all done" : `${progress.done} of ${progress.total} done`) : null;
+    progress.total > 0
+      ? progress.done === progress.total
+        ? "all done"
+        : // Phones have the room for "4/9 done" beside the view switch, not "4 of 9 done".
+          isDesktop
+          ? `${progress.done} of ${progress.total} done`
+          : `${progress.done}/${progress.total} done`
+      : null;
 
   // The header drops its button labels when its own pane is narrow (measured, not assumed).
   const tight = headerWidth > 0 && headerWidth < 560;

@@ -26,14 +26,15 @@ import {
   Plus,
   Quote,
   Search,
+  SlidersHorizontal,
   X,
 } from "lucide-react-native";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
 import { Fab, useHideOnScroll } from "../../components/fab";
-import { MenuLabel, MenuRow, pressScale, TABULAR } from "../../components/menu";
+import { MenuDivider, MenuLabel, MenuRow, pressScale, TABULAR } from "../../components/menu";
 import { Popover } from "../../components/popover";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { NewResourceSheet } from "../../components/resources/new-resource-sheet";
@@ -155,6 +156,12 @@ export default function ResourcesScreen() {
   const [playing, setPlaying] = useState<{ url: string; title: string } | null>(null);
   const [tagDialog, setTagDialog] = useState<{ tag: Tag | null } | null>(null);
   const [quick, setQuick] = useState("");
+  const [phoneMenu, setPhoneMenu] = useState(false);
+  const phoneMenuRef = useRef<View>(null);
+  // The phone field hands a pasted link to quick save (desktop has its own paste field).
+  useEffect(() => {
+    if (!isDesktop && quick && looksLikeUrl(quick)) void quickSave();
+  }, [quick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: resources = [], isLoading, isError, refetch } = useResources();
   const { data: tags = [] } = useTags();
@@ -175,18 +182,20 @@ export default function ResourcesScreen() {
   const tagCount = (id: string) => inStatus.filter((r) => r.tag_ids.includes(id)).length;
   const activeTag = tagId ? tagsById.get(tagId) ?? null : null;
 
+  // On phones the one field also takes pasted links; a link waiting to be saved isn't a search.
+  const query = !isDesktop && looksLikeUrl(search) ? "" : search;
   const filtered = useMemo(() => {
     const list = inStatus.filter(
       (r) =>
         (kind === "all" || r.type === kind) &&
         (!tagId || r.tag_ids.includes(tagId)) &&
-        matches(r, search, r.tag_ids.map((id) => tagsById.get(id)?.name ?? "")),
+        matches(r, query, r.tag_ids.map((id) => tagsById.get(id)?.name ?? "")),
     );
     const title = (r: Resource) => (r.title ?? r.body ?? r.url ?? "").toLowerCase();
     return list.sort((a, b) =>
       sort === "title" ? title(a).localeCompare(title(b)) : sort === "oldest" ? a.created_at.localeCompare(b.created_at) : b.created_at.localeCompare(a.created_at),
     );
-  }, [inStatus, kind, tagId, search, sort, tagsById]);
+  }, [inStatus, kind, tagId, query, sort, tagsById]);
 
   const columns = useMemo(() => {
     const n = isDesktop ? 3 : 2;
@@ -362,7 +371,7 @@ export default function ResourcesScreen() {
     body = <MasonrySkeleton />;
   } else if (filtered.length === 0) {
     body =
-      search || tagId || kind !== "all" ? (
+      query || tagId || kind !== "all" ? (
         <EmptyState icon={Search} title="Nothing here" subtitle="Try another search, kind or tag." />
       ) : showUsed ? (
         <EmptyState icon={Bookmark} title="Nothing used yet" subtitle="Mark a resource as used and it moves here, out of the way but kept." />
@@ -531,46 +540,106 @@ export default function ResourcesScreen() {
       <ScrollView onScroll={fab.onScroll} scrollEventThrottle={16} className="flex-1" contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
         <View className="px-screen flex-row items-start justify-between pt-2">
           <View className="flex-1 pr-3">
-            <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Resources</Text>
+            <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">
+              {showUsed ? "Used" : "Resources"}
+            </Text>
             <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
-              {savedCount} saved · {plural(tags.length, "tag")}
+              {showUsed ? plural(usedCount, "resource") : `${savedCount} saved · ${plural(tags.length, "tag")}`}
             </Text>
           </View>
-          <View className="pt-1">
+          <View className="flex-row items-center gap-1.5 pt-1">
+            {/* Saved / Used, sort and layout live in one menu on phones — rows of controls pushed the
+                first card halfway down the screen. */}
+            <View ref={phoneMenuRef} collapsable={false}>
+              <Pressable
+                onPress={() => setPhoneMenu(true)}
+                accessibilityRole="button"
+                accessibilityLabel="View options"
+                style={pressScale}
+                className={`h-[34px] w-[34px] items-center justify-center rounded-[10px] ${phoneMenu || showUsed || sort !== "newest" || view === "list" ? "bg-accent/[0.14]" : ""}`}
+              >
+                <SlidersHorizontal size={17} color={showUsed || sort !== "newest" || view === "list" ? c.accent : c.ink2} strokeWidth={2} />
+              </Pressable>
+            </View>
             <ProfileAvatar />
           </View>
         </View>
 
-        <View className="mx-screen border-line mt-4 flex-row gap-5 border-b" accessibilityRole="tablist">
-          {([
-            { label: "Saved", count: savedCount, on: !showUsed, press: () => setShowUsed(false) },
-            { label: "Used", count: usedCount, on: showUsed, press: () => setShowUsed(true) },
-          ] as const).map((t) => (
-            <Pressable key={t.label} onPress={t.press} accessibilityRole="tab" accessibilityState={{ selected: t.on }} className="-mb-px flex-row items-center gap-1.5 pb-2.5 pt-1" style={{ borderBottomWidth: 2, borderBottomColor: t.on ? c.accent : "transparent" }}>
-              <Text className={`text-[14px] font-semibold ${t.on ? "text-ink" : "text-ink-3"}`}>{t.label}</Text>
-              <Text style={TABULAR} className="text-ink-3 text-[12.5px] font-semibold">
-                {t.count}
-              </Text>
-            </Pressable>
-          ))}
+        {/* One field: it searches as you type, and a pasted link gets a Save button. */}
+        <View className="px-screen mt-4">
+          <View className="bg-surface border-line h-[46px] flex-row items-center gap-2.5 rounded-[12px] border px-3">
+            {looksLikeUrl(search) ? <Link2 size={16} color={c.accent} strokeWidth={2} /> : <Search size={16} color={c.ink3} strokeWidth={2} />}
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              onSubmitEditing={() => {
+                if (looksLikeUrl(search)) {
+                  setQuick(search);
+                  setSearch("");
+                }
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="Search, or paste a link to save"
+              placeholderTextColor={c.ink3}
+              accessibilityLabel="Search resources or paste a link to save"
+              enterKeyHint={looksLikeUrl(search) ? "done" : "search"}
+              className="text-ink flex-1 text-[15px]"
+              style={{ paddingVertical: 0, outlineWidth: 0 } as object}
+            />
+            {looksLikeUrl(search) ? (
+              <Pressable
+                onPress={() => {
+                  setQuick(search);
+                  setSearch("");
+                }}
+                accessibilityRole="button"
+                style={pressScale}
+                className="bg-accent h-8 justify-center rounded-[9px] px-3"
+              >
+                <Text className="text-on-accent text-[13px] font-semibold">Save link</Text>
+              </Pressable>
+            ) : search ? (
+              <Pressable onPress={() => setSearch("")} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear search">
+                <X size={16} color={c.ink3} strokeWidth={2.2} />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
-        <View className="px-screen mt-4 gap-2.5">
-          {quickBar}
-          {toolbar}
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}>
+        {/* One row of filters: what kind, then your tags (hold a tag to edit it). */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ paddingHorizontal: 20, gap: 6, alignItems: "center" }}>
           {KINDS.map((k) => chip(kind === k.key, k.key === "all" ? "All" : k.label, () => setKind(k.key)))}
-        </ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2" contentContainerStyle={{ paddingHorizontal: 20, gap: 6, alignItems: "center" }}>
+          {tags.length > 0 && <View className="bg-line mx-1 h-5 w-px" />}
           {tags.map((t) => chip(tagId === t.id, t.name, () => setTagId(tagId === t.id ? null : t.id), t.color, () => setTagDialog({ tag: t })))}
           <Pressable onPress={() => setTagDialog({ tag: null })} accessibilityRole="button" accessibilityLabel="New tag" className="flex-row items-center gap-1 px-2 py-[6px]">
             <Plus size={13} color={c.ink3} strokeWidth={2.2} />
             <Text className="text-ink-3 text-[12.5px] font-semibold">Tag</Text>
           </Pressable>
         </ScrollView>
-        {tags.length > 0 && <Text className="text-ink-3 px-screen mt-1.5 text-[11.5px]">Hold a tag to rename, recolour or delete it.</Text>}
+
+        <Popover anchorRef={phoneMenuRef} open={phoneMenu} onClose={() => setPhoneMenu(false)} width={250} accessibilityLabel="View options">
+          <View className="p-1.5">
+            <MenuLabel>Show</MenuLabel>
+            <MenuRow label="Saved" hint={String(savedCount)} selected={!showUsed} onPress={() => setShowUsed(false)} />
+            <MenuRow label="Used" hint={String(usedCount)} selected={showUsed} onPress={() => setShowUsed(true)} />
+            <MenuDivider />
+            <MenuLabel>Sort</MenuLabel>
+            {SORTS.map((o) => (
+              <MenuRow key={o.key} label={o.label} selected={sort === o.key} onPress={() => setSort(o.key)} />
+            ))}
+            <MenuDivider />
+            <MenuLabel>Layout</MenuLabel>
+            <MenuRow label="Cards" icon={<LayoutGrid size={15} color={c.ink2} strokeWidth={2} />} selected={view === "grid"} onPress={() => setView("grid")} />
+            <MenuRow label="List" icon={<List size={15} color={c.ink2} strokeWidth={2} />} selected={view === "list"} onPress={() => setView("list")} />
+            {tags.length > 0 && (
+              <>
+                <MenuDivider />
+                <Text className="text-ink-3 px-2.5 py-1.5 text-[12px] leading-[17px]">Hold a tag chip to rename, recolour or delete it.</Text>
+              </>
+            )}
+          </View>
+        </Popover>
 
         <View className="px-screen mt-4">{body}</View>
       </ScrollView>
