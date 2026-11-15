@@ -192,6 +192,7 @@ export default function TasksScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
   const [composeTime, setComposeTime] = useState<string | null>(null);
+  const [headerWidth, setHeaderWidth] = useState(0);
   const calendarView = usePrefs((s) => s.calendar.view);
   const setCalendar = usePrefs((s) => s.setCalendar);
   const lastCalendar = useRef<"day" | "week">(calendarView === "week" ? "week" : "day");
@@ -333,8 +334,10 @@ export default function TasksScreen() {
   const progressText =
     progress.total > 0 ? (progress.done === progress.total ? "all done" : `${progress.done} of ${progress.total} done`) : null;
 
+  // The header drops its button labels when its own pane is narrow (measured, not assumed).
+  const tight = headerWidth > 0 && headerWidth < 560;
   const header = (
-    <View className="px-screen pt-2">
+    <View className="px-screen pt-2" onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}>
       {/* The calendar leaf (the app's signature: a tear-off date in ink and vermilion) beside the
           title, with one plain line under the title — no label above, no progress ring. */}
       <View className="flex-row items-start justify-between">
@@ -346,7 +349,7 @@ export default function TasksScreen() {
           {/* Two runs that wrap as wholes — a narrow pane breaks between them, never inside "1 of 12". */}
           <View className="mt-0.5 flex-row flex-wrap">
             <Text className="text-ink-3 mr-2 text-[13.5px] font-medium">
-              {LONG_WEEKDAY[dayOfWeek(focus)]}
+              {isDesktop ? LONG_WEEKDAY[dayOfWeek(focus)] : LONG_WEEKDAY[dayOfWeek(focus)]!.slice(0, 3)}
               {progressText ? "  ·" : ""}
             </Text>
             {progressText && (
@@ -375,7 +378,7 @@ export default function TasksScreen() {
                   style={on ? { shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
                 >
                   <Icon size={15} color={on ? c.ink : c.ink3} strokeWidth={2} />
-                  {isDesktop && !detailOpen && <Text className={`text-[12.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>}
+                  {isDesktop && !tight && <Text className={`text-[12.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>}
                 </Pressable>
               );
             })}
@@ -406,7 +409,7 @@ export default function TasksScreen() {
             >
               <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
               {/* Beside an open task the pane is narrow: the button keeps its icon and loses its label. */}
-              {!detailOpen && <Text className="text-on-accent text-[13.5px] font-semibold">New task</Text>}
+              {!tight && <Text className="text-on-accent text-[13.5px] font-semibold">New task</Text>}
             </Pressable>
           ) : (
             <ProfileAvatar />
@@ -551,7 +554,7 @@ export default function TasksScreen() {
         paddingBottom: 150,
         ...(isDesktop
           ? detailOpen
-            ? { paddingHorizontal: 4, paddingTop: 24 }
+            ? { paddingHorizontal: 10, paddingTop: 28, maxWidth: 700, width: "100%", alignSelf: "center" }
             : { paddingHorizontal: 10, paddingTop: 28, maxWidth: 760, width: "100%", alignSelf: "center" }
           : null),
       }}
@@ -596,8 +599,10 @@ export default function TasksScreen() {
     return (
       <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
         <View className="flex-1 flex-row">
-          <View className="border-line w-[420px] border-r">{list}</View>
-          <View className="flex-1">
+          {/* The list keeps its room; the task opens in a panel beside it (it used to squeeze the
+              list into a narrow column and leave the editor mostly empty). */}
+          <View className="border-line min-w-[380px] flex-1 border-r">{list}</View>
+          <View style={{ width: "42%", minWidth: 400, maxWidth: 560 }}>
             <TaskEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
           </View>
         </View>
