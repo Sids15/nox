@@ -13,7 +13,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
+# image-png: decode the macOS menu-bar template icon bundled with include_bytes!.
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-deep-link = "2"
 # Local reminders fired by a background thread (Rust owns the schedule; a minimised WebView2 throttles
 # JS timers). tray-icon feature above powers the close-to-tray that keeps that thread alive.

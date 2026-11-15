@@ -3,6 +3,8 @@ mod secret_store;
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+#[cfg(target_os = "macos")]
+use tauri::RunEvent;
 use tauri::{Manager, WindowEvent};
 
 /// Bring the main window back from the tray (or from behind another window) to the foreground.
@@ -14,7 +16,8 @@ fn reveal_main<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     }
 }
 
-/// Nox desktop shell. The whole UI is the Expo web build running in the system WebView2; this crate
+/// Nox desktop shell. The whole UI is the Expo web build running in the system webview (WebView2 on
+/// Windows, WKWebView on macOS); this crate
 /// owns the window, the `nox://` deep link, the OS-keystore backing for the auth session, and the
 /// local-notification scheduler + tray.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -85,6 +88,14 @@ pub fn run() {
                         reveal_main(tray.app_handle());
                     }
                 });
+            // macOS menu bar: a monochrome template image (the wordmark), which the system tints for
+            // light and dark menu bars. The full-colour app icon looked out of place there.
+            #[cfg(target_os = "macos")]
+            {
+                let template = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
+                tray = tray.icon(template).icon_as_template(true);
+            }
+            #[cfg(not(target_os = "macos"))]
             if let Some(icon) = app.default_window_icon() {
                 tray = tray.icon(icon.clone());
             }
@@ -93,6 +104,16 @@ pub fn run() {
             notify::spawn_scheduler(app.handle().clone());
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Nox");
+        .build(tauri::generate_context!())
+        .expect("error while building Nox")
+        .run(|app, event| {
+            // macOS: closing the window only hides it (reminders keep running), so clicking the Dock
+            // icon has to bring it back — the standard Mac behaviour.
+            #[cfg(target_os = "macos")]
+            if let RunEvent::Reopen { .. } = event {
+                reveal_main(app);
+            }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
+        });
 }
