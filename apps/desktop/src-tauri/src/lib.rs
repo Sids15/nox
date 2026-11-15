@@ -22,17 +22,15 @@ fn reveal_main<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 /// local-notification scheduler + tray.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default();
+    let builder = tauri::Builder::default();
 
     // Registered BEFORE deep-link, per the plugin's requirement: on Windows a `nox://…` link spawns a
     // new process with the URL in argv, and this hands it to the running instance rather than opening
-    // a second Nox.
+    // a second Nox. (macOS delivers links to the running app itself, so it needs no such plugin.)
     #[cfg(any(windows, target_os = "linux"))]
-    {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            reveal_main(app);
-        }));
-    }
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+        reveal_main(app);
+    }));
 
     builder
         .plugin(tauri_plugin_deep_link::init())
