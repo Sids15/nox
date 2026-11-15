@@ -1,10 +1,11 @@
 import { supabase } from "@nox/db";
 import {
   credentials,
+  signInInput,
+  type SignInInput,
   magicLinkInput,
   oauthProvider,
   signUpInput,
-  type Credentials,
   type MagicLinkInput,
   type OAuthProvider,
   type SignUpInput,
@@ -33,8 +34,9 @@ async function functionErrorMessage(error: unknown): Promise<string> {
  * network; errors are surfaced (never swallowed) for the UI to handle.
  */
 export const AuthRepository = {
-  async signInWithPassword(input: Credentials): Promise<Session | null> {
-    const creds = credentials.parse(input);
+  /** Sign in with an existing password, whatever its length (the 8+ rule is for new passwords). */
+  async signInWithPassword(input: SignInInput): Promise<Session | null> {
+    const creds = signInInput.parse(input);
     const { data, error } = await supabase.auth.signInWithPassword(creds);
     if (error) throw error;
     return data.session;

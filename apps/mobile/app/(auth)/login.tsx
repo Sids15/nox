@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth, useThemeColors } from "@nox/features";
-import { credentials, signUpInput, type OAuthProvider, type SignUpInput } from "@nox/types";
+import { credentials, signInInput, signUpInput, type OAuthProvider, type SignUpInput } from "@nox/types";
 import { passwordStrength } from "@nox/utils";
 import { Apple, ArrowLeft, Check, Eye, EyeOff, MailCheck } from "lucide-react-native";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Controller, useForm, type Control } from "react-hook-form";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { AuthShell } from "../../components/auth-shell";
@@ -110,14 +110,20 @@ export default function LoginScreen() {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [showPw, setShowPw] = useState(false);
   const [socialBusy, setSocialBusy] = useState<OAuthProvider | null>(null);
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
   const {
     control,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
+    clearErrors,
   } = useForm<SignUpInput>({
-    resolver: zodResolver(signUpInput),
+    // Sign-in and sign-up validate differently (a new password needs 8+ characters; an existing one
+    // just needs typing). The resolver reads the current mode, so switching tabs switches rules.
+    resolver: (values, ctx, opts) =>
+      (modeRef.current === "signin" ? zodResolver(signInInput) : zodResolver(signUpInput))(values, ctx, opts as never) as never,
     defaultValues: { email: "", password: "", name: "" },
   });
 
@@ -170,8 +176,10 @@ export default function LoginScreen() {
   };
 
   const switchMode = (next: Mode) => {
+    modeRef.current = next;
     setMode(next);
     setServerError(null);
+    clearErrors();
   };
 
   if (sentTo) {

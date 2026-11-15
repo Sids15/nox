@@ -7,6 +7,16 @@ export const credentials = z.object({
 });
 export type Credentials = z.infer<typeof credentials>;
 
+/**
+ * Signing in checks only that a password was typed. The length rule is for choosing a new password
+ * (sign-up, reset): applying it at sign-in locked out every account whose password predates it.
+ */
+export const signInInput = z.object({
+  email: z.string().email().max(320),
+  password: z.string().min(1, "Enter your password").max(128),
+});
+export type SignInInput = z.infer<typeof signInInput>;
+
 /** Sign-up adds an optional display name (stored in Supabase user_metadata). */
 export const signUpInput = credentials.extend({
   name: z.string().trim().max(80).optional(),

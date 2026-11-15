@@ -3,6 +3,10 @@
  * message so nothing is ever swallowed.
  */
 export function authErrorMessage(e: unknown): string {
+  // A validation error (Zod) carries its issues as JSON in `message`; show the first issue's
+  // sentence, never the raw dump.
+  const issues = (e as { issues?: { message?: string }[] } | null)?.issues;
+  if (Array.isArray(issues) && issues[0]?.message) return issues[0].message;
   const raw = e instanceof Error ? e.message : typeof e === "string" ? e : "Something went wrong";
   const m = raw.toLowerCase();
   if (m.includes("invalid login credentials")) return "That email or password isn't right.";
