@@ -90,12 +90,6 @@ jobs:
   build-macos:
     needs: checks
     runs-on: macos-latest
-    env:
-      # Optional signing. With these repo secrets the app is signed with your Developer ID and
-      # notarized by Apple, so it opens on any Mac without a warning. Without them it is ad-hoc
-      # signed: it runs on the Mac that built or trusted it, but Gatekeeper will warn others.
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -115,30 +109,30 @@ jobs:
         with:
           workspaces: apps/desktop/src-tauri -> target
 
-      # Only when the certificate secret exists: put the Developer ID certificate (a base64 .p12)
-      # into a temporary keychain that codesign can use, and delete the file straight away.
-      - name: Import signing certificate
-        if: env.APPLE_CERTIFICATE != ''
-        run: |
-          KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
-          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -t 3600 -u build.keychain
-          security import "$RUNNER_TEMP/cert.p12" -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          rm -f "$RUNNER_TEMP/cert.p12"
-
-      # Tauri signs with APPLE_SIGNING_IDENTITY ("-" = ad-hoc when no certificate is configured) and
-      # notarizes automatically when APPLE_ID, APPLE_PASSWORD (an app-specific password) and
-      # APPLE_TEAM_ID are set.
+      # Optional signing. With these repo secrets Tauri imports your Developer ID certificate
+      # (APPLE_CERTIFICATE, a base64 .p12, + its password), signs with APPLE_SIGNING_IDENTITY and
+      # notarizes with APPLE_ID + APPLE_PASSWORD (an app-specific password) + APPLE_TEAM_ID, so the
+      # app opens on any Mac without a warning. Without them it is ad-hoc signed ("-").
+      #
+      # A secret that isn't set still arrives as an EMPTY variable, and Tauri treats a present
+      # APPLE_CERTIFICATE as "import this" — an empty one failed the build ("failed to import
+      # keychain certificate"). So empty Apple variables are removed before building.
       - name: Build app (universal .dmg)
-        run: bun run --cwd apps/desktop tauri build --target universal-apple-darwin
+        run: |
+          for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!v}" ]; then unset "$v"; fi
+          done
+          if [ -z "${APPLE_CERTIFICATE:-}" ]; then
+            echo "No Developer ID certificate set: building ad-hoc signed (users will see an unverified-developer prompt)."
+          fi
+          bun run --cwd apps/desktop tauri build --target universal-apple-darwin
+        shell: bash
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY || '-' }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -151,9 +145,10 @@ jobs:
           if-no-files-found: error
           path: apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
 
-  # On a `v*` tag push only: cut ONE draft GitHub Release with the Windows and macOS installers.
-  # Draft so you review the auto-generated notes and click Publish yourself. Uses the built-in gh
-  # CLI + GITHUB_TOKEN — no third-party action, no extra secret.
+  # On a `v*` tag push only: attach the Windows and macOS installers to that tag's GitHub Release —
+  # creating it as a DRAFT (you review the notes and click Publish) or, if you already made the
+  # release on github.com (which is also what creates the tag), adding the files to it. Uses the
+  # built-in gh CLI + GITHUB_TOKEN — no third-party action, no extra secret.
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [build-windows, build-macos]
@@ -169,10 +164,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            dist/nox-windows-installers/*.exe \
-            dist/nox-windows-installers/*.msi \
-            dist/nox-macos/*.dmg \
-            --title "Nox $GITHUB_REF_NAME" \
-            --generate-notes \
-            --draft
+          files=(dist/nox-windows-installers/*.exe dist/nox-windows-installers/*.msi dist/nox-macos/*.dmg)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${files[@]}" \
+              --title "Nox $GITHUB_REF_NAME" \
+              --generate-notes \
+              --draft
+          fi
