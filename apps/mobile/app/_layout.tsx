@@ -18,7 +18,7 @@ import {
   useThemeVars,
 } from "@nox/features";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { colorScheme, vars } from "nativewind";
@@ -89,6 +89,19 @@ function RootNavigator() {
   const status = useSessionStore((s) => s.status);
   const prefsHydrated = usePrefs((s) => s.hydrated);
   const c = useThemeColors();
+
+  // One guard for every signed-in page. The tabs redirect when the session ends, but Settings,
+  // Account and the note / idea / task / folder pages live outside them and had no guard at all:
+  // signing out from Settings left you sitting on Settings. The moment the session is gone, anything
+  // that isn't a sign-in page (or the root redirect) goes to the login screen.
+  const router = useRouter();
+  const segments = useSegments();
+  const area = segments[0] as string | undefined;
+  useEffect(() => {
+    if (status !== "unauthenticated") return;
+    if (area === undefined || area === "(auth)" || area === "auth-callback") return;
+    router.replace("/(auth)/login");
+  }, [status, area, router]);
 
   // Wait for persisted prefs before painting content, so the app never flashes the default
   // dark/violet theme before the user's saved theme/accent load.

@@ -148,9 +148,16 @@ export const AuthRepository = {
     if (error) throw error;
   },
 
+  /**
+   * Sign out. Revoking the session on the server needs the network; if that fails (offline, a
+   * flaky connection) we still end the session on this device, so "Sign out" always signs you out
+   * here instead of leaving you in the app with an error.
+   */
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (!error) return;
+    const local = await supabase.auth.signOut({ scope: "local" });
+    if (local.error) throw local.error;
   },
 
   /**
