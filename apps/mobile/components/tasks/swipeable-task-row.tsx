@@ -13,7 +13,7 @@ function CompleteAction({ completed }: { completed: boolean }) {
       ) : (
         <Check size={17} color="#FFFFFF" strokeWidth={2.2} />
       )}
-      <Text className="text-[10px] font-bold text-white">{completed ? "Undo" : "Done"}</Text>
+      <Text className="text-[11px] font-bold text-white">{completed ? "Undo" : "Done"}</Text>
     </View>
   );
 }
@@ -21,8 +21,8 @@ function CompleteAction({ completed }: { completed: boolean }) {
 function DeleteAction() {
   return (
     <View className="bg-high w-[76px] flex-col items-center justify-center gap-1">
-      <Trash2 size={17} color="#FFFFFF" strokeWidth={1.8} />
-      <Text className="text-[10px] font-bold text-white">Delete</Text>
+      <Trash2 size={17} color="#FFFFFF" strokeWidth={2} />
+      <Text className="text-[11px] font-bold text-white">Delete</Text>
     </View>
   );
 }

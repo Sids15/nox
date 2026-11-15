@@ -69,7 +69,7 @@ export function NotebookPage({ animate = false }: { animate?: boolean }) {
           >
             {t.title}
           </Text>
-          <Text className="text-[12.5px]" style={{ color: COVER_DIM, fontVariant: ["tabular-nums"] }}>
+          <Text className="text-[13px]" style={{ color: COVER_DIM, fontVariant: ["tabular-nums"] }}>
             {t.when}
           </Text>
         </Animated.View>

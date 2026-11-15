@@ -49,8 +49,8 @@ export function DayPreview({
   if (!date) {
     return (
       <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-ink-2 text-center text-[13.5px] font-semibold">No date</Text>
-        <Text className="text-ink-3 mt-1 text-center text-[12.5px]">It goes on your list for whenever. Pick a day to see it in your schedule.</Text>
+        <Text className="text-ink-2 text-center text-[14px] font-semibold">No date</Text>
+        <Text className="text-ink-3 mt-1 text-center text-[13px]">It goes on your list for whenever. Pick a day to see it in your schedule.</Text>
       </View>
     );
   }
@@ -92,7 +92,7 @@ export function DayPreview({
               className="hover:bg-accent/[0.06] absolute left-0 right-0 border-t"
               style={{ top: (h - start) * ROW, height: ROW, borderTopColor: withAlpha(c.ink3, 0.12) }}
             >
-              <Text style={[TABULAR, { position: "absolute", left: -46, top: -7, width: 40, textAlign: "right" }]} className="text-ink-3 text-[10.5px]">
+              <Text style={[TABULAR, { position: "absolute", left: -46, top: -7, width: 40, textAlign: "right" }]} className="text-ink-3 text-[11px]">
                 {formatTime12(`${h}:00`)!.replace(":00", "")}
               </Text>
             </Pressable>
@@ -112,7 +112,7 @@ export function DayPreview({
                 borderLeftColor: c.bg,
               }}
             >
-              <Text numberOfLines={1} className="text-ink-2 text-[11.5px] font-medium">
+              <Text numberOfLines={1} className="text-ink-2 text-[12px] font-medium">
                 {lanes > 1 ? task.title : `${formatTime12(task.due_time)} ${task.title}`}
               </Text>
             </View>
@@ -123,7 +123,7 @@ export function DayPreview({
               className="bg-accent absolute left-1 right-0 justify-center rounded-[6px] px-2"
               style={{ top: top(timeToMinutes(time)) + 1, height: blockH(duration), shadowColor: c.accent, shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }}
             >
-              <Text numberOfLines={1} className="text-on-accent text-[11.5px] font-semibold">
+              <Text numberOfLines={1} className="text-on-accent text-[12px] font-semibold">
                 {formatTime12(time)} {title || "New task"}
               </Text>
             </View>

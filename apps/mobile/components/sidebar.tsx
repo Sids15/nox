@@ -137,7 +137,7 @@ export function Sidebar() {
         <Search size={14} color={c.ink3} strokeWidth={2} />
         <Text className="text-ink-3 flex-1 text-[13px]">Search</Text>
         <View className="bg-bg border-line rounded-[5px] border px-[5px] py-[3px]">
-          <Text className="text-ink-3 text-[10px] font-semibold">{SEARCH_CHORD}</Text>
+          <Text className="text-ink-3 text-[11px] font-semibold">{SEARCH_CHORD}</Text>
         </View>
       </Pressable>
 
@@ -172,15 +172,15 @@ export function Sidebar() {
       {/* Up next: today's next timed tasks, so the rail is useful and not just empty space */}
       <View className="border-line mt-5 border-t pt-4">
         <View className="flex-row items-center justify-between px-2.5 pb-1.5">
-          <Text className="text-ink-2 text-[12.5px] font-semibold">Up next</Text>
+          <Text className="text-ink-2 text-[13px] font-semibold">Up next</Text>
           {upNext.length > 0 && (
-            <Text style={TABULAR} className="text-ink-3 text-[11.5px]">
+            <Text style={TABULAR} className="text-ink-3 text-[12px]">
               {leftToday} left today
             </Text>
           )}
         </View>
         {upNext.length === 0 ? (
-          <Text className="text-ink-3 px-2.5 text-[12.5px] leading-[18px]">
+          <Text className="text-ink-3 px-2.5 text-[13px] leading-[18px]">
             {leftToday > 0 ? `${leftToday} to do today, none at a set time.` : "Nothing else scheduled today."}
           </Text>
         ) : (
@@ -191,7 +191,7 @@ export function Sidebar() {
               accessibilityRole="link"
               className="hover:bg-chip flex-row items-baseline gap-2.5 rounded-[8px] px-2.5 py-1.5"
             >
-              <Text style={TABULAR} className="text-ink-3 w-[52px] text-[11.5px]">
+              <Text style={TABULAR} className="text-ink-3 w-[52px] text-[12px]">
                 {formatTime12(t.due_time)}
               </Text>
               <Text numberOfLines={1} className="text-ink flex-1 text-[13px]">
@@ -213,7 +213,7 @@ export function Sidebar() {
         style={{ flexShrink: 0 }}
       >
         <View className="bg-accent/[0.14] h-8 w-8 items-center justify-center rounded-full">
-          <Text className="text-accent text-[11.5px] font-semibold">{initials}</Text>
+          <Text className="text-accent text-[12px] font-semibold">{initials}</Text>
         </View>
         <View className="min-w-0 flex-1">
           <Text numberOfLines={1} className="text-ink text-[13px] font-medium">
@@ -221,12 +221,12 @@ export function Sidebar() {
           </Text>
           <View className="mt-0.5 flex-row items-center gap-1.5">
             {sync.settled ? <BreathingDot color={sync.color} /> : <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: sync.color }} />}
-            <Text numberOfLines={1} className="text-ink-3 flex-1 text-[11.5px]">
+            <Text numberOfLines={1} className="text-ink-3 flex-1 text-[12px]">
               {sync.detail ? `${sync.title} · ${sync.detail}` : sync.title}
             </Text>
           </View>
         </View>
-        <Settings2 size={15} color={c.ink3} strokeWidth={1.9} />
+        <Settings2 size={15} color={c.ink3} strokeWidth={2} />
       </Pressable>
 
       <CommandPalette visible={searchOpen} onClose={() => setSearchOpen(false)} />

@@ -20,7 +20,7 @@ const STAGES: { key: Stage; hint: string }[] = [
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <View className="min-h-[38px] flex-row items-center">
-      <Text className="text-ink-3 w-[92px] text-[13.5px]">{label}</Text>
+      <Text className="text-ink-3 w-[92px] text-[14px]">{label}</Text>
       <View className="min-w-0 flex-1 flex-row flex-wrap items-center gap-1.5">{children}</View>
     </View>
   );
@@ -114,14 +114,14 @@ export function IdeaProperties({
       </Row>
 
       <View className="flex-row py-1.5">
-        <Text className="text-ink-3 w-[92px] pt-1 text-[13.5px]">Tags</Text>
+        <Text className="text-ink-3 w-[92px] pt-1 text-[14px]">Tags</Text>
         <View className="min-w-0 flex-1">
           <TagEditor tags={idea.tags} onChange={onTags} known={known} />
         </View>
       </View>
 
       <Row label="Created">
-        <Text className="text-ink-2 text-[13.5px]">
+        <Text className="text-ink-2 text-[14px]">
           {shortDate(idea.created_at)} <Text className="text-ink-3">· updated {relativeFromNow(idea.updated_at)}</Text>
         </Text>
       </Row>

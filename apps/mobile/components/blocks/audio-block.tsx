@@ -83,10 +83,10 @@ export function AudioBlock({ block, onRemove }: { block: AudioB; onRemove: () =>
         />
       </View>
       <View className="flex-row justify-between">
-        <Text style={TABULAR} className="text-ink-3 text-[11.5px]">
+        <Text style={TABULAR} className="text-ink-3 text-[12px]">
           {fmt(shownPos)}
         </Text>
-        <Text style={TABULAR} className="text-ink-3 text-[11.5px]">
+        <Text style={TABULAR} className="text-ink-3 text-[12px]">
           −{fmt(total - shownPos)}
         </Text>
       </View>
@@ -115,7 +115,7 @@ export function AudioBlock({ block, onRemove }: { block: AudioB; onRemove: () =>
               accessibilityLabel="Back 15 seconds"
               className="hover:bg-chip h-9 w-9 items-center justify-center rounded-full"
             >
-              <RotateCcw size={20} color={c.ink2} strokeWidth={1.8} />
+              <RotateCcw size={20} color={c.ink2} strokeWidth={2} />
               <Text className="text-ink-2 absolute text-[7px] font-bold" style={{ top: 14 }}>
                 15
               </Text>
@@ -141,7 +141,7 @@ export function AudioBlock({ block, onRemove }: { block: AudioB; onRemove: () =>
               accessibilityLabel="Forward 15 seconds"
               className="hover:bg-chip h-9 w-9 items-center justify-center rounded-full"
             >
-              <RotateCw size={20} color={c.ink2} strokeWidth={1.8} />
+              <RotateCw size={20} color={c.ink2} strokeWidth={2} />
               <Text className="text-ink-2 absolute text-[7px] font-bold" style={{ top: 14 }}>
                 15
               </Text>

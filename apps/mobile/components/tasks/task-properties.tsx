@@ -304,7 +304,7 @@ function RemindMenu({
               <ChevronLeft size={16} color={c.ink2} strokeWidth={2.2} />
             </Pressable>
           )}
-          <Text className="text-ink px-1 text-[13.5px] font-semibold">Remind me at…</Text>
+          <Text className="text-ink px-1 text-[14px] font-semibold">Remind me at…</Text>
         </View>
         <View className="px-1.5 pt-1">
           <MiniCalendar selected={cDate} today={today} onSelect={setCDate} />
@@ -325,7 +325,7 @@ function RemindMenu({
             className={`h-[38px] flex-row items-center justify-center gap-1.5 rounded-[9px] ${blocked ? "bg-chip" : "bg-accent hover:opacity-90"}`}
           >
             <Plus size={14} color={blocked ? c.ink3 : c.onAccent} strokeWidth={2.4} />
-            <Text className={`text-[13.5px] font-semibold ${blocked ? "text-ink-3" : "text-on-accent"}`}>
+            <Text className={`text-[14px] font-semibold ${blocked ? "text-ink-3" : "text-on-accent"}`}>
               {past ? "That time has passed" : dup ? "Already set" : `Remind ${reminderText(at.toISOString(), today)}`}
             </Text>
           </Pressable>
@@ -345,7 +345,7 @@ function RemindMenu({
         return (
           <View className="bg-medium/[0.1] mx-1 mb-1.5 flex-row gap-2 rounded-[8px] px-2.5 py-2">
             <Clock size={13} color={c.medium} strokeWidth={2.2} style={{ marginTop: 2 }} />
-            <Text className="text-ink-2 flex-1 text-[12.5px] leading-[17px]">
+            <Text className="text-ink-2 flex-1 text-[13px] leading-[17px]">
               {all
                 ? "This task's time has already passed, so there's nothing left to remind you about. Move it to a later time to set a reminder."
                 : "Greyed-out times have already passed."}
@@ -379,7 +379,7 @@ function RemindMenu({
             return (
               <View key={iso} className="min-h-[36px] flex-row items-center gap-2.5 rounded-[8px] px-2.5">
                 <Bell size={14} color={past ? c.ink3 : c.accent} strokeWidth={2} />
-                <Text style={TABULAR} className={`flex-1 text-[13.5px] ${past ? "text-ink-3 line-through" : "text-ink"}`}>
+                <Text style={TABULAR} className={`flex-1 text-[14px] ${past ? "text-ink-3 line-through" : "text-ink"}`}>
                   {reminderText(iso, today)}
                 </Text>
                 <Pressable
@@ -576,12 +576,12 @@ export function PropertyBar({
                   style={pressScale}
                   className={`h-8 w-8 items-center justify-center rounded-full ${on ? "bg-accent" : "hover:bg-chip"}`}
                 >
-                  <Text className={`text-[12.5px] font-semibold ${on ? "text-on-accent" : "text-ink-2"}`}>{letter}</Text>
+                  <Text className={`text-[13px] font-semibold ${on ? "text-on-accent" : "text-ink-2"}`}>{letter}</Text>
                 </Pressable>
               );
             })}
           </View>
-          {repeat.weekdays.length === 0 && <Text className="text-high px-2.5 pb-1.5 text-[11.5px]">Pick at least one day.</Text>}
+          {repeat.weekdays.length === 0 && <Text className="text-high px-2.5 pb-1.5 text-[12px]">Pick at least one day.</Text>}
         </>
       )}
     </View>

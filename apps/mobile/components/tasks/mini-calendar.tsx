@@ -48,7 +48,7 @@ export function MiniCalendar({
   return (
     <View>
       <View className="mb-2 flex-row items-center justify-between">
-        <Text className="text-ink text-[13.5px] font-semibold">
+        <Text className="text-ink text-[14px] font-semibold">
           {MONTH_NAMES[month]} {year}
         </Text>
         <View className="flex-row gap-1">
@@ -75,7 +75,7 @@ export function MiniCalendar({
 
       <View className="flex-row">
         {DOW.map((d, i) => (
-          <Text key={i} className="text-ink-3 flex-1 text-center text-[10.5px] font-semibold">
+          <Text key={i} className="text-ink-3 flex-1 text-center text-[11px] font-semibold">
             {d}
           </Text>
         ))}

@@ -23,11 +23,11 @@ export function EmptyState({
   return (
     <View className="items-center px-8 pt-16">
       <View className="bg-accent/[0.12] mb-4 h-16 w-16 items-center justify-center rounded-full">
-        <Icon size={26} color={c.accent} strokeWidth={1.7} />
+        <Icon size={26} color={c.accent} strokeWidth={2} />
       </View>
-      <Text className="text-ink text-center text-[16.5px] font-semibold tracking-[-0.01em]">{title}</Text>
+      <Text className="text-ink text-center text-[16px] font-semibold tracking-[-0.01em]">{title}</Text>
       {subtitle ? (
-        <Text className="text-ink-3 mt-1.5 max-w-[280px] text-center text-[13.5px] leading-[20px]">{subtitle}</Text>
+        <Text className="text-ink-3 mt-1.5 max-w-[280px] text-center text-[14px] leading-[20px]">{subtitle}</Text>
       ) : null}
       {actionLabel && onAction ? (
         <Pressable

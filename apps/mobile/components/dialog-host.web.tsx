@@ -37,7 +37,7 @@ export function DialogHost() {
         <Pressable onPress={() => {}} className="border-line bg-elev rounded-card w-full max-w-[380px] border p-4">
           <Text className="text-ink text-[15px] font-semibold">{current.title}</Text>
           {current.message ? (
-            <Text className="text-ink-2 mt-2 text-[13.5px] leading-[20px]">{current.message}</Text>
+            <Text className="text-ink-2 mt-2 text-[14px] leading-[20px]">{current.message}</Text>
           ) : null}
 
           <View className="mt-4 flex-row justify-end gap-2">

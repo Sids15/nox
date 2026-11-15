@@ -385,7 +385,7 @@ export function TaskCalendar({
         </Pressable>
         {!days.includes(today) && (
           <Pressable onPress={() => onFocus(today)} accessibilityRole="button" className="hover:bg-chip border-line ml-1 h-8 justify-center rounded-[9px] border px-2.5">
-            <Text className="text-ink-2 text-[12.5px] font-semibold">Today</Text>
+            <Text className="text-ink-2 text-[13px] font-semibold">Today</Text>
           </Pressable>
         )}
         <Text style={TABULAR} className="text-ink ml-2 flex-1 text-[14px] font-semibold" numberOfLines={1}>
@@ -401,7 +401,7 @@ export function TaskCalendar({
               className={`h-7 justify-center rounded-[7px] px-2.5 ${mode === v ? "bg-surface" : ""}`}
               style={mode === v ? { shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
             >
-              <Text className={`text-[12.5px] font-semibold ${mode === v ? "text-ink" : "text-ink-3"}`}>
+              <Text className={`text-[13px] font-semibold ${mode === v ? "text-ink" : "text-ink-3"}`}>
                 {v === "day" ? "Day" : isDesktop ? "Week" : "3 days"}
               </Text>
             </Pressable>
@@ -417,7 +417,7 @@ export function TaskCalendar({
           className={`h-8 flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${toPlan ? "hover:bg-chip" : "opacity-40"}`}
         >
           <Sparkles size={14} color={toPlan ? c.accent : c.ink3} strokeWidth={2.2} />
-          {isDesktop && <Text className="text-ink-2 text-[12.5px] font-semibold">{mode === "day" ? "Plan day" : "Plan week"}</Text>}
+          {isDesktop && <Text className="text-ink-2 text-[13px] font-semibold">{mode === "day" ? "Plan day" : "Plan week"}</Text>}
         </Pressable>
         <View ref={gearRef} collapsable={false}>
           <Pressable
@@ -468,7 +468,7 @@ export function TaskCalendar({
       {/* Anytime row — also the drop zone for unscheduling */}
       <View className="border-line flex-row border-b">
         <View style={{ width: GUTTER }} className="justify-center pr-2">
-          <Text className="text-ink-3 text-right text-[10.5px] font-medium">Anytime</Text>
+          <Text className="text-ink-3 text-right text-[11px] font-medium">Anytime</Text>
         </View>
         <View ref={trayRef} collapsable={false} className="flex-1 flex-row">
           {days.map((d) => {
@@ -493,7 +493,7 @@ export function TaskCalendar({
                     accessibilityRole="button"
                     className="hover:bg-chip self-start rounded-[6px] px-1.5 py-0.5"
                   >
-                    <Text className="text-ink-2 text-[11.5px] font-semibold">+{all.length - list.length} more</Text>
+                    <Text className="text-ink-2 text-[12px] font-semibold">+{all.length - list.length} more</Text>
                   </Pressable>
                 )}
                 {all.length === 0 && (
@@ -515,7 +515,7 @@ export function TaskCalendar({
               <Text
                 key={h}
                 style={[TABULAR, { position: "absolute", top: (h - startHour) * ROW - 7, right: 8 }]}
-                className="text-ink-3 text-[10.5px]"
+                className="text-ink-3 text-[11px]"
               >
                 {h === startHour ? "" : hourLabel(h)}
               </Text>
@@ -646,7 +646,7 @@ export function TaskCalendar({
             shadowOffset: { width: 0, height: 4 },
           }}
         >
-          <Text numberOfLines={1} className="text-bg text-[12.5px] font-semibold">
+          <Text numberOfLines={1} className="text-bg text-[13px] font-semibold">
             {drag.task.title}
           </Text>
           <Text style={TABULAR} className="text-bg text-[12px] opacity-70">
@@ -670,7 +670,7 @@ function Stepper({ label, value, onDec, onInc }: { label: string; value: string;
   const c = useThemeColors();
   return (
     <View className="flex-row items-center px-2.5 py-1.5">
-      <Text className="text-ink flex-1 text-[13.5px]">{label}</Text>
+      <Text className="text-ink flex-1 text-[14px]">{label}</Text>
       <Pressable onPress={onDec} accessibilityRole="button" accessibilityLabel={`Earlier ${label.toLowerCase()}`} className="hover:bg-chip h-7 w-7 items-center justify-center rounded-[7px]">
         <Minus size={13} color={c.ink2} strokeWidth={2.4} />
       </Pressable>
@@ -688,7 +688,7 @@ function Toggle({ label, on, onPress }: { label: string; on: boolean; onPress: (
   const c = useThemeColors();
   return (
     <Pressable onPress={onPress} accessibilityRole="switch" accessibilityState={{ checked: on }} className="hover:bg-chip flex-row items-center rounded-[8px] px-2.5 py-2">
-      <Text className="text-ink flex-1 text-[13.5px]">{label}</Text>
+      <Text className="text-ink flex-1 text-[14px]">{label}</Text>
       <View style={{ width: 30, height: 18, borderRadius: 99, padding: 2, alignItems: on ? "flex-end" : "flex-start", backgroundColor: on ? c.accent : c.chip, borderWidth: on ? 0 : 1, borderColor: c.line }}>
         <View style={{ width: 14, height: 14, borderRadius: 99, backgroundColor: on ? "#fff" : c.ink3 }} />
       </View>
@@ -699,7 +699,7 @@ function Toggle({ label, on, onPress }: { label: string; on: boolean; onPress: (
 function Choice<T extends string | number>({ label, value, options, onChange }: { label: string; value: T; options: { v: T; label: string }[]; onChange: (v: T) => void }) {
   return (
     <View className="flex-row items-center px-2.5 py-1.5">
-      <Text className="text-ink flex-1 text-[13.5px]">{label}</Text>
+      <Text className="text-ink flex-1 text-[14px]">{label}</Text>
       <View className="bg-chip flex-row rounded-[8px] p-0.5">
         {options.map((o) => (
           <Pressable key={String(o.v)} onPress={() => onChange(o.v)} accessibilityRole="radio" accessibilityState={{ checked: value === o.v }} className={`rounded-[6px] px-2 py-1 ${value === o.v ? "bg-surface" : ""}`}>

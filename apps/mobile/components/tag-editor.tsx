@@ -55,7 +55,7 @@ export function TagEditor({
         ))}
         {adding ? (
           <View className="border-accent h-[27px] flex-row items-center rounded-[7px] border px-2">
-            <Text className="text-ink-3 text-[12.5px]">#</Text>
+            <Text className="text-ink-3 text-[13px]">#</Text>
             <TextInput
               ref={input}
               autoFocus
@@ -83,7 +83,7 @@ export function TagEditor({
               placeholder="tag"
               placeholderTextColor={c.ink3}
               accessibilityLabel="New tag"
-              className="text-ink text-[12.5px]"
+              className="text-ink text-[13px]"
               style={{ paddingVertical: 0, outlineWidth: 0, width: Math.max(48, Math.min(160, draft.length * 8 + 20)) } as object}
             />
           </View>
@@ -96,7 +96,7 @@ export function TagEditor({
               className="hover:bg-chip h-[27px] flex-row items-center gap-1 rounded-[7px] px-1.5"
             >
               <Plus size={12} color={c.ink3} strokeWidth={2.2} />
-              <Text className="text-ink-3 text-[12.5px] font-medium">{tags.length ? "Add" : "Add tag"}</Text>
+              <Text className="text-ink-3 text-[13px] font-medium">{tags.length ? "Add" : "Add tag"}</Text>
             </Pressable>
           )
         )}

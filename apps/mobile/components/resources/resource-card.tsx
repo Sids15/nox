@@ -149,7 +149,7 @@ export function ResourceCard({
             {thumb ? <Thumb value={thumb} style={{ width: "100%", height: "100%" }} /> : <TypeIcon size={17} color={c.ink2} strokeWidth={2} />}
           </View>
           <View className="min-w-0 flex-1">
-            <Text numberOfLines={1} className={`text-ink text-[14.5px] ${resource.type === "text" ? "font-serif" : "font-semibold"}`}>
+            <Text numberOfLines={1} className={`text-ink text-[15px] ${resource.type === "text" ? "font-serif" : "font-semibold"}`}>
               {resource.type === "text" ? `“${resource.body ?? title}”` : title}
             </Text>
             <View className="mt-0.5 flex-row items-center gap-2">
@@ -167,7 +167,7 @@ export function ResourceCard({
               ))}
             </View>
           </View>
-          <Text className="text-ink-3 text-[11.5px]">{relativeAge(resource.created_at)}</Text>
+          <Text className="text-ink-3 text-[12px]">{relativeAge(resource.created_at)}</Text>
           <View ref={anchor} collapsable={false} style={{ opacity: !hoverOnly || hover || menuOpen ? 1 : 0 }}>
             <Pressable
               onPress={(e) => {
@@ -206,7 +206,7 @@ export function ResourceCard({
           ) : null}
         </View>
         <View className="gap-2 px-3.5 pb-3 pt-3">
-          <Text numberOfLines={3} className="text-ink text-[14.5px] font-semibold" style={{ lineHeight: 20 }}>
+          <Text numberOfLines={3} className="text-ink text-[15px] font-semibold" style={{ lineHeight: 20 }}>
             {title}
           </Text>
           {resource.domain ? <Text className="text-ink-3 -mt-1 text-[12px]">{resource.domain}</Text> : null}
@@ -244,7 +244,7 @@ export function ResourceCard({
             {resource.body ?? title}
           </Text>
         </View>
-        {resource.title && resource.body ? <Text className="text-ink-3 pl-[15px] text-[12.5px]">— {resource.title}</Text> : null}
+        {resource.title && resource.body ? <Text className="text-ink-3 pl-[15px] text-[13px]">— {resource.title}</Text> : null}
         <Footer tags={tags} resource={resource} />
       </View>
     );
@@ -264,7 +264,7 @@ export function ResourceCard({
         <View className="gap-2 px-3.5 pb-3 pt-3">
           <View className="flex-row items-center gap-2 pr-7">
             <View className="h-5 w-5 items-center justify-center rounded-[6px]" style={{ backgroundColor: `${color}2e` }}>
-              <Text style={{ color }} className="text-[10.5px] font-bold">
+              <Text style={{ color }} className="text-[11px] font-bold">
                 {domain.charAt(0).toUpperCase()}
               </Text>
             </View>
@@ -272,7 +272,7 @@ export function ResourceCard({
               {domain}
             </Text>
           </View>
-          <Text numberOfLines={4} className="text-ink text-[14.5px] font-semibold" style={{ lineHeight: 20 }}>
+          <Text numberOfLines={4} className="text-ink text-[15px] font-semibold" style={{ lineHeight: 20 }}>
             {title}
           </Text>
           <Footer tags={tags} resource={resource} />

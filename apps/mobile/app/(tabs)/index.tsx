@@ -155,7 +155,7 @@ export default function IdeasScreen() {
           <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">
             {show === "active" ? "Ideas" : show === "dropped" ? "Dropped ideas" : "Archived ideas"}
           </Text>
-          <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+          <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[14px] font-medium">
             {show === "active"
               ? `${plural(activeCount, "idea")}${exploring ? ` · ${exploring} exploring` : ""}`
               : plural(visible.length, "idea")}
@@ -183,7 +183,7 @@ export default function IdeasScreen() {
               className="bg-accent hover:opacity-90 h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-3.5"
             >
               <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
-              <Text className="text-on-accent text-[13.5px] font-semibold">New idea</Text>
+              <Text className="text-on-accent text-[14px] font-semibold">New idea</Text>
             </Pressable>
           ) : (
             <ProfileAvatar />
@@ -218,11 +218,11 @@ export default function IdeasScreen() {
           placeholderTextColor={c.ink3}
           accessibilityLabel="Search ideas or add a new one"
           maxLength={200}
-          className="text-ink flex-1 text-[14.5px]"
+          className="text-ink flex-1 text-[15px]"
           style={{ paddingVertical: 0, outlineWidth: 0 } as object}
         />
         {caught ? (
-          <Text className="text-success text-[12.5px] font-semibold">Added to Raw</Text>
+          <Text className="text-success text-[13px] font-semibold">Added to Raw</Text>
         ) : search.trim() ? (
           <>
             {show === "active" && (
@@ -234,7 +234,7 @@ export default function IdeasScreen() {
                 className="bg-accent h-7 flex-row items-center gap-1 rounded-[8px] px-2.5"
               >
                 <Plus size={12} color={c.onAccent} strokeWidth={2.6} />
-                <Text className="text-on-accent text-[12.5px] font-semibold">Add idea</Text>
+                <Text className="text-on-accent text-[13px] font-semibold">Add idea</Text>
               </Pressable>
             )}
             <Pressable onPress={() => setSearch("")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear">
@@ -276,7 +276,7 @@ export default function IdeasScreen() {
   const stageTitle = (s: (typeof STAGES)[number], count: number) => (
     <View className="mb-2.5 flex-row items-center gap-2 pl-0.5">
       <View className="h-2 w-2 rounded-full" style={{ backgroundColor: stageTint[s.key] }} />
-      <Text className="text-ink text-[13.5px] font-bold">{s.label}</Text>
+      <Text className="text-ink text-[14px] font-bold">{s.label}</Text>
       <Text style={TABULAR} className="text-ink-3 text-[13px] font-semibold">
         {count}
       </Text>
@@ -363,7 +363,7 @@ export default function IdeasScreen() {
                 ))}
                 {list.length === 0 && (
                   <View className={`items-center rounded-[14px] border border-dashed px-3 py-6 ${hot ? "border-accent" : "border-line"}`}>
-                    <Text className="text-ink-3 text-[12.5px]">{hot ? `Move to ${s.label}` : s.hint}</Text>
+                    <Text className="text-ink-3 text-[13px]">{hot ? `Move to ${s.label}` : s.hint}</Text>
                   </View>
                 )}
               </View>
@@ -450,7 +450,7 @@ export default function IdeasScreen() {
           // Page coordinates: pinned to the window on the web (the pane starts after the sidebar).
           style={{ left: drag.x + 12, top: drag.y + 8, maxWidth: 280, ...(Platform.OS === "web" ? ({ position: "fixed" } as object) : null) }}
         >
-          <Text numberOfLines={1} className="text-bg text-[12.5px] font-semibold">
+          <Text numberOfLines={1} className="text-bg text-[13px] font-semibold">
             {drag.idea.title}
           </Text>
           <Text className="text-bg text-[12px] opacity-70">→ {drag.to ? STAGES.find((x) => x.key === drag.to)!.label : "—"}</Text>

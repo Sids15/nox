@@ -166,7 +166,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
           {/* Properties: where it lives and how it's tagged */}
           <View className="mt-3.5">
             <View className="min-h-[34px] flex-row items-center">
-              <Text className="text-ink-3 w-[72px] text-[13.5px]">Folder</Text>
+              <Text className="text-ink-3 w-[72px] text-[14px]">Folder</Text>
               <View ref={folderRef} collapsable={false}>
                 <Pressable
                   onPress={() => setFolderOpen(true)}
@@ -181,7 +181,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
               </View>
             </View>
             <View className="flex-row py-1">
-              <Text className="text-ink-3 w-[72px] pt-1 text-[13.5px]">Tags</Text>
+              <Text className="text-ink-3 w-[72px] pt-1 text-[14px]">Tags</Text>
               <View className="min-w-0 flex-1">
                 <TagEditor
                   tags={note.tags}

@@ -403,7 +403,7 @@ export function TaskComposer({
         {clash ? (
           <View className="mt-2 flex-row items-center gap-1.5">
             <View className="bg-medium h-1.5 w-1.5 rounded-full" />
-            <Text numberOfLines={1} className="text-ink-3 flex-1 text-[12.5px]">
+            <Text numberOfLines={1} className="text-ink-3 flex-1 text-[13px]">
               Also at {formatTime12(clash.task.due_time)}: <Text className="text-ink-2 font-medium">{clash.task.title}</Text>
             </Text>
           </View>
@@ -412,7 +412,7 @@ export function TaskComposer({
           <View className="bg-accent/[0.06] mt-3 gap-2.5 rounded-[12px] px-3 py-3" accessibilityLiveRegion="polite">
             {!time && (
               <View>
-                <Text className="text-ink text-[13.5px] font-semibold">When will you do it?</Text>
+                <Text className="text-ink text-[14px] font-semibold">When will you do it?</Text>
                 <View className="mt-2 flex-row flex-wrap items-center gap-1.5">
                   {suggested ? (
                     <Pressable onPress={() => onChange({ time: suggested })} accessibilityRole="button" style={press} className="bg-accent h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2.5">
@@ -421,15 +421,15 @@ export function TaskComposer({
                       <Text className="text-on-accent text-[12px] opacity-80">next free slot</Text>
                     </Pressable>
                   ) : (
-                    <Text className="text-ink-3 text-[12.5px]">No free slot left in your hours that day.</Text>
+                    <Text className="text-ink-3 text-[13px]">No free slot left in your hours that day.</Text>
                   )}
-                  <Text className="text-ink-3 text-[12.5px]">or set Time below, or press Enter to keep it anytime</Text>
+                  <Text className="text-ink-3 text-[13px]">or set Time below, or press Enter to keep it anytime</Text>
                 </View>
               </View>
             )}
             {time && !duration && (
               <View>
-                <Text className="text-ink text-[13.5px] font-semibold">How long will it take?</Text>
+                <Text className="text-ink text-[14px] font-semibold">How long will it take?</Text>
                 <View className="mt-2 flex-row flex-wrap gap-1.5">
                   {[15, 30, 45, 60, 90, 120].map((m) => (
                     <Pressable key={m} onPress={() => onChange({ duration: m })} accessibilityRole="button" style={press} className="border-line hover:bg-chip h-[30px] justify-center rounded-[8px] border px-2.5">
@@ -455,7 +455,7 @@ export function TaskComposer({
         />
       </View>
 
-      {error ? <Text className="text-high mt-3 px-5 text-[12.5px]">{error}</Text> : null}
+      {error ? <Text className="text-high mt-3 px-5 text-[13px]">{error}</Text> : null}
     </View>
   );
 
@@ -499,7 +499,7 @@ export function TaskComposer({
           >
             <View style={{ width: 12, height: 12, borderRadius: 99, backgroundColor: createMore ? "#fff" : c.ink3 }} />
           </View>
-          <Text className="text-ink-2 text-[12.5px] font-medium">Create more</Text>
+          <Text className="text-ink-2 text-[13px] font-medium">Create more</Text>
         </Pressable>
 
         <View className="flex-1">

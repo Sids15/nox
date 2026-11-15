@@ -29,7 +29,7 @@ export default function AuthCallback() {
   if (authError) {
     return (
       <View className="bg-bg flex-1 items-center justify-center px-8">
-        <Text className="text-ink text-center text-[18px] font-bold">This link didn't work</Text>
+        <Text className="text-ink text-center text-[17px] font-bold">This link didn't work</Text>
         <Text className="text-ink-2 mt-2 text-center text-[14px] leading-[21px]">
           {authError} Email links are single-use and time-limited — request a new one and open the
           most recent email.

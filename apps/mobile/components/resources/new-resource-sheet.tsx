@@ -242,7 +242,7 @@ export function NewResourceSheet({
           >
           {/* Header */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-ink font-serif text-[22px] font-bold">{resource ? "Edit resource" : "Save something"}</Text>
+            <Text className="text-ink font-serif text-[20px] font-bold">{resource ? "Edit resource" : "Save something"}</Text>
             <Pressable
               onPress={onClose}
               hitSlop={8}
@@ -268,7 +268,7 @@ export function NewResourceSheet({
                   style={{ borderBottomWidth: 2, borderBottomColor: on ? c.accent : "transparent" }}
                 >
                   <Icon size={15} color={on ? c.ink : c.ink3} strokeWidth={2} />
-                  <Text className={`text-[13.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>
+                  <Text className={`text-[14px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>
                 </Pressable>
               );
             })}
@@ -330,9 +330,9 @@ export function NewResourceSheet({
                   </View>
                 ) : (
                   <View className="h-[150px] items-center justify-center gap-1.5">
-                    <ImagePlus size={22} color={c.ink2} strokeWidth={1.8} />
+                    <ImagePlus size={22} color={c.ink2} strokeWidth={2} />
                     <Text className="text-ink text-[14px] font-semibold">Choose a picture</Text>
-                    <Text className="text-ink-3 text-[12.5px]">JPEG, PNG or WebP, up to 10 MB</Text>
+                    <Text className="text-ink-3 text-[13px]">JPEG, PNG or WebP, up to 10 MB</Text>
                   </View>
                 )}
               </Pressable>
@@ -393,7 +393,7 @@ export function NewResourceSheet({
                     <Image source={{ uri: thumbnail }} style={{ width: 96, alignSelf: "stretch", minHeight: 72 }} resizeMode="cover" />
                   ) : (
                     <View className="w-[64px] items-center justify-center" style={{ backgroundColor: `${letterColor(domain)}1f` }}>
-                      <Text style={{ color: letterColor(domain) }} className="text-[18px] font-bold">
+                      <Text style={{ color: letterColor(domain) }} className="text-[17px] font-bold">
                         {domain.charAt(0).toUpperCase()}
                       </Text>
                     </View>
@@ -408,7 +408,7 @@ export function NewResourceSheet({
                       placeholder={fetched ? "Add a title" : "Fetching the title…"}
                       placeholderTextColor={c.ink3}
                       accessibilityLabel="Title"
-                      className="text-ink text-[14.5px] font-semibold"
+                      className="text-ink text-[15px] font-semibold"
                       style={{ paddingVertical: 0, outlineWidth: 0 } as object}
                     />
                     <View className="mt-1 flex-row items-center gap-1.5">
@@ -439,7 +439,7 @@ export function NewResourceSheet({
                     className="rounded-pill flex-row items-center gap-1 px-2.5 py-[5px]"
                   >
                     {on && <Check size={11} color="#fff" strokeWidth={3} />}
-                    <Text style={{ color: on ? "#fff" : t.color }} className="text-[12.5px] font-semibold">
+                    <Text style={{ color: on ? "#fff" : t.color }} className="text-[13px] font-semibold">
                       {t.name}
                     </Text>
                   </Pressable>
@@ -456,7 +456,7 @@ export function NewResourceSheet({
                   placeholder="New tag"
                   placeholderTextColor={c.ink3}
                   accessibilityLabel="New tag"
-                  className="text-ink text-[12.5px]"
+                  className="text-ink text-[13px]"
                   style={{ paddingVertical: 0, outlineWidth: 0, width: Math.max(64, Math.min(160, tagQuery.length * 8 + 16)) } as object}
                 />
               </View>
@@ -489,7 +489,7 @@ export function NewResourceSheet({
               style={pressScale}
               className={`h-10 items-center justify-center rounded-[10px] px-5 ${isDesktop ? "" : "h-[48px] flex-1 rounded-[12px]"} ${canSave ? "bg-accent hover:opacity-90" : "bg-chip"}`}
             >
-              <Text className={`text-[14.5px] font-semibold ${canSave ? "text-on-accent" : "text-ink-3"}`}>
+              <Text className={`text-[15px] font-semibold ${canSave ? "text-on-accent" : "text-ink-3"}`}>
                 {uploading
                   ? "Uploading…"
                   : canSave

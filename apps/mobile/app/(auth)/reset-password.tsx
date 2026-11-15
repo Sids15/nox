@@ -53,13 +53,13 @@ export default function ResetPasswordScreen() {
 
   const field = (name: string, label: string, value: string, onChange: (v: string) => void, bad: boolean, right?: ReactNode) => (
     <View className="mt-4">
-      <Text className="text-ink-2 mb-1.5 text-[13.5px] font-semibold">{label}</Text>
+      <Text className="text-ink-2 mb-1.5 text-[14px] font-semibold">{label}</Text>
       <View
         className="bg-surface h-[48px] flex-row items-center rounded-[11px] px-3.5"
         style={{ borderWidth: 1, borderColor: bad ? c.critical : focused === name ? c.accent : c.line }}
       >
         <TextInput
-          className="text-ink flex-1 text-[15.5px]"
+          className="text-ink flex-1 text-[15px]"
           style={{ paddingVertical: 0, outlineWidth: 0 } as object}
           value={value}
           onChangeText={onChange}
@@ -80,7 +80,7 @@ export default function ResetPasswordScreen() {
   return (
     <AuthShell>
       <Text className="text-ink font-serif text-[32px] font-bold leading-[39px] tracking-[-0.01em]">Set a new password</Text>
-      <Text className="text-ink-2 mt-2 text-[15.5px] leading-[23px]">You'll be signed in as soon as it's saved.</Text>
+      <Text className="text-ink-2 mt-2 text-[15px] leading-[23px]">You'll be signed in as soon as it's saved.</Text>
 
       <View className="mt-3">
         {field(
@@ -90,21 +90,21 @@ export default function ResetPasswordScreen() {
           setPassword,
           false,
           <Pressable onPress={() => setShow((s) => !s)} hitSlop={8} accessibilityRole="button" accessibilityLabel={show ? "Hide password" : "Show password"}>
-            {show ? <EyeOff size={18} color={c.ink3} strokeWidth={1.9} /> : <Eye size={18} color={c.ink3} strokeWidth={1.9} />}
+            {show ? <EyeOff size={18} color={c.ink3} strokeWidth={2} /> : <Eye size={18} color={c.ink3} strokeWidth={2} />}
           </Pressable>,
         )}
         <View className="mt-2 flex-row items-center gap-1.5">
           <Check size={13} color={longEnough ? c.success : c.ink3} strokeWidth={2.6} />
-          <Text className={`text-[12.5px] ${longEnough ? "text-success" : "text-ink-3"}`}>At least {MIN_LENGTH} characters</Text>
+          <Text className={`text-[13px] ${longEnough ? "text-success" : "text-ink-3"}`}>At least {MIN_LENGTH} characters</Text>
         </View>
 
         {field("confirm", "Confirm password", confirm, setConfirm, confirm.length > 0 && !matches)}
-        {confirm.length > 0 && !matches ? <Text className="text-critical mt-1.5 text-[12.5px]">Passwords don't match.</Text> : null}
+        {confirm.length > 0 && !matches ? <Text className="text-critical mt-1.5 text-[13px]">Passwords don't match.</Text> : null}
       </View>
 
       {error ? (
         <View className="bg-critical/[0.08] mt-4 rounded-[10px] px-3.5 py-2.5">
-          <Text className="text-critical text-[13.5px]">{error}</Text>
+          <Text className="text-critical text-[14px]">{error}</Text>
         </View>
       ) : null}
 
@@ -118,12 +118,12 @@ export default function ResetPasswordScreen() {
         {busy ? (
           <ActivityIndicator color={c.onAccent} />
         ) : (
-          <Text className={`text-[15.5px] font-semibold ${valid ? "text-on-accent" : "text-ink-3"}`}>Save password</Text>
+          <Text className={`text-[15px] font-semibold ${valid ? "text-on-accent" : "text-ink-3"}`}>Save password</Text>
         )}
       </Pressable>
 
       <Pressable onPress={() => void onCancel()} hitSlop={8} accessibilityRole="button" className="mt-6 self-start">
-        <Text className="text-ink-2 text-[14.5px] font-semibold">Cancel and sign out</Text>
+        <Text className="text-ink-2 text-[15px] font-semibold">Cancel and sign out</Text>
       </Pressable>
     </AuthShell>
   );

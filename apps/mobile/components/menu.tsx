@@ -54,7 +54,7 @@ export function MenuRow({
       {icon}
       <Text
         numberOfLines={1}
-        className={`flex-1 text-[13.5px] ${danger ? "text-high font-medium" : selected ? "text-accent font-semibold" : "text-ink"}`}
+        className={`flex-1 text-[14px] ${danger ? "text-high font-medium" : selected ? "text-accent font-semibold" : "text-ink"}`}
       >
         {label}
       </Text>
@@ -69,7 +69,7 @@ export function MenuRow({
 }
 
 export function MenuLabel({ children }: { children: string }) {
-  return <Text className="text-ink-3 px-2.5 pb-1 pt-2 text-[11.5px] font-semibold">{children}</Text>;
+  return <Text className="text-ink-3 px-2.5 pb-1 pt-2 text-[12px] font-semibold">{children}</Text>;
 }
 
 export const MenuDivider = () => <View className="bg-line mx-1 my-1.5 h-px" />;

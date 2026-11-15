@@ -52,7 +52,7 @@ function PrimaryButton({ label, onPress, disabled, icon }: { label: string; onPr
       style={pressScale}
       className={`h-[50px] flex-row items-center justify-center gap-2 rounded-[12px] px-5 ${disabled ? "bg-chip" : "bg-accent hover:opacity-90"}`}
     >
-      <Text className={`text-[15.5px] font-semibold ${disabled ? "text-ink-3" : "text-on-accent"}`}>{label}</Text>
+      <Text className={`text-[15px] font-semibold ${disabled ? "text-ink-3" : "text-on-accent"}`}>{label}</Text>
       {icon}
     </Pressable>
   );
@@ -61,7 +61,7 @@ function PrimaryButton({ label, onPress, disabled, icon }: { label: string; onPr
 function GhostButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={pressScale} className="hover:bg-chip h-[44px] items-center justify-center rounded-[12px] px-4">
-      <Text className="text-ink-2 text-[14.5px] font-semibold">{label}</Text>
+      <Text className="text-ink-2 text-[15px] font-semibold">{label}</Text>
     </Pressable>
   );
 }
@@ -191,11 +191,11 @@ function Onboarding() {
         {spaces.map(({ icon: Icon, name: n, line }, i) => (
           <View key={n} className={`flex-row items-start gap-4 py-4 ${i > 0 ? "border-line border-t" : ""}`}>
             <View className="bg-accent/[0.12] h-10 w-10 items-center justify-center rounded-[11px]">
-              <Icon size={19} color={c.accent} strokeWidth={1.9} />
+              <Icon size={19} color={c.accent} strokeWidth={2} />
             </View>
             <View className="flex-1">
-              <Text className="text-ink text-[16.5px] font-semibold">{n}</Text>
-              <Text className="text-ink-2 mt-0.5 text-[14.5px] leading-[21px]">{line}</Text>
+              <Text className="text-ink text-[16px] font-semibold">{n}</Text>
+              <Text className="text-ink-2 mt-0.5 text-[15px] leading-[21px]">{line}</Text>
             </View>
           </View>
         ))}
@@ -207,7 +207,7 @@ function Onboarding() {
       <Title>Make it yours</Title>
       <Lead>We'll use your name in greetings. You can change all of this later in Settings.</Lead>
 
-      <Text className="text-ink-2 mb-2 mt-7 text-[13.5px] font-semibold">Your name</Text>
+      <Text className="text-ink-2 mb-2 mt-7 text-[14px] font-semibold">Your name</Text>
       <TextInput
         value={name}
         onChangeText={setName}
@@ -222,7 +222,7 @@ function Onboarding() {
         style={{ paddingVertical: 0 }}
       />
 
-      <Text className="text-ink-2 mb-2 mt-6 text-[13.5px] font-semibold">Appearance</Text>
+      <Text className="text-ink-2 mb-2 mt-6 text-[14px] font-semibold">Appearance</Text>
       <SegmentedControl<ThemeName>
         value={theme}
         onChange={setTheme}
@@ -232,7 +232,7 @@ function Onboarding() {
         ]}
       />
 
-      <Text className="text-ink-2 mb-2 mt-6 text-[13.5px] font-semibold">Accent</Text>
+      <Text className="text-ink-2 mb-2 mt-6 text-[14px] font-semibold">Accent</Text>
       <View className="flex-row gap-3">
         {ACCENT_ORDER.map((a) => {
           const on = a === accent;
@@ -287,7 +287,7 @@ function Onboarding() {
         {remindState === "on" ? (
           <View className="flex-row items-center gap-2">
             <Check size={16} color={c.success} strokeWidth={2.6} />
-            <Text className="text-success text-[14.5px] font-semibold">Reminders are on.</Text>
+            <Text className="text-success text-[15px] font-semibold">Reminders are on.</Text>
           </View>
         ) : remindState === "off" ? (
           <Text className="text-ink-2 text-[14px] leading-[21px]">
@@ -337,7 +337,7 @@ function Onboarding() {
               ))}
             </>
           ) : (
-            <Text className="text-ink-3 text-[12.5px]">Dates, times, “every mon”, “!high” are understood.</Text>
+            <Text className="text-ink-3 text-[13px]">Dates, times, “every mon”, “!high” are understood.</Text>
           )}
         </View>
       </View>
@@ -364,7 +364,7 @@ function Onboarding() {
         {added ? (
           <View className="bg-success/[0.1] flex-row items-center gap-2.5 rounded-[12px] px-4 py-3">
             <Check size={16} color={c.success} strokeWidth={2.6} />
-            <Text className="text-ink flex-1 text-[14.5px]">
+            <Text className="text-ink flex-1 text-[15px]">
               Added <Text className="font-semibold">{added}</Text>
             </Text>
           </View>
@@ -402,7 +402,7 @@ function Onboarding() {
             <Text className="text-[15px] font-semibold" style={{ color: "#E8775B" }}>
               {first ? `Welcome, ${first}.` : "Welcome."}
             </Text>
-            <Text className="mt-3 font-serif text-[36px] font-bold leading-[43px] tracking-[-0.01em]" style={{ color: COVER_INK }}>
+            <Text className="mt-3 font-serif text-[32px] font-bold leading-[43px] tracking-[-0.01em]" style={{ color: COVER_INK }}>
               A quiet notebook for everything you're working on.
             </Text>
             <Text className="mt-4 text-[16px] leading-[24px]" style={{ color: COVER_DIM }}>
@@ -423,7 +423,7 @@ function Onboarding() {
               <Text className="text-on-accent text-[16px] font-semibold">Open the notebook</Text>
               <ArrowRight size={17} color={c.onAccent} strokeWidth={2.4} />
             </Pressable>
-            <Text className="mt-3 text-center text-[12.5px]" style={{ color: COVER_DIM }}>
+            <Text className="mt-3 text-center text-[13px]" style={{ color: COVER_DIM }}>
               Takes about a minute. You can skip any step.
             </Text>
           </View>

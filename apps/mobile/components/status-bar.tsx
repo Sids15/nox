@@ -15,7 +15,7 @@ function SyncChip() {
   return (
     <View className="flex-row items-center gap-1.5">
       <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: online ? c.accent : c.ink3 }} />
-      <Text className="text-ink-3 text-[10px] font-medium tracking-[0.04em]">{label}</Text>
+      <Text className="text-ink-3 text-[11px] font-medium tracking-[0.04em]">{label}</Text>
     </View>
   );
 }
@@ -53,10 +53,10 @@ export function StatusBar() {
 
   return (
     <View className="border-line bg-surface h-[26px] flex-row items-center justify-between border-t px-4">
-      <Text className="text-ink-3 text-[10px] font-medium tracking-[0.04em]">{summary}</Text>
+      <Text className="text-ink-3 text-[11px] font-medium tracking-[0.04em]">{summary}</Text>
       <View className="flex-row items-center gap-4">
         <SyncChip />
-        <Text className="text-ink-3 text-[10px] font-medium tracking-[0.04em]">
+        <Text className="text-ink-3 text-[11px] font-medium tracking-[0.04em]">
           {SEARCH_CHORD} search · {MODULE_CHORD} modules
         </Text>
       </View>

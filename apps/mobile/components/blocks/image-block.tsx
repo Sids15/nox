@@ -42,7 +42,7 @@ export function ImageBlock({ block, onRemove }: { block: ImgBlock; onRemove: () 
       </Pressable>
       {!block.storagePath && (
         <View className="absolute bottom-2 left-2 rounded-[7px] bg-black/55 px-2 py-0.5">
-          <Text className="text-[11.5px] font-medium text-white">Saving…</Text>
+          <Text className="text-[12px] font-medium text-white">Saving…</Text>
         </View>
       )}
     </Pressable>

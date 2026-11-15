@@ -67,7 +67,7 @@ export function NoteRow({
         {note.tags.slice(0, 2).map((t) => (
           <TagChip key={t} tag={t} size="sm" />
         ))}
-        {note.tags.length > 2 && <Text className="text-ink-3 text-[11.5px]">+{note.tags.length - 2}</Text>}
+        {note.tags.length > 2 && <Text className="text-ink-3 text-[12px]">+{note.tags.length - 2}</Text>}
       </View>
     </Pressable>
   );

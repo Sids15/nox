@@ -57,7 +57,7 @@ export function TaskRow({
       {timeGutter && (
         <Text
           style={TABULAR}
-          className={`w-[68px] pl-1 text-[12.5px] font-semibold ${complete ? "text-ink-3" : "text-ink-2"}`}
+          className={`w-[68px] pl-1 text-[13px] font-semibold ${complete ? "text-ink-3" : "text-ink-2"}`}
           numberOfLines={1}
         >
           {time ?? ""}
@@ -115,7 +115,7 @@ export function TaskRow({
               <View className="flex-row items-center gap-0.5">
                 <Bell size={11} color={c.ink3} strokeWidth={2} />
                 {reminders > 1 && (
-                  <Text style={TABULAR} className="text-ink-3 text-[11.5px]">
+                  <Text style={TABULAR} className="text-ink-3 text-[12px]">
                     {reminders}
                   </Text>
                 )}

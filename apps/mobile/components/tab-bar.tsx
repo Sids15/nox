@@ -77,8 +77,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityLabel={meta.label}
                 className="flex-1 items-center justify-center"
               >
-                <meta.Icon size={21} color={color} strokeWidth={1.7} />
-                <Text style={{ color }} className="mt-[3px] text-[10px] font-semibold">
+                <meta.Icon size={21} color={color} strokeWidth={2} />
+                <Text style={{ color }} className="mt-[3px] text-[11px] font-semibold">
                   {meta.label}
                 </Text>
               </Pressable>

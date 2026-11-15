@@ -71,14 +71,14 @@ export default function FolderScreen() {
           hitSlop={8}
           className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
         >
-          <MoreHorizontal size={20} color={c.ink2} strokeWidth={1.7} />
+          <MoreHorizontal size={20} color={c.ink2} strokeWidth={2} />
         </Pressable>
       </View>
       <View className="px-screen mt-3">
-        <Text className="text-ink font-serif text-[26px] font-bold tracking-[-0.01em]">
+        <Text className="text-ink font-serif text-[24px] font-bold tracking-[-0.01em]">
           {folder?.name ?? "Folder"}
         </Text>
-        <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+        <Text className="text-ink-3 mt-0.5 text-[14px] font-medium">
           {plural(folderNotes.length, "note")}
         </Text>
       </View>

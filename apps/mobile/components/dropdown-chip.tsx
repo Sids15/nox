@@ -52,7 +52,7 @@ export function DropdownChip<T extends string>({
     <>
       {minimal ? (
         <Pressable ref={ref} onPress={openMenu} hitSlop={6} className="flex-row items-center gap-1">
-          <Text className="text-ink text-[14.5px] font-semibold">{label}</Text>
+          <Text className="text-ink text-[15px] font-semibold">{label}</Text>
           <ChevronDown size={14} color={c.ink3} strokeWidth={2} />
         </Pressable>
       ) : (
@@ -63,7 +63,7 @@ export function DropdownChip<T extends string>({
             isActive ? "border-accent/[0.45] bg-accent/[0.14]" : "border-line bg-chip"
           }`}
         >
-          <Text className={`text-[12.5px] font-semibold ${isActive ? "text-accent" : "text-ink-2"}`}>
+          <Text className={`text-[13px] font-semibold ${isActive ? "text-accent" : "text-ink-2"}`}>
             {label}
           </Text>
           {showChevron && <ChevronDown size={12} color={isActive ? c.accent : c.ink3} strokeWidth={2} />}
@@ -99,7 +99,7 @@ export function DropdownChip<T extends string>({
                 className="px-4 py-2.5"
               >
                 <Text
-                  className={`text-[13.5px] ${
+                  className={`text-[14px] ${
                     o.value === value ? "text-accent font-semibold" : "text-ink"
                   }`}
                 >

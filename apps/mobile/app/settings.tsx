@@ -119,8 +119,8 @@ function Row({ title, detail, children, last, onPress }: { title: string; detail
   const inner = (
     <>
       <View className="min-w-0 flex-1 pr-3">
-        <Text className="text-ink text-[14.5px] font-medium">{title}</Text>
-        {detail ? <Text className="text-ink-3 mt-0.5 text-[12.5px] leading-[17px]">{detail}</Text> : null}
+        <Text className="text-ink text-[15px] font-medium">{title}</Text>
+        {detail ? <Text className="text-ink-3 mt-0.5 text-[13px] leading-[17px]">{detail}</Text> : null}
       </View>
       {children}
     </>
@@ -159,7 +159,7 @@ function ThemeTile({ theme, selected, onPress, accent }: { theme: ThemeName; sel
       </View>
       <View className="mt-2 flex-row items-center justify-center gap-1.5">
         {selected && <Check size={13} color={c.accent} strokeWidth={2.6} />}
-        <Text className={`text-[13.5px] ${selected ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{paper ? "Paper" : "Night"}</Text>
+        <Text className={`text-[14px] ${selected ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{paper ? "Paper" : "Night"}</Text>
       </View>
     </Pressable>
   );
@@ -168,7 +168,7 @@ function ThemeTile({ theme, selected, onPress, accent }: { theme: ThemeName; sel
 function Shortcut({ keys, label }: { keys: string[]; label: string }) {
   return (
     <View className="border-line flex-row items-center border-b px-4 py-2.5">
-      <Text className="text-ink-2 flex-1 text-[13.5px]">{label}</Text>
+      <Text className="text-ink-2 flex-1 text-[14px]">{label}</Text>
       <View className="flex-row gap-1">
         {keys.map((k) => (
           <View key={k} className="bg-chip border-line min-w-[24px] items-center rounded-[6px] border px-1.5 py-0.5">
@@ -240,7 +240,7 @@ export default function SettingsScreen() {
 
   const section = (key: SectionKey, title: string, intro: string, body: ReactNode) => (
     <View key={key} onLayout={(e) => (offsets.current[key] = e.nativeEvent.layout.y)} className="mt-8">
-      <Text className="text-ink font-serif text-[19px] font-bold">{title}</Text>
+      <Text className="text-ink font-serif text-[20px] font-bold">{title}</Text>
       <Text className="text-ink-3 mb-3 mt-0.5 text-[13px]">{intro}</Text>
       {body}
     </View>
@@ -284,8 +284,8 @@ export default function SettingsScreen() {
               {/* Web only for now: on phones the heading face is compiled into the app. */}
               {Platform.OS === "web" && (
               <View className="border-line border-b px-4 py-3">
-                <Text className="text-ink text-[14.5px] font-medium">Headings</Text>
-                <Text className="text-ink-3 mt-0.5 text-[12.5px]">The typeface for titles like "Today" and note names.</Text>
+                <Text className="text-ink text-[15px] font-medium">Headings</Text>
+                <Text className="text-ink-3 mt-0.5 text-[13px]">The typeface for titles like "Today" and note names.</Text>
                 <View className="mt-3 flex-row flex-wrap gap-2">
                   {(
                     [
@@ -305,12 +305,12 @@ export default function SettingsScreen() {
                         className={`min-w-[120px] flex-1 rounded-[12px] border px-3 py-2.5 ${on ? "border-accent bg-accent/[0.07]" : "border-line hover:bg-chip"}`}
                       >
                         <Text
-                          className="text-ink text-[22px] font-bold"
+                          className="text-ink text-[20px] font-bold"
                           style={Platform.OS === "web" ? ({ fontFamily: HEADING_STACKS[f.key].family, letterSpacing: HEADING_STACKS[f.key].tracking } as object) : undefined}
                         >
                           Today
                         </Text>
-                        <Text className={`mt-0.5 text-[12.5px] ${on ? "text-accent font-semibold" : "text-ink-3"}`}>{f.label}</Text>
+                        <Text className={`mt-0.5 text-[13px] ${on ? "text-accent font-semibold" : "text-ink-3"}`}>{f.label}</Text>
                       </Pressable>
                     );
                   })}
@@ -318,8 +318,8 @@ export default function SettingsScreen() {
               </View>
               )}
               <View className="px-4 py-3">
-                <Text className="text-ink text-[14.5px] font-medium">Accent</Text>
-                <Text className="text-ink-3 mt-0.5 text-[12.5px]">Buttons, highlights and today's date.</Text>
+                <Text className="text-ink text-[15px] font-medium">Accent</Text>
+                <Text className="text-ink-3 mt-0.5 text-[13px]">Buttons, highlights and today's date.</Text>
                 <View className="mt-3 flex-row flex-wrap gap-2">
                   {ACCENTS.map((a) => {
                     const on = a.key === accent;
@@ -412,7 +412,7 @@ export default function SettingsScreen() {
           <Row title="Sync" detail={sync.detail ?? "All changes saved"}>
             <View className="flex-row items-center gap-2">
               <View style={{ width: 8, height: 8, borderRadius: 99, backgroundColor: sync.color }} />
-              <Text className="text-ink-2 text-[13.5px] font-medium">{sync.title}</Text>
+              <Text className="text-ink-2 text-[14px] font-medium">{sync.title}</Text>
             </View>
           </Row>
           <Row title="Account" detail="Name, email, password, and deleting your account" onPress={() => router.push("/account")}>
@@ -434,21 +434,21 @@ export default function SettingsScreen() {
             <Group>
               <View className="border-line flex-row items-center gap-2 border-b px-4 py-3">
                 <Keyboard size={15} color={c.ink2} strokeWidth={2} />
-                <Text className="text-ink text-[14.5px] font-medium">Keyboard shortcuts</Text>
+                <Text className="text-ink text-[15px] font-medium">Keyboard shortcuts</Text>
               </View>
               <Shortcut keys={[MOD, "K"]} label="Search everything" />
               <Shortcut keys={["⌥", "1–4"]} label="Ideas, Notes, Tasks, Resources" />
               <Shortcut keys={["Enter"]} label="Add the task you're typing" />
               <Shortcut keys={[MOD, "Enter"]} label="Add a task from anywhere in the box" />
               <View className="flex-row items-center px-4 py-2.5">
-                <Text className="text-ink-2 flex-1 text-[13.5px]">Close a dialog or menu</Text>
+                <Text className="text-ink-2 flex-1 text-[14px]">Close a dialog or menu</Text>
                 <View className="bg-chip border-line rounded-[6px] border px-1.5 py-0.5">
                   <Text className="text-ink-2 text-[12px] font-semibold">Esc</Text>
                 </View>
               </View>
             </Group>
           )}
-          <Text className="text-ink-3 mt-4 text-[12.5px] leading-[19px]">
+          <Text className="text-ink-3 mt-4 text-[13px] leading-[19px]">
             Your notes, ideas, tasks and resources are stored in your account and visible only to you. Dictation in Chrome and Edge is transcribed by the browser's speech service; Nox doesn't record or keep the audio.
           </Text>
         </>,
@@ -461,7 +461,7 @@ export default function SettingsScreen() {
       <Pressable onPress={() => goBack("/tasks")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Back" className="hover:bg-chip -ml-2 h-9 w-9 items-center justify-center rounded-[10px]">
         <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
       </Pressable>
-      <Text className="text-ink font-serif text-[28px] font-bold">Settings</Text>
+      <Text className="text-ink font-serif text-[30px] font-bold">Settings</Text>
     </View>
   );
 

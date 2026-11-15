@@ -11,7 +11,7 @@ export function TagChip({ tag, size = "md", onRemove }: { tag: string; size?: "s
   const label = tag.startsWith("#") ? tag : `#${tag}`;
   const body = (
     <>
-      <Text style={{ color }} className={size === "sm" ? "text-[11px] font-semibold" : "text-[12.5px] font-semibold"}>
+      <Text style={{ color }} className={size === "sm" ? "text-[11px] font-semibold" : "text-[13px] font-semibold"}>
         {label}
       </Text>
       {onRemove && <X size={11} color={color} strokeWidth={2.6} />}

@@ -91,7 +91,7 @@ export function BlockList({
                   placeholderTextColor={c.ink3}
                   minHeight={30}
                   accessibilityLabel="Heading"
-                  className="text-ink mt-2 font-serif text-[21px] font-bold leading-[28px]"
+                  className="text-ink mt-2 font-serif text-[20px] font-bold leading-[28px]"
                 />
               );
             case "paragraph":

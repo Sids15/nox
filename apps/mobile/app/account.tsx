@@ -99,11 +99,11 @@ export default function AccountScreen() {
       <>
         {opts.icon}
         <View className="min-w-0 flex-1">
-          <Text style={opts.danger ? { color: c.high } : undefined} className={`text-[14.5px] font-medium ${opts.danger ? "" : "text-ink"}`}>
+          <Text style={opts.danger ? { color: c.high } : undefined} className={`text-[15px] font-medium ${opts.danger ? "" : "text-ink"}`}>
             {opts.title}
           </Text>
           {opts.detail ? (
-            <Text numberOfLines={2} className="text-ink-3 mt-0.5 text-[12.5px]">
+            <Text numberOfLines={2} className="text-ink-3 mt-0.5 text-[13px]">
               {opts.detail}
             </Text>
           ) : null}
@@ -127,7 +127,7 @@ export default function AccountScreen() {
   );
   const section = (title: string, intro: string, body: ReactNode) => (
     <View className="mt-8">
-      <Text className="text-ink font-serif text-[19px] font-bold">{title}</Text>
+      <Text className="text-ink font-serif text-[20px] font-bold">{title}</Text>
       <Text className="text-ink-3 mb-3 mt-0.5 text-[13px]">{intro}</Text>
       {body}
     </View>
@@ -137,7 +137,7 @@ export default function AccountScreen() {
       <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink font-serif text-[24px] font-bold">
         {n}
       </Text>
-      <Text className="text-ink-3 text-[12.5px]">{label}</Text>
+      <Text className="text-ink-3 text-[13px]">{label}</Text>
     </View>
   );
 
@@ -153,13 +153,13 @@ export default function AccountScreen() {
           <Text className="text-ink-2 text-[14px] font-semibold">Settings</Text>
         </Pressable>
       </View>
-      <Text className="text-ink mt-2 font-serif text-[28px] font-bold">Account</Text>
+      <Text className="text-ink mt-2 font-serif text-[30px] font-bold">Account</Text>
 
       {/* Profile */}
       <View className="border-line bg-surface mt-5 rounded-[16px] border p-5">
         <View className="flex-row items-center gap-4">
           <View className="bg-accent/[0.14] h-16 w-16 items-center justify-center rounded-full">
-            <Text className="text-accent font-serif text-[22px] font-bold">{initials}</Text>
+            <Text className="text-accent font-serif text-[20px] font-bold">{initials}</Text>
           </View>
           <View className="min-w-0 flex-1">
             {nameDraft !== null ? (
@@ -173,18 +173,18 @@ export default function AccountScreen() {
                 placeholder="Your name"
                 placeholderTextColor={c.ink3}
                 accessibilityLabel="Your name"
-                className="text-ink border-accent rounded-[9px] border px-2 text-[18px] font-semibold"
+                className="text-ink border-accent rounded-[9px] border px-2 text-[17px] font-semibold"
                 style={{ height: 36, outlineWidth: 0 } as object}
               />
             ) : (
               <Pressable onPress={() => setNameDraft(currentName || name)} accessibilityRole="button" accessibilityLabel={`Name: ${name}. Edit`} className="group -ml-2 flex-row items-center gap-2 self-start rounded-[9px] px-2 py-1 hover:bg-chip">
-                <Text numberOfLines={1} className="text-ink text-[19px] font-semibold">
+                <Text numberOfLines={1} className="text-ink text-[20px] font-semibold">
                   {name}
                 </Text>
                 <Pencil size={13} color={c.ink3} strokeWidth={2} />
               </Pressable>
             )}
-            <Text numberOfLines={1} className="text-ink-3 mt-0.5 text-[13.5px]">
+            <Text numberOfLines={1} className="text-ink-3 mt-0.5 text-[14px]">
               {email || "Not signed in"}
               {nameBusy ? " · saving…" : ""}
             </Text>
@@ -231,8 +231,8 @@ export default function AccountScreen() {
         "How you get into your account.",
         group(
           <>
-            {row({ icon: <Mail size={17} color={c.ink2} strokeWidth={2} />, title: "Email", detail: email || "—", onPress: () => setEmailOpen(true), right: <Text className="text-accent text-[13.5px] font-semibold">Change</Text> })}
-            {row({ icon: <Lock size={17} color={c.ink2} strokeWidth={2} />, title: "Password", detail: "You'll sign in again after changing it.", onPress: () => setPwOpen(true), right: <Text className="text-accent text-[13.5px] font-semibold">Change</Text> })}
+            {row({ icon: <Mail size={17} color={c.ink2} strokeWidth={2} />, title: "Email", detail: email || "—", onPress: () => setEmailOpen(true), right: <Text className="text-accent text-[14px] font-semibold">Change</Text> })}
+            {row({ icon: <Lock size={17} color={c.ink2} strokeWidth={2} />, title: "Password", detail: "You'll sign in again after changing it.", onPress: () => setPwOpen(true), right: <Text className="text-accent text-[14px] font-semibold">Change</Text> })}
             {row({ icon: <LogOut size={17} color={c.ink2} strokeWidth={2} />, title: "Sign out of this device", detail: "Your notebook stays in your account.", onPress: () => void signOut(), last: true })}
           </>,
         ),
@@ -300,7 +300,7 @@ function ModalCard({
         }
       >
         <View className="mb-4 flex-row items-center justify-between">
-          <Text className="text-ink text-[18px] font-bold tracking-[-0.01em]">{title}</Text>
+          <Text className="text-ink text-[17px] font-bold tracking-[-0.01em]">{title}</Text>
           {desktop && (
             <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="Close">
               <X size={17} color={c.ink3} strokeWidth={2} />
@@ -383,7 +383,7 @@ function ModalButtons({
   return (
     <View className="mt-5 flex-row gap-3">
       <Pressable onPress={onCancel} className="bg-chip border-line flex-1 items-center rounded-[13px] border py-[13px]">
-        <Text className="text-ink-2 text-[14.5px] font-semibold">Cancel</Text>
+        <Text className="text-ink-2 text-[15px] font-semibold">Cancel</Text>
       </Pressable>
       <Pressable
         onPress={onConfirm}
@@ -399,7 +399,7 @@ function ModalButtons({
           elevation: valid ? 6 : 0,
         }}
       >
-        <Text className="text-[14.5px] font-bold text-white">{busy ? "…" : confirmLabel}</Text>
+        <Text className="text-[15px] font-bold text-white">{busy ? "…" : confirmLabel}</Text>
       </Pressable>
     </View>
   );
@@ -460,7 +460,7 @@ function ChangePasswordModal({
 
   const eye = (
     <Pressable onPress={() => setShow((s) => !s)} hitSlop={8}>
-      {show ? <EyeOff size={17} color={c.ink3} strokeWidth={1.8} /> : <Eye size={17} color={c.ink3} strokeWidth={1.8} />}
+      {show ? <EyeOff size={17} color={c.ink3} strokeWidth={2} /> : <Eye size={17} color={c.ink3} strokeWidth={2} />}
     </Pressable>
   );
 
@@ -473,7 +473,7 @@ function ChangePasswordModal({
         <ModalField
           {...fieldProps}
           autoFocus
-          icon={<Lock size={16} color={c.ink3} strokeWidth={1.8} />}
+          icon={<Lock size={16} color={c.ink3} strokeWidth={2} />}
           right={eye}
           value={pw}
           onChangeText={setPw}
@@ -483,14 +483,14 @@ function ChangePasswordModal({
         />
         <View className="mb-3.5 mt-2 flex-row items-center gap-1.5">
           <Check size={12} color={longEnough ? c.success : c.ink3} strokeWidth={2.6} />
-          <Text style={{ color: longEnough ? c.success : c.ink3 }} className="text-[10.5px]">at least 8 characters</Text>
+          <Text style={{ color: longEnough ? c.success : c.ink3 }} className="text-[11px]">at least 8 characters</Text>
         </View>
 
         <FieldLabel desktop={desktop}>CONFIRM PASSWORD</FieldLabel>
         <ModalField
           {...fieldProps}
           error={mismatch}
-          icon={<Lock size={16} color={c.ink3} strokeWidth={1.8} />}
+          icon={<Lock size={16} color={c.ink3} strokeWidth={2} />}
           right={eye}
           value={confirm}
           onChangeText={setConfirm}
@@ -584,7 +584,7 @@ function DeleteAccountModal({
           lineColor={c.line}
           accentColor={c.high}
           autoFocus
-          icon={<Mail size={16} color={c.ink3} strokeWidth={1.8} />}
+          icon={<Mail size={16} color={c.ink3} strokeWidth={2} />}
           value={typed}
           onChangeText={setTyped}
           placeholder={email || "your email"}
@@ -663,7 +663,7 @@ function ChangeEmailModal({
       <ModalCard desktop={desktop} themeVars={themeVars} onClose={close} title="Change email">
         <View className="bg-chip mb-3.5 h-[42px] flex-row items-center gap-2.5 rounded-[11px] px-3.5">
           <Text className="text-ink-3 text-[12px] font-semibold">Current</Text>
-          <Text className="text-ink-2 text-[12.5px]">{currentEmail || "—"}</Text>
+          <Text className="text-ink-2 text-[13px]">{currentEmail || "—"}</Text>
         </View>
 
         <FieldLabel desktop={desktop}>NEW EMAIL</FieldLabel>
@@ -674,7 +674,7 @@ function ChangeEmailModal({
           lineColor={c.line}
           accentColor={c.accent}
           autoFocus
-          icon={<Mail size={16} color={c.ink3} strokeWidth={1.8} />}
+          icon={<Mail size={16} color={c.ink3} strokeWidth={2} />}
           value={email}
           onChangeText={setEmail}
           placeholder="new@email.com"

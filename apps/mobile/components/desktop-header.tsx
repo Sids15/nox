@@ -27,7 +27,7 @@ export function DesktopHeader({
     <View className="px-screen flex-row items-start justify-between pt-2">
       <View>
         <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">{title}</Text>
-        <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">{eyebrow}</Text>
+        <Text className="text-ink-3 mt-0.5 text-[14px] font-medium">{eyebrow}</Text>
       </View>
       <View className="flex-row items-center gap-2.5">
         {children}
@@ -39,7 +39,7 @@ export function DesktopHeader({
           className="bg-accent hover:opacity-90 h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-3.5"
         >
           <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
-          <Text className="text-on-accent text-[13.5px] font-semibold">{actionLabel}</Text>
+          <Text className="text-on-accent text-[14px] font-semibold">{actionLabel}</Text>
         </Pressable>
       </View>
     </View>

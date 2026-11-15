@@ -26,7 +26,7 @@ import {
   Plus,
   Quote,
   Search,
-  SlidersHorizontal,
+  ListFilter,
   X,
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -285,7 +285,7 @@ export default function ResourcesScreen() {
         placeholder={activeTag ? `Paste a link to save it to ${activeTag.name}…` : "Paste a link and press Enter to save it…"}
         placeholderTextColor={c.ink3}
         accessibilityLabel="Paste a link to save"
-        className="text-ink flex-1 text-[14.5px]"
+        className="text-ink flex-1 text-[15px]"
         style={{ paddingVertical: 0, outlineWidth: 0 } as object}
       />
       {looksLikeUrl(quick) ? (
@@ -497,7 +497,7 @@ export default function ResourcesScreen() {
                   {activeTag && <View className="h-3 w-3 rounded-full" style={{ backgroundColor: activeTag.color }} />}
                   <Text className="text-ink font-serif text-[30px] font-bold leading-[36px]">{scopeTitle}</Text>
                 </View>
-                <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+                <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[14px] font-medium">
                   {plural(filtered.length, "resource")}
                   {showUsed ? " · used" : ""}
                   {activeTag && kind !== "all" ? ` · ${KINDS.find((k) => k.key === kind)!.label.toLowerCase()}` : ""}
@@ -505,7 +505,7 @@ export default function ResourcesScreen() {
               </View>
               <Pressable onPress={openNew} accessibilityRole="button" accessibilityLabel="New resource" style={pressScale} className="bg-accent hover:opacity-90 mt-1 h-[36px] flex-row items-center gap-1.5 rounded-[10px] px-3.5">
                 <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
-                <Text className="text-on-accent text-[13.5px] font-semibold">New resource</Text>
+                <Text className="text-on-accent text-[14px] font-semibold">New resource</Text>
               </Pressable>
             </View>
             <View className="mt-5">{quickBar}</View>
@@ -529,7 +529,7 @@ export default function ResourcesScreen() {
       className="rounded-pill px-3 py-[6px]"
       style={{ backgroundColor: color ? (on ? color : `${color}1f`) : on ? c.ink : c.chip }}
     >
-      <Text style={{ color: color ? (on ? "#fff" : color) : on ? c.bg : c.ink2 }} className="text-[12.5px] font-semibold">
+      <Text style={{ color: color ? (on ? "#fff" : color) : on ? c.bg : c.ink2 }} className="text-[13px] font-semibold">
         {label}
       </Text>
     </Pressable>
@@ -543,7 +543,7 @@ export default function ResourcesScreen() {
             <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">
               {showUsed ? "Used" : "Resources"}
             </Text>
-            <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+            <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[14px] font-medium">
               {showUsed ? plural(usedCount, "resource") : `${savedCount} saved · ${plural(tags.length, "tag")}`}
             </Text>
           </View>
@@ -558,7 +558,7 @@ export default function ResourcesScreen() {
                 style={pressScale}
                 className={`h-[34px] w-[34px] items-center justify-center rounded-[10px] ${phoneMenu || showUsed || sort !== "newest" || view === "list" ? "bg-accent/[0.14]" : ""}`}
               >
-                <SlidersHorizontal size={17} color={showUsed || sort !== "newest" || view === "list" ? c.accent : c.ink2} strokeWidth={2} />
+                <ListFilter size={17} color={showUsed || sort !== "newest" || view === "list" ? c.accent : c.ink2} strokeWidth={2} />
               </Pressable>
             </View>
             <ProfileAvatar />
@@ -614,7 +614,7 @@ export default function ResourcesScreen() {
           {tags.map((t) => chip(tagId === t.id, t.name, () => setTagId(tagId === t.id ? null : t.id), t.color, () => setTagDialog({ tag: t })))}
           <Pressable onPress={() => setTagDialog({ tag: null })} accessibilityRole="button" accessibilityLabel="New tag" className="flex-row items-center gap-1 px-2 py-[6px]">
             <Plus size={13} color={c.ink3} strokeWidth={2.2} />
-            <Text className="text-ink-3 text-[12.5px] font-semibold">Tag</Text>
+            <Text className="text-ink-3 text-[13px] font-semibold">Tag</Text>
           </Pressable>
         </ScrollView>
 

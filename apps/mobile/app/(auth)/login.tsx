@@ -40,7 +40,7 @@ function Field({
   return (
     <View className="mt-4">
       <View className="mb-1.5 flex-row items-center justify-between">
-        <Text className="text-ink-2 text-[13.5px] font-semibold">{label}</Text>
+        <Text className="text-ink-2 text-[14px] font-semibold">{label}</Text>
         {action}
       </View>
       <Controller
@@ -52,7 +52,7 @@ function Field({
             style={{ borderWidth: 1, borderColor: error ? c.critical : focused ? c.accent : c.line }}
           >
             <TextInput
-              className="text-ink flex-1 text-[15.5px]"
+              className="text-ink flex-1 text-[15px]"
               style={{ paddingVertical: 0, outlineWidth: 0 } as object}
               value={value ?? ""}
               onChangeText={onChange}
@@ -69,7 +69,7 @@ function Field({
           </View>
         )}
       />
-      {error ? <Text className="text-critical mt-1.5 text-[12.5px]">{error}</Text> : null}
+      {error ? <Text className="text-critical mt-1.5 text-[13px]">{error}</Text> : null}
     </View>
   );
 }
@@ -186,10 +186,10 @@ export default function LoginScreen() {
     return (
       <AuthShell>
         <View className="bg-accent/[0.12] mb-6 h-14 w-14 items-center justify-center rounded-[14px]">
-          <MailCheck size={26} color={c.accent} strokeWidth={1.9} />
+          <MailCheck size={26} color={c.accent} strokeWidth={2} />
         </View>
         <Text className="text-ink font-serif text-[30px] font-bold leading-[37px] tracking-[-0.01em]">Check your email</Text>
-        <Text className="text-ink-2 mt-3 text-[15.5px] leading-[23px]">
+        <Text className="text-ink-2 mt-3 text-[15px] leading-[23px]">
           We sent a confirmation link to <Text className="text-ink font-semibold">{sentTo}</Text>. Open it on this device to
           finish setting up.
         </Text>
@@ -203,7 +203,7 @@ export default function LoginScreen() {
           className="mt-8 flex-row items-center gap-1.5 self-start"
         >
           <ArrowLeft size={16} color={c.accent} strokeWidth={2.2} />
-          <Text className="text-accent text-[14.5px] font-semibold">Back to sign in</Text>
+          <Text className="text-accent text-[15px] font-semibold">Back to sign in</Text>
         </Pressable>
       </AuthShell>
     );
@@ -216,7 +216,7 @@ export default function LoginScreen() {
       <Text className="text-ink font-serif text-[32px] font-bold leading-[39px] tracking-[-0.01em]">
         {signin ? "Welcome back" : "Create your account"}
       </Text>
-      <Text className="text-ink-2 mt-2 text-[15.5px] leading-[23px]">
+      <Text className="text-ink-2 mt-2 text-[15px] leading-[23px]">
         {signin ? "Sign in to pick up where you left off." : "Free, and it syncs between your phone and your computer."}
       </Text>
 
@@ -244,7 +244,7 @@ export default function LoginScreen() {
 
       <View className="my-6 flex-row items-center gap-3">
         <View className="bg-line h-px flex-1" />
-        <Text className="text-ink-3 text-[12.5px] font-medium">or with email</Text>
+        <Text className="text-ink-3 text-[13px] font-medium">or with email</Text>
         <View className="bg-line h-px flex-1" />
       </View>
 
@@ -282,7 +282,7 @@ export default function LoginScreen() {
         onSubmitEditing={() => void onSubmit()}
         right={
           <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={8} accessibilityRole="button" accessibilityLabel={showPw ? "Hide password" : "Show password"}>
-            {showPw ? <EyeOff size={18} color={c.ink3} strokeWidth={1.9} /> : <Eye size={18} color={c.ink3} strokeWidth={1.9} />}
+            {showPw ? <EyeOff size={18} color={c.ink3} strokeWidth={2} /> : <Eye size={18} color={c.ink3} strokeWidth={2} />}
           </Pressable>
         }
       />
@@ -302,7 +302,7 @@ export default function LoginScreen() {
 
       {serverError ? (
         <View className="bg-critical/[0.08] mt-4 rounded-[10px] px-3.5 py-2.5">
-          <Text className="text-critical text-[13.5px]">{serverError}</Text>
+          <Text className="text-critical text-[14px]">{serverError}</Text>
         </View>
       ) : null}
 
@@ -316,20 +316,20 @@ export default function LoginScreen() {
         {isSubmitting ? (
           <ActivityIndicator color={c.onAccent} />
         ) : (
-          <Text className="text-on-accent text-[15.5px] font-semibold">{signin ? "Sign in" : "Create account"}</Text>
+          <Text className="text-on-accent text-[15px] font-semibold">{signin ? "Sign in" : "Create account"}</Text>
         )}
       </Pressable>
 
       {!signin && (
-        <Text className="text-ink-3 mt-3 text-[12.5px] leading-[18px]">
+        <Text className="text-ink-3 mt-3 text-[13px] leading-[18px]">
           By creating an account you agree to the Terms and the Privacy Policy.
         </Text>
       )}
 
       <View className="mt-8 flex-row flex-wrap items-center gap-1.5">
-        <Text className="text-ink-2 text-[14.5px]">{signin ? "New to Nox?" : "Already have an account?"}</Text>
+        <Text className="text-ink-2 text-[15px]">{signin ? "New to Nox?" : "Already have an account?"}</Text>
         <Pressable onPress={() => switchMode(signin ? "signup" : "signin")} hitSlop={8} accessibilityRole="button">
-          <Text className="text-accent text-[14.5px] font-semibold">{signin ? "Create an account" : "Sign in"}</Text>
+          <Text className="text-accent text-[15px] font-semibold">{signin ? "Create an account" : "Sign in"}</Text>
         </Pressable>
       </View>
     </AuthShell>

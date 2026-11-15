@@ -103,11 +103,11 @@ export function TagDialog({
                   placeholder="Tag name, e.g. read later"
                   placeholderTextColor={c.ink3}
                   accessibilityLabel="Tag name"
-                  className="text-ink flex-1 text-[14.5px]"
+                  className="text-ink flex-1 text-[15px]"
                   style={{ paddingVertical: 0, outlineWidth: 0 } as object}
                 />
               </View>
-              {duplicate && <Text className="text-high mt-1.5 text-[12.5px]">You already have a tag with that name.</Text>}
+              {duplicate && <Text className="text-high mt-1.5 text-[13px]">You already have a tag with that name.</Text>}
 
               <Text className="text-ink-2 mb-2 mt-4 text-[13px] font-semibold">Colour</Text>
               <View className="flex-row flex-wrap gap-2">
@@ -127,9 +127,9 @@ export function TagDialog({
               </View>
 
               <View className="mt-4 flex-row items-center">
-                <Text className="text-ink-3 mr-2 text-[12.5px]">Preview</Text>
+                <Text className="text-ink-3 mr-2 text-[13px]">Preview</Text>
                 <View className="rounded-pill px-3 py-[5px]" style={{ backgroundColor: `${color}1f` }}>
-                  <Text style={{ color }} className="text-[12.5px] font-semibold">
+                  <Text style={{ color }} className="text-[13px] font-semibold">
                     {trimmed || "tag"}
                   </Text>
                 </View>
@@ -139,7 +139,7 @@ export function TagDialog({
                 {tag && onDelete && (
                   <Pressable onPress={() => setConfirming(true)} accessibilityRole="button" className="hover:bg-chip -ml-2 h-10 flex-row items-center gap-1.5 rounded-[10px] px-2.5">
                     <Trash2 size={14} color={c.high} strokeWidth={2} />
-                    <Text className="text-high text-[13.5px] font-semibold">Delete</Text>
+                    <Text className="text-high text-[14px] font-semibold">Delete</Text>
                   </Pressable>
                 )}
                 <View className="flex-1" />

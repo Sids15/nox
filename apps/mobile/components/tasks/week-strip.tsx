@@ -55,7 +55,7 @@ export function WeekStrip({
               style={pressScale}
               className="hover:bg-chip mr-1 h-[28px] justify-center rounded-[8px] px-2.5"
             >
-              <Text className="text-accent text-[12.5px] font-semibold">Today</Text>
+              <Text className="text-accent text-[13px] font-semibold">Today</Text>
             </Pressable>
           )}
           <Pressable

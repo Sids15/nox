@@ -108,7 +108,7 @@ export function TimePicker({
         />
         {parsed && (
           <Pressable onPress={applyTyped} hitSlop={6} className="bg-accent rounded-[6px] px-2 py-1">
-            <Text className="text-on-accent text-[11.5px] font-bold">Set {formatTime12(parsed)}</Text>
+            <Text className="text-on-accent text-[12px] font-bold">Set {formatTime12(parsed)}</Text>
           </Pressable>
         )}
       </View>
@@ -171,7 +171,7 @@ function QuickRow({ label, hint, selected, onPress }: { label: string; hint: str
       accessibilityState={{ selected }}
       className={`min-h-[36px] flex-row items-center gap-2 rounded-[8px] px-2.5 ${selected ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
     >
-      <Text className={`flex-1 text-[13.5px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>{label}</Text>
+      <Text className={`flex-1 text-[14px] ${selected ? "text-accent font-semibold" : "text-ink"}`}>{label}</Text>
       {hint ? (
         <Text style={TABULAR} className={`text-[12px] ${selected ? "text-accent" : "text-ink-3"}`}>
           {hint}
@@ -190,7 +190,7 @@ function QuickPill({ label, selected, onPress }: { label: string; selected: bool
       accessibilityState={{ selected }}
       className={`rounded-pill px-3 py-[6px] ${selected ? "bg-accent" : "bg-chip hover:bg-elev"}`}
     >
-      <Text className={`text-[12.5px] font-semibold ${selected ? "text-on-accent" : "text-ink-2"}`}>{label}</Text>
+      <Text className={`text-[13px] font-semibold ${selected ? "text-on-accent" : "text-ink-2"}`}>{label}</Text>
     </Pressable>
   );
 }

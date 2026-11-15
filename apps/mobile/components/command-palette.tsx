@@ -204,11 +204,11 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
                       <h.icon size={15} color={on ? c.accent : c.ink2} strokeWidth={2} />
                     </View>
                     <View className="min-w-0 flex-1">
-                      <Text numberOfLines={1} className="text-ink text-[14.5px] font-medium">
+                      <Text numberOfLines={1} className="text-ink text-[15px] font-medium">
                         {h.title}
                       </Text>
                       {h.detail ? (
-                        <Text numberOfLines={1} className="text-ink-3 mt-0.5 text-[12.5px]">
+                        <Text numberOfLines={1} className="text-ink-3 mt-0.5 text-[13px]">
                           {h.detail}
                         </Text>
                       ) : null}

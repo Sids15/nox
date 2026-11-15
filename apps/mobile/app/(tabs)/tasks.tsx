@@ -58,9 +58,9 @@ function CalendarLeaf({ dateKey }: { dateKey: string }) {
       style={{ shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 }}
     >
       <View className="items-center py-[3px]" style={{ backgroundColor: c.accent }}>
-        <Text className="text-on-accent text-[10px] font-bold tracking-[0.08em]">{month}</Text>
+        <Text className="text-on-accent text-[11px] font-bold tracking-[0.08em]">{month}</Text>
       </View>
-      <Text style={TABULAR} className="text-ink py-1 text-center font-serif text-[26px] font-bold leading-[32px]">
+      <Text style={TABULAR} className="text-ink py-1 text-center font-serif text-[24px] font-bold leading-[32px]">
         {Number(dateKey.slice(8))}
       </Text>
     </View>
@@ -116,7 +116,7 @@ function Section({
   return (
     <View className="mt-6">
       <View className="border-line mb-0.5 flex-row items-center justify-between border-b pb-2 pl-1">
-        <Text className={`text-[13.5px] font-bold tracking-[-0.01em] ${tone === "overdue" ? "text-high" : "text-ink"}`}>
+        <Text className={`text-[14px] font-bold tracking-[-0.01em] ${tone === "overdue" ? "text-high" : "text-ink"}`}>
           {title}
           {count != null ? <Text style={TABULAR} className="text-ink-3 font-semibold">{`  ${count}`}</Text> : null}
         </Text>
@@ -153,7 +153,7 @@ function Fold({
         className="border-line hover:bg-surface flex-row items-center gap-1.5 rounded-t-[6px] border-b pb-2 pl-1 pt-1"
       >
         <Chevron size={15} color={c.ink3} strokeWidth={2.2} />
-        <Text className="text-ink-2 text-[13.5px] font-bold tracking-[-0.01em]">
+        <Text className="text-ink-2 text-[14px] font-bold tracking-[-0.01em]">
           {title}
           <Text style={TABULAR} className="text-ink-3 font-semibold">{`  ${count}`}</Text>
         </Text>
@@ -355,12 +355,12 @@ export default function TasksScreen() {
           </Text>
           {/* Two runs that wrap as wholes — a narrow pane breaks between them, never inside "1 of 12". */}
           <View className="mt-0.5 flex-row flex-wrap">
-            <Text className="text-ink-3 mr-2 text-[13.5px] font-medium">
+            <Text className="text-ink-3 mr-2 text-[14px] font-medium">
               {isDesktop ? LONG_WEEKDAY[dayOfWeek(focus)] : LONG_WEEKDAY[dayOfWeek(focus)]!.slice(0, 3)}
               {progressText ? "  ·" : ""}
             </Text>
             {progressText && (
-              <Text style={TABULAR} className="text-ink-3 text-[13.5px] font-medium">
+              <Text style={TABULAR} className="text-ink-3 text-[14px] font-medium">
                 {progressText}
               </Text>
             )}
@@ -385,7 +385,7 @@ export default function TasksScreen() {
                   style={on ? { shadowColor: "#1B2131", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
                 >
                   <Icon size={15} color={on ? c.ink : c.ink3} strokeWidth={2} />
-                  {isDesktop && !tight && <Text className={`text-[12.5px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>}
+                  {isDesktop && !tight && <Text className={`text-[13px] font-semibold ${on ? "text-ink" : "text-ink-3"}`}>{label}</Text>}
                 </Pressable>
               );
             })}
@@ -416,7 +416,7 @@ export default function TasksScreen() {
             >
               <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
               {/* Beside an open task the pane is narrow: the button keeps its icon and loses its label. */}
-              {!tight && <Text className="text-on-accent text-[13.5px] font-semibold">New task</Text>}
+              {!tight && <Text className="text-on-accent text-[14px] font-semibold">New task</Text>}
             </Pressable>
           ) : (
             <ProfileAvatar />
@@ -494,7 +494,7 @@ export default function TasksScreen() {
               tone="overdue"
               action={
                 <Pressable onPress={moveOverdueToToday} hitSlop={6} accessibilityRole="button" className="hover:bg-chip rounded-[7px] px-2 py-1">
-                  <Text className="text-accent text-[12.5px] font-semibold">Move to today</Text>
+                  <Text className="text-accent text-[13px] font-semibold">Move to today</Text>
                 </Pressable>
               }
             >

@@ -77,7 +77,7 @@ export function IdeaCard({
               {has("audio") && <Mic size={12} color={c.ink3} strokeWidth={2} />}
               {has("image") && <ImageIcon size={12} color={c.ink3} strokeWidth={2} />}
               {has("link") && <Link2 size={12} color={c.ink3} strokeWidth={2} />}
-              <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[11.5px]">
+              <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 text-[12px]">
                 {relativeAge(idea.updated_at)}
               </Text>
             </View>

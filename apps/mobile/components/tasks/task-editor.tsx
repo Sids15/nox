@@ -253,7 +253,7 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
         </View>
 
         <View className="bg-line mx-[20px] mt-8 h-px" />
-        <Text style={TABULAR} className="text-ink-3 px-screen mt-3 text-[12.5px]">
+        <Text style={TABULAR} className="text-ink-3 px-screen mt-3 text-[13px]">
           Created {shortDate(task.created_at)} · Edited {relativeFromNow(task.updated_at)}
           {isDesktop ? " · Changes save automatically" : ""}
         </Text>

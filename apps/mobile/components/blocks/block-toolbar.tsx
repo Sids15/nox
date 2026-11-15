@@ -101,7 +101,7 @@ export function BlockToolbar({
           ) : dictation.listening ? (
             <View className="flex-1 flex-row items-center gap-3 px-2">
               <View className="bg-accent h-2.5 w-2.5 rounded-full" />
-              <Text numberOfLines={1} className={`flex-1 text-[13.5px] ${dictation.interim ? "text-ink" : "text-ink-3"}`}>
+              <Text numberOfLines={1} className={`flex-1 text-[14px] ${dictation.interim ? "text-ink" : "text-ink-3"}`}>
                 {dictation.interim || "Listening… speak and your words appear in the text"}
               </Text>
               <Pressable onPress={dictation.stop} accessibilityRole="button" className="bg-accent rounded-[9px] px-3.5 py-1.5">
@@ -110,7 +110,7 @@ export function BlockToolbar({
             </View>
           ) : (
             <View className={`flex-1 flex-row items-center ${labelled ? "gap-1" : "justify-around"}`}>
-              {labelled && <Text className="text-ink-3 mr-2 pl-2 text-[12.5px] font-medium">Add</Text>}
+              {labelled && <Text className="text-ink-3 mr-2 pl-2 text-[13px] font-medium">Add</Text>}
               {[
               { key: "h", label: "Heading", Icon: Heading, onPress: onAddHeading, on: true },
               { key: "p", label: "Text", Icon: Pilcrow, onPress: onAddParagraph, on: true },
