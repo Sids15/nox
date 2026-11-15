@@ -12,4 +12,7 @@ module.exports = {
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
   presets: [require("nativewind/preset"), noxPreset],
+  // `hover:` styles only where a real pointer can hover. On a phone the browser fakes a hover on tap
+  // and leaves it stuck until you tap elsewhere — rows and buttons stayed highlighted.
+  future: { hoverOnlyWhenSupported: true },
 };

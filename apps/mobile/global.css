@@ -66,6 +66,64 @@ body {
   letter-spacing: var(--nox-display-tracking, -0.022em) !important;
 }
 
+/*
+ * Phone (touch) behaviour, so the web app feels installed rather than like a page:
+ * - no grey flash when tapping anything tappable (our press states give the feedback);
+ * - no font inflation in landscape;
+ * - the page itself doesn't rubber-band or pull-to-refresh (inner lists still scroll and bounce);
+ * - taps fire immediately (no double-tap-zoom wait) and holding a control doesn't select its label.
+ */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+body {
+  overscroll-behavior: none;
+}
+[role="button"],
+[role="tab"],
+[role="switch"],
+[role="checkbox"],
+[role="radio"],
+button,
+a {
+  touch-action: manipulation;
+}
+[role="button"],
+[role="tab"],
+[role="switch"],
+[role="checkbox"],
+[role="radio"],
+button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/*
+ * iOS Safari zooms into any field whose text is under 16px when it's focused, and doesn't zoom back.
+ * On touch screens, small text fields (the 10–15px sizes used across Nox) render at 16px instead.
+ * Never fixed with maximum-scale=1: that blocks pinch-zoom for people who need it.
+ */
+@media (pointer: coarse) {
+  input[class*="text-[10"],
+  input[class*="text-[11"],
+  input[class*="text-[12"],
+  input[class*="text-[13"],
+  input[class*="text-[14"],
+  input[class*="text-[15"],
+  textarea[class*="text-[10"],
+  textarea[class*="text-[11"],
+  textarea[class*="text-[12"],
+  textarea[class*="text-[13"],
+  textarea[class*="text-[14"],
+  textarea[class*="text-[15"] {
+    font-size: 16px !important;
+  }
+}
+
 /* Text selection and the caret carry the accent instead of the browser's blue. */
 ::selection {
   background: rgb(var(--accent) / 0.22);

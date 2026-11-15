@@ -33,6 +33,7 @@ import { SyncChrome } from "../components/sync-banner";
 import { useAuthDeepLink } from "../lib/use-auth-deeplink";
 import { useNotifications } from "../lib/use-notifications";
 import { useHeadingFont } from "../lib/heading-font";
+import { useWebViewport } from "../lib/web-viewport";
 
 initSentry();
 // Wire real connectivity so offline writes pause (queue) instead of failing, and register every
@@ -51,6 +52,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   const themeVars = useThemeVars();
   useHeadingFont();
   const { bg } = useThemeColors();
+  useWebViewport(bg, theme === "dark");
 
   useEffect(() => {
     colorScheme.set(theme);
