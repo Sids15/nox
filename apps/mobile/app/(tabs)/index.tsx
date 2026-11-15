@@ -93,13 +93,12 @@ export default function IdeasScreen() {
     openIdea(id);
   };
   // Catch an idea without leaving the board: type, Enter, it lands in Raw.
-  const [capture, setCapture] = useState("");
   const [caught, setCaught] = useState<string | null>(null);
   const quickCapture = () => {
-    const title = capture.trim().slice(0, 200);
+    const title = search.trim().slice(0, 200);
     if (!title) return;
     createIdea.create({ title, description: null, content: [], priority: "medium", status: "raw", tags: [] });
-    setCapture("");
+    setSearch("");
     setCaught(title);
     setTimeout(() => setCaught(null), 2500);
   };
@@ -207,51 +206,43 @@ export default function IdeasScreen() {
         </View>
       </Popover>
 
-      {/* Search */}
-      <View className="bg-surface border-line mt-4 h-[42px] flex-row items-center gap-2.5 rounded-[11px] border px-3">
+      {/* One field: it filters the board as you type, and Enter adds what you typed as a new idea. */}
+      <View className="bg-surface border-line mt-4 h-[44px] flex-row items-center gap-2.5 rounded-[12px] border px-3">
         <Search size={15} color={c.ink3} strokeWidth={2} />
         <TextInput
           value={search}
           onChangeText={setSearch}
-          placeholder="Search ideas, notes inside them, tags…"
+          onSubmitEditing={show === "active" ? quickCapture : undefined}
+          submitBehavior="submit"
+          placeholder={show === "active" ? "Search your ideas, or type a new one and press Enter" : "Search ideas, notes inside them, tags…"}
           placeholderTextColor={c.ink3}
-          accessibilityLabel="Search ideas"
+          accessibilityLabel="Search ideas or add a new one"
+          maxLength={200}
           className="text-ink flex-1 text-[14.5px]"
           style={{ paddingVertical: 0, outlineWidth: 0 } as object}
         />
-        {search ? (
-          <Pressable onPress={() => setSearch("")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear search">
-            <X size={15} color={c.ink3} strokeWidth={2.2} />
-          </Pressable>
+        {caught ? (
+          <Text className="text-success text-[12.5px] font-semibold">Added to Raw</Text>
+        ) : search.trim() ? (
+          <>
+            {show === "active" && (
+              <Pressable
+                onPress={quickCapture}
+                accessibilityRole="button"
+                accessibilityLabel={`Add "${search.trim()}" as a new idea`}
+                style={pressScale}
+                className="bg-accent h-7 flex-row items-center gap-1 rounded-[8px] px-2.5"
+              >
+                <Plus size={12} color={c.onAccent} strokeWidth={2.6} />
+                <Text className="text-on-accent text-[12.5px] font-semibold">Add idea</Text>
+              </Pressable>
+            )}
+            <Pressable onPress={() => setSearch("")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear">
+              <X size={15} color={c.ink3} strokeWidth={2.2} />
+            </Pressable>
+          </>
         ) : null}
       </View>
-
-      {show === "active" && (
-        <View className="mt-2.5 flex-row items-center gap-2.5 px-1">
-          <Lightbulb size={15} color={capture.trim() ? c.accent : c.ink3} strokeWidth={2} />
-          <TextInput
-            value={capture}
-            onChangeText={setCapture}
-            onSubmitEditing={quickCapture}
-            submitBehavior="submit"
-            placeholder="Catch an idea: type it and press Enter"
-            placeholderTextColor={c.ink3}
-            accessibilityLabel="Catch an idea"
-            maxLength={200}
-            className="text-ink flex-1 text-[14.5px]"
-            style={{ paddingVertical: 6, outlineWidth: 0 } as object}
-          />
-          {caught ? (
-            <Text numberOfLines={1} className="text-success max-w-[200px] text-[12.5px] font-semibold">
-              Added to Raw
-            </Text>
-          ) : capture.trim() ? (
-            <Pressable onPress={quickCapture} accessibilityRole="button" style={pressScale} className="bg-accent h-7 justify-center rounded-[8px] px-2.5">
-              <Text className="text-on-accent text-[12.5px] font-semibold">Add</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      )}
 
       {filtersActive && (
         <View className="mt-3 flex-row flex-wrap items-center gap-1.5">
@@ -316,7 +307,11 @@ export default function IdeasScreen() {
           {search ? "No ideas match" : show === "dropped" ? "Nothing dropped" : show === "archived" ? "Nothing archived" : "No ideas here"}
         </Text>
         <Text className="text-ink-3 mt-1 text-center text-[13px]">
-          {search ? "Try different words, or clear the filters." : "Ideas you drop or archive land here, and can be brought back."}
+          {search
+            ? show === "active"
+              ? "Press Enter to add it as a new idea, or try different words."
+              : "Try different words, or clear the filters."
+            : "Ideas you drop or archive land here, and can be brought back."}
         </Text>
       </View>
     );
