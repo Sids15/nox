@@ -24,7 +24,6 @@ import { confirmDelete, plural } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { NoteEditor } from "../../components/notes/note-editor";
 import { NoteRow } from "../../components/notes/note-row";
-import { PinnedNoteCard } from "../../components/notes/pinned-note-card";
 import { groupNotesByDate, noteMatches } from "../../components/notes/note-utils";
 import { TagChip } from "../../components/tag-chip";
 import { tagCounts } from "../../components/tag-editor";
@@ -533,17 +532,8 @@ export default function NotesScreen() {
             )
           ) : (
             <>
-              {pinned.length > 0 && (
-                <>
-                  <SectionLabel>PINNED</SectionLabel>
-                  <View className="flex-row gap-[10px]">
-                    {pinned.slice(0, 2).map((n) => (
-                      <PinnedNoteCard key={n.id} note={n} onPress={() => openNote(n)} />
-                    ))}
-                    {pinned.length === 1 && <View className="flex-1" />}
-                  </View>
-                </>
-              )}
+              {/* Pinned notes as the same rows as the rest — all of them, not only the first two. */}
+              {pinned.length > 0 && <NoteList notes={pinned} onOpen={openNote} folderNameOf={folderNameOf} />}
 
               {folders.length > 0 && !selectedTag && !search && (
                 <>
