@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
-    "icons": "tauri icon ../mobile/assets/icon.png",
+    "icons": "tauri icon icon-source.png",
     "tauri": "tauri"
   },
   "devDependencies": {
