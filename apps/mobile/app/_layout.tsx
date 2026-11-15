@@ -32,6 +32,7 @@ import { DialogHost } from "../components/dialog-host";
 import { SyncChrome } from "../components/sync-banner";
 import { useAuthDeepLink } from "../lib/use-auth-deeplink";
 import { useNotifications } from "../lib/use-notifications";
+import { useHeadingFont } from "../lib/heading-font";
 
 initSentry();
 // Wire real connectivity so offline writes pause (queue) instead of failing, and register every
@@ -48,6 +49,7 @@ registerMutationDefaults(queryClient);
 function ThemeProvider({ children }: { children: ReactNode }) {
   const theme = usePrefs((s) => s.theme);
   const themeVars = useThemeVars();
+  useHeadingFont();
   const { bg } = useThemeColors();
 
   useEffect(() => {

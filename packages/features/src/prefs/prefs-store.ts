@@ -21,6 +21,9 @@ export interface CalendarPrefs {
   askWhenAdding: boolean;
 }
 
+/** The typeface for titles and headings: the system sans, a lighter modern serif, or the classic serif. */
+export type HeadingFont = "sans" | "modern" | "classic";
+
 export const DEFAULT_CALENDAR: CalendarPrefs = {
   view: "list",
   startHour: 7,
@@ -44,6 +47,8 @@ interface PrefsState {
   onboarded: boolean;
   calendar: CalendarPrefs;
   setCalendar: (patch: Partial<CalendarPrefs>) => void;
+  headingFont: HeadingFont;
+  setHeadingFont: (f: HeadingFont) => void;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -73,6 +78,8 @@ export const usePrefs = create<PrefsState>()(
       onboarded: false,
       calendar: DEFAULT_CALENDAR,
       setCalendar: (patch) => set((s) => ({ calendar: { ...s.calendar, ...patch } })),
+      headingFont: "sans",
+      setHeadingFont: (headingFont) => set({ headingFont }),
       hydrated: false,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -113,6 +120,7 @@ export const usePrefs = create<PrefsState>()(
         lastCarryoverOn: s.lastCarryoverOn,
         onboarded: s.onboarded,
         calendar: s.calendar,
+        headingFont: s.headingFont,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first

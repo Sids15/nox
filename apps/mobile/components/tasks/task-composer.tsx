@@ -26,7 +26,8 @@ const WEB = Platform.OS === "web";
 const TITLE_FONT: TextStyle = {
   // The serif, like every other title in the app (task, note and idea editors, page headings).
   fontFamily: Platform.select({
-    web: 'Georgia, "Iowan Old Style", ui-serif, "Times New Roman", serif',
+    // The user's heading typeface (see lib/heading-font.ts), like every other title.
+    web: 'var(--nox-display, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)',
     ios: "Georgia",
     default: "serif",
   }),

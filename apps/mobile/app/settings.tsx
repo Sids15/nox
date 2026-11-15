@@ -25,6 +25,7 @@ import { TABULAR, pressScale } from "../components/menu";
 import { Sidebar } from "../components/sidebar";
 import { Alert } from "../lib/alert";
 import { goBack } from "../lib/go-back";
+import { HEADING_STACKS } from "../lib/heading-font";
 import { ensurePermission, sendTestNotification } from "../lib/notifications";
 import { useIdentity } from "../lib/use-identity";
 import { useIsDesktop } from "../lib/use-responsive";
@@ -191,7 +192,7 @@ export default function SettingsScreen() {
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
   const { session, signOut } = useAuth();
-  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif, calendar, setCalendar } = usePrefs();
+  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif, calendar, setCalendar, headingFont, setHeadingFont } = usePrefs();
   const sync = useSyncLabel();
   const { name, initials } = useIdentity();
   const email = session?.user?.email ?? "";
@@ -280,6 +281,42 @@ export default function SettingsScreen() {
           </View>
           <View className="mt-4">
             <Group>
+              {/* Web only for now: on phones the heading face is compiled into the app. */}
+              {Platform.OS === "web" && (
+              <View className="border-line border-b px-4 py-3">
+                <Text className="text-ink text-[14.5px] font-medium">Headings</Text>
+                <Text className="text-ink-3 mt-0.5 text-[12.5px]">The typeface for titles like "Today" and note names.</Text>
+                <View className="mt-3 flex-row flex-wrap gap-2">
+                  {(
+                    [
+                      { key: "sans", label: "Clean", sample: "System sans" },
+                      { key: "modern", label: "Modern serif", sample: "Charter" },
+                      { key: "classic", label: "Classic serif", sample: "Georgia" },
+                    ] as const
+                  ).map((f) => {
+                    const on = headingFont === f.key;
+                    return (
+                      <Pressable
+                        key={f.key}
+                        onPress={() => setHeadingFont(f.key)}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: on }}
+                        accessibilityLabel={`${f.label} headings`}
+                        className={`min-w-[120px] flex-1 rounded-[12px] border px-3 py-2.5 ${on ? "border-accent bg-accent/[0.07]" : "border-line hover:bg-chip"}`}
+                      >
+                        <Text
+                          className="text-ink text-[22px] font-bold"
+                          style={Platform.OS === "web" ? ({ fontFamily: HEADING_STACKS[f.key].family, letterSpacing: HEADING_STACKS[f.key].tracking } as object) : undefined}
+                        >
+                          Today
+                        </Text>
+                        <Text className={`mt-0.5 text-[12.5px] ${on ? "text-accent font-semibold" : "text-ink-3"}`}>{f.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+              )}
               <View className="px-4 py-3">
                 <Text className="text-ink text-[14.5px] font-medium">Accent</Text>
                 <Text className="text-ink-3 mt-0.5 text-[12.5px]">Buttons, highlights and today's date.</Text>

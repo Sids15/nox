@@ -47,6 +47,25 @@ body {
   font-synthesis: none;
 }
 
+/*
+ * Titles and headings (`font-serif` in the code) follow the user's "Headings" setting: the root
+ * layout sets --nox-display / --nox-display-tracking (lib/heading-font.ts). The fallback is the
+ * default choice, the system sans, so there is no flash of another face before it loads.
+ */
+.font-serif {
+  font-family: var(
+    --nox-display,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif
+  ) !important;
+  letter-spacing: var(--nox-display-tracking, -0.022em) !important;
+}
+
 /* Text selection and the caret carry the accent instead of the browser's blue. */
 ::selection {
   background: rgb(var(--accent) / 0.22);
