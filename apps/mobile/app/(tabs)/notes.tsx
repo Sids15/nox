@@ -11,7 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react-native";
 import type { Note } from "@nox/types";
 import { useRouter } from "expo-router";
-import { ChevronRight, Folder, FolderPlus, Hash, MoreHorizontal, NotebookPen, Plus, Search } from "lucide-react-native";
+import { Folder, FolderPlus, Hash, MoreHorizontal, NotebookPen, Plus, Search } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -223,15 +223,8 @@ export default function NotesScreen() {
         <View className="flex-1 flex-row">
           {/* Pane 1 — folders */}
           <View className="border-line w-[248px] border-r px-2 pt-6">
-            <View className="flex-row items-center justify-between px-[9px]">
+            <View className="px-[9px]">
               <Text className="text-ink font-serif text-[20px] font-bold">Notes</Text>
-              <Pressable
-                onPress={() => setNewFolderOpen(true)}
-                accessibilityLabel="New folder"
-                className="bg-chip rounded-pill hover:bg-elev h-[30px] w-[30px] items-center justify-center"
-              >
-                <FolderPlus size={15} color={c.ink2} strokeWidth={1.8} />
-              </Pressable>
             </View>
             <Text className="text-ink-3 mb-3 mt-1 px-[9px] text-[13px] font-medium">
               {plural(active.length, "note")} · {plural(folders.length, "folder")}
@@ -255,6 +248,16 @@ export default function NotesScreen() {
                     onPress={() => setSelectedFolderId(f.id)}
                   />
                 ))}
+                {/* New folder lives with the folders (it was a grey circle in the pane's corner). */}
+                <Pressable
+                  onPress={() => setNewFolderOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="New folder"
+                  className="hover:bg-chip h-[36px] flex-row items-center gap-2.5 rounded-[10px] px-[11px]"
+                >
+                  <Plus size={15} color={c.ink3} strokeWidth={2} />
+                  <Text className="text-ink-3 text-[14px] font-medium">New folder</Text>
+                </Pressable>
               </View>
               {tags.length > 0 && (
                 <View className="mt-5">
@@ -326,7 +329,7 @@ export default function NotesScreen() {
                   onChangeText={setSearch}
                   placeholder="Search notes…"
                   placeholderTextColor={c.ink3}
-                  className="text-ink flex-1 text-[13.5px]"
+                  className="text-ink flex-1 text-[14px]"
                   style={{ paddingVertical: 0 }}
                 />
               </View>
@@ -454,30 +457,24 @@ export default function NotesScreen() {
         <View className="px-screen flex-row items-start justify-between pt-2">
           <View>
             <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Notes</Text>
-            <Text className="text-ink-3 mt-0.5 text-[13.5px] font-medium">
+            <Text className="text-ink-3 mt-0.5 text-[14px] font-medium">
               {plural(active.length, "note")} · {plural(folders.length, "folder")}
             </Text>
           </View>
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              onPress={() => setNewFolderOpen(true)}
-              className="bg-chip rounded-pill h-[34px] w-[34px] items-center justify-center"
-            >
-              <FolderPlus size={16} color={c.ink2} strokeWidth={1.8} />
-            </Pressable>
+          <View className="pt-1">
             <ProfileAvatar />
           </View>
         </View>
 
         <View className="px-screen mt-5">
           <View className="bg-chip rounded-input h-11 flex-row items-center gap-[10px] px-[13px]">
-            <Search size={15} color={c.ink3} strokeWidth={1.8} />
+            <Search size={15} color={c.ink3} strokeWidth={2} />
             <TextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Search notes…"
               placeholderTextColor={c.ink3}
-              className="text-ink flex-1 text-[14.5px]"
+              className="text-ink flex-1 text-[15px]"
               style={{ paddingVertical: 0 }}
             />
           </View>
@@ -496,7 +493,7 @@ export default function NotesScreen() {
                   className="rounded-pill px-3 py-[6px]"
                   style={{ backgroundColor: on ? tagColor(tag) : `${tagColor(tag)}1f` }}
                 >
-                  <Text style={{ color: on ? "#fff" : tagColor(tag) }} className="text-[12.5px] font-semibold">
+                  <Text style={{ color: on ? "#fff" : tagColor(tag) }} className="text-[13px] font-semibold">
                     #{tag}
                   </Text>
                 </Pressable>
@@ -536,7 +533,7 @@ export default function NotesScreen() {
               {pinned.length > 0 && <NoteList notes={pinned} onOpen={openNote} folderNameOf={folderNameOf} />}
 
               {/* Folders as a row of tiles that scrolls sideways: as a list they filled the first screen. */}
-              {folders.length > 0 && !selectedTag && !search && (
+              {!selectedTag && !search && (
                 <>
                   <SectionLabel>Folders</SectionLabel>
                   <ScrollView
@@ -554,11 +551,11 @@ export default function NotesScreen() {
                         style={pressScale}
                         className="border-line bg-surface w-[128px] rounded-[14px] border px-3 py-3"
                       >
-                        <Folder size={18} color={c.accent} strokeWidth={1.9} />
-                        <Text numberOfLines={1} className="text-ink mt-2.5 text-[14.5px] font-semibold">
+                        <Folder size={18} color={c.accent} strokeWidth={2} />
+                        <Text numberOfLines={1} className="text-ink mt-2.5 text-[15px] font-semibold">
                           {f.name}
                         </Text>
-                        <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 mt-0.5 text-[12.5px]">
+                        <Text style={{ fontVariant: ["tabular-nums"] }} className="text-ink-3 mt-0.5 text-[13px]">
                           {plural(noteCount(f.id), "note")}
                         </Text>
                       </Pressable>
@@ -570,8 +567,8 @@ export default function NotesScreen() {
                       style={pressScale}
                       className="border-line w-[96px] items-center justify-center rounded-[14px] border border-dashed"
                     >
-                      <FolderPlus size={18} color={c.ink3} strokeWidth={1.9} />
-                      <Text className="text-ink-3 mt-1.5 text-[12.5px] font-semibold">New</Text>
+                      <FolderPlus size={18} color={c.ink3} strokeWidth={2} />
+                      <Text className="text-ink-3 mt-1.5 text-[13px] font-semibold">New</Text>
                     </Pressable>
                   </ScrollView>
                 </>
