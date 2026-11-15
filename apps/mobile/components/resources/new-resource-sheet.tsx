@@ -5,7 +5,8 @@ import { capitalize as cap, domainFrom } from "@nox/utils";
 import { Check, Image as ImageIcon, ImagePlus, Link2, PlayCircle, Plus, Quote, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert } from "../../lib/alert";
 import { pressScale } from "../menu";
 import { pickImage } from "../../lib/media";
@@ -60,6 +61,8 @@ export function NewResourceSheet({
   const c = useThemeColors();
   const themeVars = useThemeVars();
   const isDesktop = useIsDesktop();
+  const win = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const userId = useSessionStore((s) => s.session?.user.id ?? null);
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
@@ -203,7 +206,9 @@ export function NewResourceSheet({
     <Modal transparent visible={visible} animationType={isDesktop ? "fade" : "slide"} onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={[{ flex: 1 }, isDesktop ? { justifyContent: "center", alignItems: "center", padding: 24 } : null, vars(themeVars)]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        // Android too: a Modal window doesn't resize for the keyboard by itself, so the sheet would
+        // sit under it.
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {/* The backdrop always fills the whole screen. As flex-1 it stopped at the top of the
             keyboard avoider's padding, so while typing on iOS the strip between the sheet and the
@@ -214,16 +219,27 @@ export function NewResourceSheet({
           className={
             isDesktop
               ? "bg-sheet border-line w-full gap-4 rounded-[18px] border px-6 pb-5 pt-5"
-              : "bg-sheet gap-4 rounded-t-[28px] px-5 pb-9 pt-2.5"
+              : "bg-sheet rounded-t-[24px] pt-2.5"
           }
           style={
             isDesktop
               ? { maxWidth: 540, shadowColor: "#1B2131", shadowOpacity: 0.22, shadowRadius: 40, shadowOffset: { width: 0, height: 18 }, elevation: 20 }
-              : { shadowColor: "rgb(4,4,10)", shadowOpacity: 0.4, shadowRadius: 40, shadowOffset: { width: 0, height: -14 } }
+              : // Capped below the screen height, so with the keyboard up the form scrolls instead of
+                // its top being cut off.
+                { maxHeight: win.height * 0.9, shadowColor: "#1B2131", shadowOpacity: 0.2, shadowRadius: 30, shadowOffset: { width: 0, height: -10 } }
           }
         >
-          {!isDesktop && <View className="bg-ink-3 mb-1 h-1 w-9 self-center rounded-full opacity-40" />}
+          {!isDesktop && <View className="bg-ink-3 mb-2 h-1 w-9 self-center rounded-full opacity-40" />}
 
+          {/* On phones everything but the Save button scrolls; Save stays pinned below. */}
+          <ScrollView
+            scrollEnabled={!isDesktop}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}
+            style={{ flexShrink: 1 }}
+            contentContainerStyle={{ gap: 16, ...(isDesktop ? null : { paddingHorizontal: 20, paddingBottom: 4 }) }}
+          >
           {/* Header */}
           <View className="flex-row items-center justify-between">
             <Text className="text-ink font-serif text-[22px] font-bold">{resource ? "Edit resource" : "Save something"}</Text>
@@ -258,7 +274,8 @@ export function NewResourceSheet({
             })}
           </View>
 
-          {/* The thing itself */}
+          {/* The thing itself. A steady height on phones so switching tabs doesn't make the sheet jump. */}
+          <View style={isDesktop ? undefined : { minHeight: 132 }}>
           {type === "text" ? (
             <View className="gap-2.5">
               <View className="border-line bg-surface flex-row rounded-[12px] border px-3.5 py-3">
@@ -358,6 +375,17 @@ export function NewResourceSheet({
                 )}
               </Field>
 
+              {/* Before a link is pasted: where its preview will appear, and what to paste. */}
+              {!domain && (
+                <View className="border-line items-center justify-center rounded-[12px] border border-dashed px-4" style={{ minHeight: 76 }}>
+                  <Text className="text-ink-3 text-center text-[13px] leading-[19px]">
+                    {type === "video"
+                      ? "Paste a YouTube or Vimeo link. Nox shows its thumbnail and plays it here."
+                      : "Paste any link: an article, a repo, a site. Nox fetches its title and preview."}
+                  </Text>
+                </View>
+              )}
+
               {/* Preview: what the card will look like, with an editable title. */}
               {!!domain && (
                 <View className="border-line bg-surface flex-row overflow-hidden rounded-[12px] border">
@@ -392,6 +420,8 @@ export function NewResourceSheet({
               )}
             </View>
           )}
+
+          </View>
 
           {/* Tags: every tag you have, tap to add or remove; type to make a new one. */}
           <View className="gap-2">
@@ -439,8 +469,13 @@ export function NewResourceSheet({
             )}
           </View>
 
+          </ScrollView>
+
           {/* Footer */}
-          <View className={`flex-row items-center gap-2 pt-1 ${isDesktop ? "justify-end" : ""}`}>
+          <View
+            className={`flex-row items-center gap-2 ${isDesktop ? "justify-end pt-4" : "border-line border-t px-5 pt-3"}`}
+            style={isDesktop ? undefined : { paddingBottom: Math.max(insets.bottom, 12) + 4 }}
+          >
             {isDesktop && (
               <Pressable onPress={onClose} accessibilityRole="button" style={pressScale} className="hover:bg-chip h-10 justify-center rounded-[10px] px-4">
                 <Text className="text-ink-2 text-[14px] font-semibold">Cancel</Text>
@@ -452,10 +487,20 @@ export function NewResourceSheet({
               accessibilityRole="button"
               accessibilityState={{ disabled: !canSave }}
               style={pressScale}
-              className={`bg-accent h-10 items-center justify-center rounded-[10px] px-5 ${isDesktop ? "" : "h-[48px] flex-1 rounded-[12px]"} ${canSave ? "hover:opacity-90" : "opacity-40"}`}
+              className={`h-10 items-center justify-center rounded-[10px] px-5 ${isDesktop ? "" : "h-[48px] flex-1 rounded-[12px]"} ${canSave ? "bg-accent hover:opacity-90" : "bg-chip"}`}
             >
-              <Text className="text-on-accent text-[14.5px] font-semibold">
-                {uploading ? "Uploading…" : resource ? "Save changes" : "Save"}
+              <Text className={`text-[14.5px] font-semibold ${canSave ? "text-on-accent" : "text-ink-3"}`}>
+                {uploading
+                  ? "Uploading…"
+                  : canSave
+                    ? resource
+                      ? "Save changes"
+                      : "Save"
+                    : type === "text"
+                      ? "Write a snippet to save"
+                      : type === "image"
+                        ? "Choose a picture to save"
+                        : "Paste a link to save"}
               </Text>
             </Pressable>
           </View>
