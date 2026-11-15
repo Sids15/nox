@@ -20,7 +20,7 @@ export default function IdeaDetailScreen() {
       <View className="flex-1 flex-row">
         {isDesktop && <Sidebar />}
         <View className="flex-1">
-          <IdeaEditor id={id} onClose={() => goBack("/")} />
+          <IdeaEditor id={id} onClose={() => goBack("/(tabs)")} />
         </View>
       </View>
     </SafeAreaView>

@@ -5,7 +5,7 @@ import { Bookmark, FileText, Lightbulb, Search, Settings2, SquareCheckBig, type 
 import { formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Image, Platform, Pressable, Text, View } from "react-native";
+import { Animated, Image, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { clockLabel, greeting, skyColor, useClock } from "../lib/use-clock";
 import { useIdentity } from "../lib/use-identity";
 import { useSyncLabel } from "../lib/use-sync-label";
@@ -21,6 +21,12 @@ export const SEARCH_CHORD = IS_MAC_WEB ? "⌘K" : "Ctrl K";
 export const MODULE_CHORD = IS_MAC_WEB ? "⌥ 1–4" : "Alt 1–4";
 
 const NAV_PATHS = ["/", "/notes", "/tasks", "/resources"] as const;
+/**
+ * Where each module really lives. The bare "/" is claimed twice — by the Ideas tab and by the root
+ * redirect (which sends a signed-in user to Tasks) — so from a page outside the tabs (Settings,
+ * Account, an open note) "Ideas" landed on Tasks. The group-qualified path is unambiguous.
+ */
+const hrefFor = (path: string) => (path === "/" ? "/(tabs)" : `/(tabs)${path}`);
 
 /** The sync dot breathes — a slow 2.6s pulse that says "connected" without saying anything. */
 function BreathingDot({ color }: { color: string }) {
@@ -71,7 +77,7 @@ export function Sidebar() {
         const n = /^Digit[1-9]$/.test(e.code) ? Number(e.code.slice(5)) : 0;
         if (n >= 1 && n <= NAV_PATHS.length) {
           e.preventDefault();
-          router.navigate(NAV_PATHS[n - 1]!);
+          router.navigate(hrefFor(NAV_PATHS[n - 1]!) as never);
         }
       }
     };
@@ -117,7 +123,7 @@ export function Sidebar() {
         />
         <Text className="text-ink-3 text-[11px] font-medium">{clockLabel(now)}</Text>
       </View>
-      <Text numberOfLines={1} className="text-ink-2 px-2 pb-4 text-[13px]">
+      <Text numberOfLines={1} className="text-ink-2 px-2 pb-4 text-[13px]" style={{ flexShrink: 0, lineHeight: 18 }}>
         {greeting(now, firstName)}
       </Text>
 
@@ -135,14 +141,16 @@ export function Sidebar() {
         </View>
       </Pressable>
 
-      {/* Nav */}
+      {/* Nav and Up next scroll when the window is short; the header above and the profile below
+          stay put (they used to be squeezed into each other). */}
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
       <View className="gap-0.5">
         {nav.map((item, i) => {
           const active = pathname === item.path;
           return (
             <Pressable
               key={item.path}
-              onPress={() => router.navigate(item.path)}
+              onPress={() => router.navigate(hrefFor(item.path) as never)}
               accessibilityRole="link"
               accessibilityState={{ selected: active }}
               accessibilityLabel={`${item.label}, ${item.count}`}
@@ -179,7 +187,7 @@ export function Sidebar() {
           upNext.map((t) => (
             <Pressable
               key={t.id}
-              onPress={() => router.navigate("/tasks")}
+              onPress={() => router.navigate("/(tabs)/tasks" as never)}
               accessibilityRole="link"
               className="hover:bg-chip flex-row items-baseline gap-2.5 rounded-[8px] px-2.5 py-1.5"
             >
@@ -194,14 +202,15 @@ export function Sidebar() {
         )}
       </View>
 
-      <View className="flex-1" />
+      </ScrollView>
 
       {/* Profile, with sync state under the name */}
       <Pressable
         onPress={() => router.push("/settings")}
         accessibilityRole="button"
         accessibilityLabel={`Settings. ${name}, ${sync.title}`}
-        className="hover:bg-chip flex-row items-center gap-2.5 rounded-[10px] px-2 py-2"
+        className="hover:bg-chip border-line flex-row items-center gap-2.5 rounded-[10px] px-2 py-2"
+        style={{ flexShrink: 0 }}
       >
         <View className="bg-accent/[0.14] h-8 w-8 items-center justify-center rounded-full">
           <Text className="text-accent text-[11.5px] font-semibold">{initials}</Text>

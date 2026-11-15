@@ -32,10 +32,10 @@ function snippet(text: string | null | undefined, needle: string): string | null
 }
 
 const PAGES: Hit[] = [
-  { key: "go:tasks", title: "Tasks", detail: "Today and your calendar", type: "Go to", icon: SquareCheckBig, route: "/tasks" },
-  { key: "go:notes", title: "Notes", detail: "Folders and tags", type: "Go to", icon: FileText, route: "/notes" },
-  { key: "go:ideas", title: "Ideas", detail: "The board, raw to complete", type: "Go to", icon: Lightbulb, route: "/" },
-  { key: "go:resources", title: "Resources", detail: "Links, videos, pictures, snippets", type: "Go to", icon: Bookmark, route: "/resources" },
+  { key: "go:tasks", title: "Tasks", detail: "Today and your calendar", type: "Go to", icon: SquareCheckBig, route: "/(tabs)/tasks" },
+  { key: "go:notes", title: "Notes", detail: "Folders and tags", type: "Go to", icon: FileText, route: "/(tabs)/notes" },
+  { key: "go:ideas", title: "Ideas", detail: "The board, raw to complete", type: "Go to", icon: Lightbulb, route: "/(tabs)" },
+  { key: "go:resources", title: "Resources", detail: "Links, videos, pictures, snippets", type: "Go to", icon: Bookmark, route: "/(tabs)/resources" },
   { key: "go:settings", title: "Settings", detail: "Appearance, calendar, notifications", type: "Go to", icon: Settings2, route: "/settings" },
 ];
 
@@ -118,7 +118,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
         detail: [r.domain ?? (r.type === "text" ? "Snippet" : capitalize(r.type)), snippet(r.body, needle)].filter(Boolean).join(" · "),
         type: "Resource",
         icon: Bookmark,
-        route: "/resources",
+        route: "/(tabs)/resources",
         url: r.url,
       });
     }
