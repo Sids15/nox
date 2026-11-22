@@ -3,7 +3,15 @@ use keyring::{Entry, Error as KeyringError};
 /// One namespace for every Nox credential, so a user can find (and revoke) them in the OS keystore.
 const SERVICE: &str = "app.nox.desktop";
 
+/// Only the names the session store uses (letters, digits, `-`, `_`, `.`, `:`; at most 128) — so the
+/// webview can't use these commands as a general-purpose keychain reader or writer.
 fn entry(key: &str) -> Result<Entry, String> {
+    let ok = !key.is_empty()
+        && key.len() <= 128
+        && key.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | ':'));
+    if !ok {
+        return Err("invalid secret name".into());
+    }
     Entry::new(SERVICE, key).map_err(|e| e.to_string())
 }
 
