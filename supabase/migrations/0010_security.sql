@@ -108,22 +108,32 @@ alter table public.users add column if not exists ai_enabled boolean not null de
 -- ── 3. No pointing at another account's rows ─────────────────────────────────────────────────────
 -- A foreign key is checked without RLS, so without this a user could file a note under someone
 -- else's folder id or hang a task off someone else's task (and be cascade-deleted with it).
-create or replace function public.same_owner_refs()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
+-- One function per table: a trigger function that names a column the table doesn't have
+-- (tasks.folder_id) fails on every write, even behind an `if` for another table.
+create or replace function public.notes_same_owner()
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  if tg_table_name = 'notes' and new.folder_id is not null
+  if new.folder_id is not null
      and not exists (select 1 from public.folders f where f.id = new.folder_id and f.user_id = new.user_id) then
     raise exception 'folder belongs to another account' using errcode = '42501';
   end if;
-  if tg_table_name = 'folders' and new.parent_id is not null
+  return new;
+end $$;
+
+create or replace function public.folders_same_owner()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.parent_id is not null
      and not exists (select 1 from public.folders f where f.id = new.parent_id and f.user_id = new.user_id) then
     raise exception 'parent folder belongs to another account' using errcode = '42501';
   end if;
-  if tg_table_name = 'tasks' and new.origin_task_id is not null
+  return new;
+end $$;
+
+create or replace function public.tasks_same_owner()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.origin_task_id is not null
      and not exists (select 1 from public.tasks t where t.id = new.origin_task_id and t.user_id = new.user_id) then
     raise exception 'origin task belongs to another account' using errcode = '42501';
   end if;
@@ -135,11 +145,13 @@ declare t text;
 begin
   foreach t in array array['notes', 'folders', 'tasks'] loop
     execute format('drop trigger if exists same_owner_refs on public.%I', t);
+    execute format('drop trigger if exists same_owner on public.%I', t);
     execute format(
-      'create trigger same_owner_refs before insert or update on public.%I
-         for each row execute function public.same_owner_refs()', t);
+      'create trigger same_owner before insert or update on public.%I
+         for each row execute function public.%I()', t, t || '_same_owner');
   end loop;
 end $$;
+drop function if exists public.same_owner_refs();
 
 -- ── 4. Size ceilings ─────────────────────────────────────────────────────────────────────────────
 -- NOT VALID: checked on every new write, existing rows are left alone. Generous on purpose — the
