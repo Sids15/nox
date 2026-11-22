@@ -1,4 +1,5 @@
 import { useAuth, usePrefs, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
+import { AiRepository } from "@nox/api";
 import { accents, type AccentName, type ThemeName } from "@nox/ui";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
@@ -16,9 +17,10 @@ import {
   Palette,
   Plus,
   RefreshCw,
+  Sparkles,
   UserRound,
 } from "lucide-react-native";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TABULAR, pressScale } from "../components/menu";
@@ -42,10 +44,11 @@ const APP_VERSION = Constants.expoConfig?.version ?? "dev";
 const hourLabel = (h: number) => (h === 0 || h === 24 ? "12 AM" : h === 12 ? "12 PM" : h < 12 ? `${h} AM` : `${h - 12} PM`);
 const MOD = Platform.OS === "web" && typeof navigator !== "undefined" && /Mac/.test(navigator.platform) ? "⌘" : "Ctrl";
 
-type SectionKey = "appearance" | "tasks" | "notifications" | "account" | "about";
+type SectionKey = "appearance" | "tasks" | "ai" | "notifications" | "account" | "about";
 const SECTIONS: { key: SectionKey; label: string; Icon: LucideIcon }[] = [
   { key: "appearance", label: "Appearance", Icon: Palette },
   { key: "tasks", label: "Tasks & calendar", Icon: CalendarDays },
+  { key: "ai", label: "Nox AI", Icon: Sparkles },
   { key: "notifications", label: "Notifications", Icon: BellRing },
   { key: "account", label: "Account & sync", Icon: UserRound },
   { key: "about", label: "About", Icon: Info },
@@ -192,7 +195,11 @@ export default function SettingsScreen() {
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
   const { session, signOut } = useAuth();
-  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif, calendar, setCalendar, headingFont, setHeadingFont } = usePrefs();
+  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif, calendar, setCalendar, headingFont, setHeadingFont, aiEnabled, setAiEnabled } = usePrefs();
+  const [aiUsed, setAiUsed] = useState<number | null>(null);
+  useEffect(() => {
+    if (aiEnabled) void AiRepository.usedToday().then(setAiUsed);
+  }, [aiEnabled]);
   const sync = useSyncLabel();
   const { name, initials } = useIdentity();
   const email = session?.user?.email ?? "";
@@ -381,6 +388,33 @@ export default function SettingsScreen() {
           <Row title="Show completed tasks" detail="In the calendar. Done tasks are struck through." last>
             <Toggle label="Show completed tasks" value={calendar.showCompleted} onChange={(v) => cal({ showCompleted: v })} />
           </Row>
+        </Group>,
+      )}
+
+      {section(
+        "ai",
+        "Nox AI",
+        "Planning your day, typing tasks in plain words, note help, the idea coach, tag suggestions, Ask Nox and briefs.",
+        <Group>
+          <Row
+            title="Use Nox AI"
+            detail="Off hides every AI button and sends nothing. On, only what a feature needs is sent, and only when you tap it."
+          >
+            <Toggle label="Use Nox AI" value={aiEnabled} onChange={setAiEnabled} />
+          </Row>
+          <Row
+            title="What gets sent"
+            detail="Plan day sends task titles, times and priorities. Note and idea help sends that one note or idea. Ask Nox sends the few items that match your question. Your account details never are."
+          />
+          <Row
+            title="Today"
+            detail={
+              aiUsed === null
+                ? "Each account has a daily allowance of AI requests; it resets every day."
+                : `${aiUsed} AI request${aiUsed === 1 ? "" : "s"} used today. The allowance resets every day.`
+            }
+            last
+          />
         </Group>,
       )}
 
