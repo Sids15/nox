@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Task } from "@nox/types";
-import { autoSchedule, findFreeSlot, minutesToTime, tasksOnDay, timeToMinutes } from "./day-plan";
+import { autoSchedule, checkPlan, findFreeSlot, minutesToTime, tasksOnDay, timeToMinutes } from "./day-plan";
 
 const MON = "2026-07-06"; // a Monday
 const TUE = "2026-07-07";
@@ -107,5 +107,39 @@ describe("findFreeSlot / autoSchedule", () => {
       { id: "high", time: "09:00" },
       { id: "low", time: "11:00" },
     ]);
+  });
+});
+
+describe("checkPlan", () => {
+  const opts = { dayStart: 9 * 60, dayEnd: 18 * 60, notBefore: 10 * 60 };
+  const meeting = { task: mk({ id: "m", due_time: "11:00", duration_minutes: 60 }), projected: false };
+  const a = mk({ id: "a" });
+  const b = mk({ id: "b" });
+
+  test("keeps good placements, sorted by time", () => {
+    expect(
+      checkPlan([meeting], [a, b], [
+        { id: "b", start: "13:00", minutes: 30 },
+        { id: "a", start: "10:00", minutes: 45 },
+      ], opts),
+    ).toEqual([
+      { id: "a", time: "10:00", minutes: 45 },
+      { id: "b", time: "13:00", minutes: 30 },
+    ]);
+  });
+
+  test("drops clashes, unknown ids, repeats, bad times and anything outside the hours", () => {
+    expect(
+      checkPlan([meeting], [a, b], [
+        { id: "a", start: "11:30", minutes: 30 }, // clashes with the meeting
+        { id: "x", start: "14:00", minutes: 30 }, // not offered
+        { id: "b", start: "09:30", minutes: 30 }, // before notBefore
+        { id: "b", start: "17:45", minutes: 30 }, // runs past the day
+        { id: "b", start: "25:00", minutes: 30 }, // not a time
+        { id: "a", start: "14:00", minutes: 60 },
+        { id: "b", start: "14:30", minutes: 30 }, // overlaps the kept "a"
+        { id: "a", start: "16:00", minutes: 30 }, // "a" already placed
+      ], opts),
+    ).toEqual([{ id: "a", time: "14:00", minutes: 60 }]);
   });
 });

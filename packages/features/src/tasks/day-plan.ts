@@ -113,3 +113,40 @@ export function autoSchedule(planned: PlannedTask[], toPlace: Task[], opts: Slot
   }
   return out;
 }
+
+export interface PlacedTask {
+  id: string;
+  /** "HH:MM". */
+  time: string;
+  minutes: number;
+}
+
+/**
+ * Check a suggested plan (from Nox AI) against the real day before showing it: keep only placements
+ * of tasks that were offered, each once, on a valid time, inside the working hours, not before
+ * `notBefore`, and clashing with neither what's already scheduled nor an earlier kept placement.
+ * Lengths are clamped to 5 min–12 h; a start is snapped up to `step`. Order is by start time.
+ */
+export function checkPlan(
+  planned: PlannedTask[],
+  offered: Task[],
+  slots: { id: string; start: string; minutes: number }[],
+  { dayStart, dayEnd, notBefore = 0, step = 5 }: SlotOptions,
+): PlacedTask[] {
+  const busy = busyOf(planned);
+  const ok = new Set(offered.map((t) => t.id));
+  const seen = new Set<string>();
+  const out: PlacedTask[] = [];
+  for (const slot of slots) {
+    if (!ok.has(slot.id) || seen.has(slot.id) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(slot.start)) continue;
+    const minutes = Math.max(5, Math.min(12 * 60, Math.round(slot.minutes) || 30));
+    const start = Math.ceil(timeToMinutes(slot.start) / step) * step;
+    const end = start + minutes;
+    if (start < dayStart || end > dayEnd || start < notBefore) continue;
+    if (busy.some(([s, e]) => start < e && end > s)) continue;
+    busy.push([start, end]);
+    seen.add(slot.id);
+    out.push({ id: slot.id, time: minutesToTime(start), minutes });
+  }
+  return out.sort((a, b) => a.time.localeCompare(b.time));
+}
