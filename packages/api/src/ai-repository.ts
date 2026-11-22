@@ -26,8 +26,8 @@ import {
 export class AiError extends Error {
   constructor(
     message: string,
-    /** "daily_limit" when the day's allowance is used up; "offline" when there's no connection. */
-    public code?: "daily_limit" | "not_set_up" | "offline",
+    /** Why it failed, when the app should react to the reason (not just show the message). */
+    public code?: "daily_limit" | "rate_limited" | "ai_disabled" | "not_set_up" | "offline",
   ) {
     super(message);
     this.name = "AiError";
@@ -45,7 +45,8 @@ async function run<S extends AiSchema>(action: string, input: unknown, schema: S
     } catch {
       body = null;
     }
-    if (body?.code === "daily_limit") throw new AiError(body.error ?? "Today's AI requests are used up.", "daily_limit");
+    if (body?.code === "daily_limit" || body?.code === "rate_limited" || body?.code === "ai_disabled")
+      throw new AiError(body.error ?? "Nox AI can't answer right now.", body.code);
     if (res?.status === 503) throw new AiError("AI isn't set up on the server yet.", "not_set_up");
     if (!res) throw new AiError("Can't reach Nox AI — check your connection.", "offline");
     throw new AiError(body?.error ?? "The AI couldn't answer. Try again.");
@@ -118,12 +119,29 @@ export const AiRepository = {
     return run("brief", { kind, today, weekday: weekdayOf(today), data }, aiBrief);
   },
 
-  /** Requests used today, for the Settings line. Null when unknown (offline, or migration 0009 missing). */
+  /** Requests used today, for the Settings line. Null when unknown (offline, or migration 0010 missing). */
   async usedToday(): Promise<number | null> {
     // The server counts by its own (UTC) date.
     const today = new Date().toISOString().slice(0, 10);
-    const { data, error } = await supabase.from("ai_usage").select("count").eq("day", today).maybeSingle();
+    const { data, error } = await supabase.from("rate_limits").select("count").eq("bucket", "ai").eq("day", today).maybeSingle();
     if (error) return null;
     return (data as { count?: number } | null)?.count ?? 0;
+  },
+
+  /** The account-wide Nox AI switch (users.ai_enabled). Null when it can't be read. */
+  async accountEnabled(): Promise<boolean | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    const { data, error } = await supabase.from("users").select("ai_enabled").eq("id", session.user.id).maybeSingle();
+    if (error || !data) return null;
+    return (data as { ai_enabled?: boolean }).ai_enabled !== false;
+  },
+
+  /** Turn Nox AI on or off for the whole account — the server refuses AI requests while it's off. */
+  async setAccountEnabled(enabled: boolean): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not signed in");
+    const { error } = await supabase.from("users").update({ ai_enabled: enabled }).eq("id", session.user.id);
+    if (error) throw error;
   },
 };
