@@ -17,6 +17,7 @@ import { BlockToolbar } from "../blocks/block-toolbar";
 import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { EditorTopBar } from "../editor-top-bar";
+import { DocAssist } from "../ai/doc-assist";
 import { MenuLabel, MenuRow } from "../menu";
 import { Popover } from "../popover";
 import { TagEditor, useKnownTags } from "../tag-editor";
@@ -191,6 +192,15 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
               </View>
             </View>
           </View>
+          <DocAssist
+            docId={note.id}
+            editor={editor}
+            title={title}
+            onTitle={onTitle}
+            tags={note.tags}
+            onTags={(tags) => updateNote.mutate({ id: note.id, patch: { tags } })}
+            knownTags={knownTags}
+          />
           <Popover anchorRef={folderRef} open={folderOpen} onClose={() => setFolderOpen(false)} width={230} accessibilityLabel="Folder">
             <View className="p-1.5">
               {[{ id: null as string | null, name: "No folder" }, ...folders].map((row) => (

@@ -35,6 +35,8 @@ export interface BlockEditor {
   focusEnd: () => void;
   /** Dictated text: appended to the block holding the caret, or a new paragraph there. */
   insertText: (text: string) => void;
+  /** Swap the whole document (AI tidy / summary), saving it. */
+  replaceAll: (blocks: ContentBlock[]) => void;
 }
 
 /**
@@ -197,6 +199,11 @@ export function useBlockEditor(
         insertAt(at, [{ type: "paragraph", text: text.charAt(0).toUpperCase() + text.slice(1) }]);
         focusAt(at, "end");
       }
+    },
+    replaceAll: (blocks) => {
+      const next = seed(blocks);
+      update(() => ({ blocks: next, keys: next.map(newKey) }));
+      focused.current = null;
     },
     focusEnd: () => {
       const last = doc.blocks.length - 1;
