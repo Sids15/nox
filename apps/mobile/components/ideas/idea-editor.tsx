@@ -17,6 +17,9 @@ import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { EditorTopBar } from "../editor-top-bar";
 import { IdeaProperties } from "./idea-properties";
+import { DocAssist } from "../ai/doc-assist";
+import { IdeaCoachButton, IdeaCoachPanel, useIdeaCoach } from "../ai/idea-coach";
+import { useKnownTags } from "../tag-editor";
 import { confirmDelete } from "../../lib/confirm";
 import { useIsDesktop } from "../../lib/use-responsive";
 
@@ -58,6 +61,8 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
   };
   const editor = useBlockEditor(idea?.id ?? "", idea?.content ?? [], saveContent);
   const media = useMediaBlocks(idea?.id ?? "", editor);
+  const coach = useIdeaCoach(idea);
+  const knownTags = useKnownTags();
 
   if (!idea) {
     return (
@@ -142,6 +147,28 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             onPriority={(priority) => patch({ priority })}
             onTags={(tags) => patch({ tags })}
           />
+
+          {coach.result ? (
+            <View className="mt-3">
+              <IdeaCoachPanel coach={coach} idea={idea} onAddToIdea={(blocks) => editor.replaceAll([...editor.blocks, ...blocks])} />
+            </View>
+          ) : null}
+          <DocAssist
+            docId={idea.id}
+            editor={editor}
+            title={title}
+            onTitle={(t) => {
+              setTitle(t);
+              patch({ title: t.slice(0, 200) });
+            }}
+            tags={idea.tags}
+            onTags={(tags) => patch({ tags })}
+            knownTags={knownTags}
+            modes={["summarize", "tidy", "title_tags", "actions"]}
+          >
+            {!coach.result && <IdeaCoachButton coach={coach} idea={idea} blocks={editor.blocks} />}
+          </DocAssist>
+          {coach.error ? <Text className="text-high mt-1 text-[13px]">{coach.error}</Text> : null}
         </View>
 
         <View className="mx-screen border-line mt-4 border-t" />
