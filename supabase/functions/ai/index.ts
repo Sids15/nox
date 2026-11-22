@@ -269,7 +269,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   } catch {
     return json(400, { error: "invalid body" });
   }
-  const spec = ACTIONS[action];
+  const spec = Object.hasOwn(ACTIONS, action) ? ACTIONS[action] : undefined;
   if (!spec) return json(400, { error: "unknown action" });
 
   // The counter runs as the caller (their JWT), so it can only ever count their own requests.
