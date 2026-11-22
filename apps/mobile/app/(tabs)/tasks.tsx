@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { CalendarDays, ChevronDown, ChevronRight, List, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { BriefCard } from "../../components/ai/brief-card";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
 import { Fab, useHideOnScroll } from "../../components/fab";
@@ -466,6 +467,7 @@ export default function TasksScreen() {
         </View>
         <Text className="text-ink-3 ml-3 text-[15px]">Add a task{focus === today ? "" : ` for ${dayWord}`}</Text>
       </Pressable>
+      {focus === today && <BriefCard today={today} />}
       </>
       )}
     </View>
