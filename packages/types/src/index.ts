@@ -5,3 +5,4 @@ export * from "./note";
 export * from "./task";
 export * from "./resource";
 export * from "./auth";
+export * from "./ai";
