@@ -8,7 +8,14 @@
 // is the SSRF boundary: without it, a signed-in user could point the function at an internal address
 // (169.254.169.254, localhost, a private range) and read the response. Only https, only these hosts.
 //
+// Callers are checked against Supabase Auth here too (not only by the platform's verify_jwt), and
+// each account may make URL_META_PER_MINUTE (default 20) / URL_META_DAILY_LIMIT (default 300)
+// previews — hit_rate_limit(), migration 0010 — so the function can't be used to hammer the sites
+// on the list from Supabase's addresses.
+//
 // Deploy:  supabase functions deploy url-meta      (verify_jwt stays on — authed users only)
+
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const VIDEO_HOSTS = ["youtube.com", "youtu.be", "vimeo.com"];
 const LINK_HOSTS = [
@@ -97,6 +104,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
+  if (Number(req.headers.get("content-length") ?? 0) > 8 * 1024) return json(413, { error: "too large" });
+
+  // Who's asking, checked with Supabase Auth; then their rate limit.
+  const auth = req.headers.get("Authorization");
+  const sbUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!auth?.startsWith("Bearer ")) return json(401, { error: "sign in first" });
+  if (!sbUrl || !anonKey || !serviceKey) return json(500, { error: "server misconfigured" });
+  const caller = createClient(sbUrl, anonKey, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
+  const { data: { user } } = await caller.auth.getUser();
+  if (!user) return json(401, { error: "sign in first" });
+  const admin = createClient(sbUrl, serviceKey, { auth: { persistSession: false } });
+  const num = (name: string, fallback: number) => Math.max(1, Number(Deno.env.get(name)) || fallback);
+  const { data: verdict, error: limitError } = await admin.rpc("hit_rate_limit", {
+    p_uid: user.id,
+    p_bucket: "url_meta",
+    p_per_minute: num("URL_META_PER_MINUTE", 20),
+    p_per_day: num("URL_META_DAILY_LIMIT", 300),
+  });
+  // Without migration 0010 the check can't run; previews are low-risk, so fail open rather than
+  // break link cards — the host allow-list above is the real boundary.
+  if (!limitError && verdict !== "ok") return json(429, { error: "too many previews — try again in a minute" });
+
   let url: unknown;
   try {
     url = (await req.json())?.url;
@@ -150,7 +181,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     return json(200, { title, image, domain: host });
   } catch (e) {
-    console.error("url-meta fetch failed", host, e);
+    console.error("url-meta fetch failed", host, e instanceof Error ? e.name : "unknown");
     // A preview is best-effort — a fetch failure is a 200 with nothing, not an error the UI must handle.
     return json(200, { domain: host });
   } finally {
