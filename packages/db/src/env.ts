@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPublicSupabaseKey } from "./key-guard";
 
 /**
  * Validated runtime configuration. Only `EXPO_PUBLIC_*` values are inlined into the client
@@ -7,7 +8,10 @@ import { z } from "zod";
  */
 const schema = z.object({
   supabaseUrl: z.string().url(),
-  supabaseAnonKey: z.string().min(1),
+  supabaseAnonKey: z
+    .string()
+    .min(1)
+    .refine(isPublicSupabaseKey, "this is a SECRET (service) key — only the anon/publishable key may ship in the app"),
   sentryDsn: z.string().url().optional(),
 });
 
