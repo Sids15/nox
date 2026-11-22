@@ -96,17 +96,17 @@ begin
 
   begin
     insert into public.notes (user_id, title) values (a, 'planted');
-    report := report || 'FAIL  B creates a note in A''s account → allowed';
-  exception when others then report := report || 'PASS  B creates a note in A''s account → refused'; end;
+    report := report || text 'FAIL  B creates a note in A''s account → allowed';
+  exception when others then report := report || text 'PASS  B creates a note in A''s account → refused'; end;
 
   begin
     insert into public.notes (user_id, title, folder_id) values (b, 'mine', folder_a);
-    report := report || 'FAIL  B files a note in A''s folder → allowed';
+    report := report || text 'FAIL  B files a note in A''s folder → allowed';
   exception when others then report := report || format('PASS  B files a note in A''s folder → refused (%s)', sqlerrm); end;
 
   begin
     insert into public.tasks (user_id, title, origin_task_id) values (b, 'mine', task_a);
-    report := report || 'FAIL  B hangs a task off A''s task → allowed';
+    report := report || text 'FAIL  B hangs a task off A''s task → allowed';
   exception when others then report := report || format('PASS  B hangs a task off A''s task → refused (%s)', sqlerrm); end;
 
   begin
@@ -116,13 +116,13 @@ begin
 
   begin
     insert into public.rate_limits (key, bucket, count) values (b::text, 'ai', -1000);
-    report := report || 'FAIL  B resets its own AI counter → allowed';
-  exception when others then report := report || 'PASS  B writes its own usage counter → refused'; end;
+    report := report || text 'FAIL  B resets its own AI counter → allowed';
+  exception when others then report := report || text 'PASS  B writes its own usage counter → refused'; end;
 
   begin
     perform public.hit_rate_limit(b, 'ai', 1000000, 1000000);
-    report := report || 'FAIL  B calls the rate limiter directly → allowed';
-  exception when others then report := report || 'PASS  B calls the rate limiter directly → refused'; end;
+    report := report || text 'FAIL  B calls the rate limiter directly → allowed';
+  exception when others then report := report || text 'PASS  B calls the rate limiter directly → refused'; end;
 
   begin
     update public.users set ai_enabled = false where id = a;
@@ -138,12 +138,12 @@ begin
   -- ── 5. Size ceilings (as B, on B's own rows) ───────────────────────────────────────────────────
   begin
     insert into public.tasks (user_id, title) values (b, repeat('x', 600));
-    report := report || 'FAIL  600-character task title → allowed';
-  exception when others then report := report || 'PASS  600-character task title → refused'; end;
+    report := report || text 'FAIL  600-character task title → allowed';
+  exception when others then report := report || text 'PASS  600-character task title → refused'; end;
 
   begin
     insert into public.tasks (user_id, title) values (b, 'Normal task');
-    report := report || 'PASS  B can still add its own normal task';
+    report := report || text 'PASS  B can still add its own normal task';
   exception when others then report := report || ('FAIL  B adding its own task — error: ' || sqlerrm); end;
 
   execute 'reset role';
@@ -156,7 +156,7 @@ begin
     select (select count(*) from public.notes) + (select count(*) from public.tasks) + (select count(*) from public.users)
       + (select count(*) from public.rate_limits) into n;
     report := report || format('%s  signed-out visitor reads notes/tasks/users/counters → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
-  exception when others then report := report || 'PASS  signed-out visitor reads data → refused'; end;
+  exception when others then report := report || text 'PASS  signed-out visitor reads data → refused'; end;
   execute 'reset role';
 
   -- ── Report (and roll everything back) ──────────────────────────────────────────────────────────
