@@ -1,10 +1,13 @@
 import { useFolders, useIdeas, useNotes, useResources, useTasks, useThemeColors, useThemeVars } from "@nox/features";
 import { capitalize, formatTime12, relativeDayLabel, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { Bookmark, CornerDownLeft, FileText, Lightbulb, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { AiRepository } from "@nox/api";
+import { Bookmark, CornerDownLeft, FileText, Lightbulb, Search, Settings2, Sparkles, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { rankContext, type AskItem } from "../lib/ask-context";
+import { useAiCall, useAiEnabled } from "../lib/use-ai";
 import { openExternal } from "../lib/open-external";
 import { noteMatches, noteTitle } from "./notes/note-utils";
 
@@ -58,10 +61,55 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
   const { data: tasks = [] } = useTasks();
   const { data: resources = [] } = useResources();
 
+  // Ask Nox: a question answered from the user's own things.
+  const aiOn = useAiEnabled();
+  const ask = useAiCall(AiRepository.ask);
+  /** The question the answer on screen is for (the field can change after asking). */
+  const [asked, setAsked] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!visible) setQ("");
-  }, [visible]);
+    if (!visible) {
+      setQ("");
+      setAsked(null);
+      ask.reset();
+    }
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => setIndex(0), [q]);
+
+  /** Everything Ask Nox may draw on, with where each item opens. */
+  const library = useMemo(() => {
+    const text = (blocks: { type: string; text?: string }[]) => blocks.map((b) => b.text ?? "").join("\n");
+    const out: (AskItem & { hit: Hit })[] = [];
+    for (const n of notes)
+      if (!n.deleted && !n.is_archived)
+        out.push({ id: n.id, kind: "note", title: noteTitle(n), text: `${n.tags.map((t) => `#${t}`).join(" ")}\n${text(n.content)}`, hit: { key: `note:${n.id}`, title: noteTitle(n), type: "Note", icon: FileText, route: `/note/${n.id}` } });
+    for (const i of ideas)
+      if (!i.deleted && !i.is_archived)
+        out.push({ id: i.id, kind: "idea", title: i.title, text: `Stage: ${i.status}. ${i.tags.map((t) => `#${t}`).join(" ")}\n${text(i.content)}`, hit: { key: `idea:${i.id}`, title: i.title, type: "Idea", icon: Lightbulb, route: `/idea/${i.id}` } });
+    for (const r of resources)
+      if (!r.deleted && !r.is_archived) {
+        const title = r.title ?? r.body?.slice(0, 80) ?? r.url ?? "Untitled";
+        out.push({ id: r.id, kind: "resource", title, text: [r.domain, r.url, r.body].filter(Boolean).join("\n"), hit: { key: `res:${r.id}`, title, type: "Resource", icon: Bookmark, route: "/(tabs)/resources", url: r.url } });
+      }
+    for (const t of tasks)
+      if (!t.deleted)
+        out.push({
+          id: t.id,
+          kind: "task",
+          title: t.title,
+          text: `${t.status === "complete" ? "Done" : "Open"}${t.due_date ? `, due ${t.due_date}${t.due_time ? ` ${t.due_time.slice(0, 5)}` : ""}` : ""}. ${t.notes ?? ""}`,
+          hit: { key: `task:${t.id}`, title: t.title, type: "Task", icon: SquareCheckBig, route: `/task/${t.id}` },
+        });
+    return out;
+  }, [notes, ideas, resources, tasks]);
+
+  const runAsk = () => {
+    const question = q.trim();
+    if (!question) return;
+    setAsked(question);
+    const context = rankContext(question, library).map(({ id, kind, title, text }) => ({ id, kind, title, text }));
+    void ask.run(question, todayKey(), context);
+  };
 
   const hits = useMemo<Hit[]>(() => {
     const needle = q.trim().toLowerCase();
@@ -122,10 +170,21 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
         url: r.url,
       });
     }
-    return out.slice(0, 30);
-  }, [q, ideas, notes, folders, tasks, resources]);
+    const list = out.slice(0, 30);
+    // A question (or anything wordy) can be put to Nox AI — first when nothing else matches.
+    const words = needle.split(/\s+/).filter(Boolean).length;
+    if (aiOn && (words >= 3 || needle.endsWith("?"))) {
+      const askHit: Hit = { key: "ask", title: `Ask Nox: “${q.trim()}”`, detail: "Answered from your notes, ideas, resources and tasks", type: "AI", icon: Sparkles, route: "" };
+      return list.length ? [...list, askHit] : [askHit];
+    }
+    return list;
+  }, [q, ideas, notes, folders, tasks, resources, aiOn]);
 
   const open = (hit: Hit) => {
+    if (hit.key === "ask") {
+      runAsk();
+      return;
+    }
     onClose();
     // A resource with a link opens it (what tapping its card does); text resources fall back to the list.
     if (hit.type === "Resource" && hit.url) {
@@ -171,7 +230,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
               autoFocus
               value={q}
               onChangeText={setQ}
-              placeholder="Search tasks, notes, ideas, resources…"
+              placeholder={aiOn ? "Search, or ask Nox a question…" : "Search tasks, notes, ideas, resources…"}
               placeholderTextColor={c.ink3}
               accessibilityLabel="Search everything"
               onSubmitEditing={() => hits[index] && open(hits[index])}
@@ -181,6 +240,55 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
           </View>
 
           <ScrollView ref={scroller} className="max-h-[400px]" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 6 }}>
+            {asked !== null && (
+              <View className="bg-accent/[0.06] mb-1.5 rounded-[12px] px-3.5 py-3" accessibilityLiveRegion="polite">
+                <View className="flex-row items-center gap-1.5">
+                  <Sparkles size={13} color={c.accent} strokeWidth={2.2} />
+                  <Text numberOfLines={1} className="text-ink flex-1 text-[14px] font-semibold">
+                    {asked}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      setAsked(null);
+                      ask.reset();
+                    }}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                  >
+                    <Text className="text-ink-3 text-[12px] font-semibold">Clear</Text>
+                  </Pressable>
+                </View>
+                {ask.busy ? (
+                  <View className="mt-2 flex-row items-center gap-2">
+                    <ActivityIndicator size="small" color={c.accent} style={{ transform: [{ scale: 0.7 }] }} />
+                    <Text className="text-ink-3 text-[13px]">Looking through your things…</Text>
+                  </View>
+                ) : ask.error ? (
+                  <Text className="text-high mt-2 text-[13px]">{ask.error}</Text>
+                ) : ask.result ? (
+                  <>
+                    <Text selectable className="text-ink-2 mt-2 text-[14px] leading-[21px]">
+                      {ask.result.answer}
+                    </Text>
+                    {ask.result.sources.length > 0 && (
+                      <View className="mt-2.5 flex-row flex-wrap gap-1.5">
+                        {ask.result.sources
+                          .map((id) => library.find((l) => l.id === id)?.hit)
+                          .filter((h): h is Hit => !!h)
+                          .map((h) => (
+                            <Pressable key={h.key} onPress={() => open(h)} accessibilityRole="button" className="border-line bg-surface hover:bg-chip flex-row items-center gap-1.5 rounded-[8px] border px-2 py-1">
+                              <h.icon size={12} color={c.ink2} strokeWidth={2} />
+                              <Text numberOfLines={1} className="text-ink max-w-[200px] text-[12px] font-medium">
+                                {h.title}
+                              </Text>
+                            </Pressable>
+                          ))}
+                      </View>
+                    )}
+                  </>
+                ) : null}
+              </View>
+            )}
             {!typed && <Text className="text-ink-3 px-2.5 pb-1 pt-1.5 text-[12px] font-semibold">Jump to</Text>}
             {typed && hits.length === 0 ? (
               <View className="items-center px-4 py-8">
