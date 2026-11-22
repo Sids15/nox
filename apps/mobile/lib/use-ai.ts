@@ -1,5 +1,5 @@
-import { AiError } from "@nox/api";
-import { usePrefs } from "@nox/features";
+import { AiError, AiRepository } from "@nox/api";
+import { usePrefs, useSessionStore } from "@nox/features";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface AiCall<A extends unknown[], T> {
@@ -41,6 +41,8 @@ export function useAiCall<A extends unknown[], T>(fn: (...args: A) => Promise<T>
       setResult(out);
       return out;
     } catch (e) {
+      // Switched off on another device: hide the AI buttons here too.
+      if (e instanceof AiError && e.code === "ai_disabled") usePrefs.getState().setAiEnabled(false);
       if (alive.current && id === seq.current) {
         setError(e instanceof AiError ? e.message : "The AI couldn't answer. Try again.");
       }
@@ -62,3 +64,38 @@ export function useAiCall<A extends unknown[], T>(fn: (...args: A) => Promise<T>
 
 /** Whether AI features show at all (Settings → Nox AI). */
 export const useAiEnabled = () => usePrefs((s) => s.aiEnabled);
+
+/**
+ * Turn Nox AI on or off for the whole account. The device follows at once; the account setting is
+ * what the server enforces, so if saving it fails the switch goes back and the error is returned.
+ */
+export async function setNoxAi(enabled: boolean): Promise<string | null> {
+  const prefs = usePrefs.getState();
+  const before = prefs.aiEnabled;
+  prefs.setAiEnabled(enabled);
+  try {
+    await AiRepository.setAccountEnabled(enabled);
+    return null;
+  } catch (e) {
+    // Database without migration 0010: there's no account setting yet, so this device's is it.
+    const code = (e as { code?: string } | null)?.code;
+    if (code === "PGRST204" || code === "42703") return null;
+    usePrefs.getState().setAiEnabled(before);
+    return "Couldn't save that to your account. Check your connection and try again.";
+  }
+}
+
+/** On sign-in, take the account's Nox AI setting, so a switch flipped on one device holds on all. */
+export function useAiAccountSync() {
+  const userId = useSessionStore((s) => s.session?.user.id ?? null);
+  useEffect(() => {
+    if (!userId) return;
+    let live = true;
+    void AiRepository.accountEnabled().then((on) => {
+      if (live && on !== null) usePrefs.getState().setAiEnabled(on);
+    });
+    return () => {
+      live = false;
+    };
+  }, [userId]);
+}

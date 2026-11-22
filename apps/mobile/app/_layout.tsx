@@ -34,6 +34,7 @@ import { useAuthDeepLink } from "../lib/use-auth-deeplink";
 import { useNotifications } from "../lib/use-notifications";
 import { useHeadingFont } from "../lib/heading-font";
 import { useWebViewport } from "../lib/web-viewport";
+import { useAiAccountSync } from "../lib/use-ai";
 
 initSentry();
 // Wire real connectivity so offline writes pause (queue) instead of failing, and register every
@@ -88,6 +89,7 @@ function RootNavigator() {
   useAuthBootstrap();
   useAuthDeepLink();
   useRealtimeSync();
+  useAiAccountSync();
   const status = useSessionStore((s) => s.status);
   const prefsHydrated = usePrefs((s) => s.hydrated);
   const c = useThemeColors();

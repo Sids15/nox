@@ -1,5 +1,6 @@
 import { useAuth, usePrefs, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
 import { AiRepository } from "@nox/api";
+import { setNoxAi } from "../lib/use-ai";
 import { accents, type AccentName, type ThemeName } from "@nox/ui";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
@@ -195,8 +196,9 @@ export default function SettingsScreen() {
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
   const { session, signOut } = useAuth();
-  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif, calendar, setCalendar, headingFont, setHeadingFont, aiEnabled, setAiEnabled } = usePrefs();
+  const { theme, accent, morningSummary, endOfDayPrompt, taskReminders, setTheme, setAccent, setNotif, calendar, setCalendar, headingFont, setHeadingFont, aiEnabled } = usePrefs();
   const [aiUsed, setAiUsed] = useState<number | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   useEffect(() => {
     if (aiEnabled) void AiRepository.usedToday().then(setAiUsed);
   }, [aiEnabled]);
@@ -398,9 +400,19 @@ export default function SettingsScreen() {
         <Group>
           <Row
             title="Use Nox AI"
-            detail="Off hides every AI button and sends nothing. On, only what a feature needs is sent, and only when you tap it."
+            detail={
+              aiError ??
+              "Applies to your whole account, on every device. Off hides every AI button and the server refuses AI requests. On, only what a feature needs is sent, and only when you tap it."
+            }
           >
-            <Toggle label="Use Nox AI" value={aiEnabled} onChange={setAiEnabled} />
+            <Toggle
+              label="Use Nox AI"
+              value={aiEnabled}
+              onChange={(v) => {
+                setAiError(null);
+                void setNoxAi(v).then(setAiError);
+              }}
+            />
           </Row>
           <Row
             title="What gets sent"
@@ -410,8 +422,8 @@ export default function SettingsScreen() {
             title="Today"
             detail={
               aiUsed === null
-                ? "Each account has a daily allowance of AI requests; it resets every day."
-                : `${aiUsed} AI request${aiUsed === 1 ? "" : "s"} used today. The allowance resets every day.`
+                ? "Each account may make a few AI requests a minute and a daily allowance; it resets every day."
+                : `${aiUsed} AI request${aiUsed === 1 ? "" : "s"} used today. A few a minute are allowed, and the daily allowance resets every day.`
             }
             last
           />
