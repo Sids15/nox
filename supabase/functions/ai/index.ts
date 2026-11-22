@@ -5,12 +5,16 @@
 // model key lives only in this function's secrets — it never ships in the web, Mac or Windows build,
 // where anyone could pull it out.
 //
-// Cost control, in order:
-//   1. The app does everything it can without a model (quick-add parsing, slot finding) and only
-//      calls this for what genuinely needs one.
-//   2. Inputs are capped in size here, so one request can't be huge.
-//   3. bump_ai_usage() (migration 0009) caps each user's requests per day — AI_DAILY_LIMIT, default 40.
-//   4. One request per action, with a fixed JSON reply shape, so nothing is retried for bad output.
+// Security and cost control, in order:
+//   1. Who's calling is checked here (getUser on their token), on top of the platform's verify_jwt —
+//      so even a deploy with JWT verification switched off serves no one anonymous.
+//   2. The request body is capped (32 KB) before it's parsed, and every string/list in it is cut down.
+//   3. hit_rate_limit() (migration 0010, service key only) allows AI_PER_MINUTE (default 6) and
+//      AI_DAILY_LIMIT (default 40) requests per user, AI_PROJECT_DAILY_LIMIT (default 500) across
+//      everyone — so the free tier can't be drained — and refuses users who switched Nox AI off.
+//   4. The app does everything it can without a model and calls this only when one is needed; one
+//      request per action, with a fixed JSON reply shape, so nothing is retried for bad output.
+//   5. Nothing the user wrote is logged — only error codes.
 //
 // Provider: Google Gemini by default (free tier on the Flash-Lite model). Everything provider-specific
 // is in callGemini(); add another adapter beside it to switch.
@@ -18,6 +22,9 @@
 // Secrets:  supabase secrets set GEMINI_API_KEY=...            (required)
 //           supabase secrets set AI_MODEL=gemini-3.5-flash-lite  (optional)
 //           supabase secrets set AI_DAILY_LIMIT=40               (optional)
+//           supabase secrets set AI_PER_MINUTE=6                 (optional)
+//           supabase secrets set AI_PROJECT_DAILY_LIMIT=500      (optional)
+// SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided by the platform.
 // Deploy:   supabase functions deploy ai        (verify_jwt stays on — signed-in users only)
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -31,6 +38,42 @@ const CORS = {
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 }
+
+/** The most a request body may be, read before parsing — so a huge body can't tie up the function. */
+const MAX_BODY_BYTES = 32 * 1024;
+
+async function readBody(req: Request): Promise<unknown> {
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > MAX_BODY_BYTES) throw new RangeError("too large");
+  const reader = req.body?.getReader();
+  if (!reader) return {};
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel();
+      throw new RangeError("too large");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) {
+    bytes.set(c, at);
+    at += c.length;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+const LIMIT_MESSAGES: Record<string, { status: number; error: string; code: string }> = {
+  minute: { status: 429, error: "That's a lot of AI requests at once — wait a minute and try again.", code: "rate_limited" },
+  day: { status: 429, error: "You've used today's AI requests. They reset tomorrow.", code: "daily_limit" },
+  project: { status: 429, error: "Nox AI has hit its limit for today. It resets tomorrow.", code: "daily_limit" },
+  disabled: { status: 403, error: "Nox AI is switched off for your account. Turn it on in Settings → Nox AI.", code: "ai_disabled" },
+};
 
 /** Clamp any string the client sends, so a request can't smuggle in a giant prompt. */
 const MAX_TEXT = 8_000;
@@ -239,7 +282,18 @@ async function callGemini(system: string, user: string, schema: Schema): Promise
 
   if (res.status === 429) throw new ProviderError(429, "The AI is busy — try again in a minute");
   if (!res.ok) {
-    console.error("gemini error", res.status, (await res.text()).slice(0, 500));
+    // Codes only (e.g. 400 INVALID_ARGUMENT, 403 PERMISSION_DENIED for a bad key): the provider's
+    // full error message can echo the prompt, which is the user's own writing.
+    let reason = "";
+    try {
+      reason = String((await res.json())?.error?.status ?? "");
+    } catch {
+      /* not JSON */
+    }
+    console.error("gemini error", res.status, reason);
+    if (res.status === 400 || res.status === 401 || res.status === 403) {
+      throw new ProviderError(502, "The AI couldn't answer — the server's AI setup (key or model) may be wrong.");
+    }
     throw new ProviderError(502, "The AI couldn't answer");
   }
   const body = await res.json();
@@ -259,37 +313,53 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
   const auth = req.headers.get("Authorization");
-  if (!auth) return json(401, { error: "sign in first" });
+  if (!auth?.startsWith("Bearer ")) return json(401, { error: "sign in first" });
 
   let action: string, input: Record<string, unknown>;
   try {
-    const body = await req.json();
+    const body = (await readBody(req)) as { action?: unknown; input?: unknown } | null;
     action = String(body?.action ?? "");
     input = (clamp(body?.input ?? {}) as Record<string, unknown>) ?? {};
-  } catch {
-    return json(400, { error: "invalid body" });
+  } catch (e) {
+    return e instanceof RangeError ? json(413, { error: "That's too much to send at once." }) : json(400, { error: "invalid body" });
   }
   const spec = Object.hasOwn(ACTIONS, action) ? ACTIONS[action] : undefined;
   if (!spec) return json(400, { error: "unknown action" });
 
-  // The counter runs as the caller (their JWT), so it can only ever count their own requests.
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: auth } },
+  const url = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !anonKey || !serviceKey) return json(500, { error: "server misconfigured" });
+
+  // Who is this? Checked against Supabase Auth, never read from the body.
+  const caller = createClient(url, anonKey, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
+  const { data: { user } } = await caller.auth.getUser();
+  if (!user) return json(401, { error: "sign in first" });
+
+  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const num = (name: string, fallback: number) => Math.max(1, Number(Deno.env.get(name)) || fallback);
+  const { data: verdict, error } = await admin.rpc("hit_rate_limit", {
+    p_uid: user.id,
+    p_bucket: "ai",
+    p_per_minute: num("AI_PER_MINUTE", 6),
+    p_per_day: num("AI_DAILY_LIMIT", 40),
+    p_project_per_day: num("AI_PROJECT_DAILY_LIMIT", 500),
   });
-  const cap = Math.max(1, Number(Deno.env.get("AI_DAILY_LIMIT")) || 40);
-  const { data: allowed, error } = await supabase.rpc("bump_ai_usage", { cap });
   if (error) {
-    console.error("usage check failed", error.message);
+    console.error("rate limit check failed", error.code);
     return json(500, { error: "couldn't check your AI usage" });
   }
-  if (!allowed) return json(429, { error: `You've used today's ${cap} AI requests. They reset tomorrow.`, code: "daily_limit" });
+  if (verdict !== "ok") {
+    const m = LIMIT_MESSAGES[String(verdict)] ?? LIMIT_MESSAGES.day!;
+    return json(m.status, { error: m.error, code: m.code });
+  }
 
   try {
     const result = await callGemini(spec.system, spec.prompt(input), spec.schema);
     return json(200, { result });
   } catch (e) {
     if (e instanceof ProviderError) return json(e.status, { error: e.message });
-    console.error("ai failed", e);
+    console.error("ai failed", e instanceof Error ? e.name : "unknown");
     return json(500, { error: "Something went wrong" });
   }
 });
