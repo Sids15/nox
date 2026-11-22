@@ -101,3 +101,25 @@ describe("parseQuickAdd — the whole line, and what it leaves alone", () => {
     expect(p("Tomorrow")).toEqual({ title: "Tomorrow", matched: [] });
   });
 });
+
+describe("parseQuickAdd — length", () => {
+  test("minutes and hours, with or without 'for'", () => {
+    expect(p("call dentist thursday 3pm for 30 minutes")).toMatchObject({ title: "call dentist", date: "2026-11-19", time: "15:00", duration: 30 });
+    expect(p("Review deck 45 min")).toMatchObject({ title: "Review deck", duration: 45 });
+    expect(p("Gym for an hour")).toMatchObject({ title: "Gym", duration: 60 });
+    expect(p("Walk half an hour")).toMatchObject({ title: "Walk", duration: 30 });
+    expect(p("Write essay 1.5 hrs")).toMatchObject({ title: "Write essay", duration: 90 });
+    expect(p("Deep work 1h 30m")).toMatchObject({ title: "Deep work", duration: 90 });
+    expect(p("Study for 2 hours tomorrow")).toMatchObject({ title: "Study", date: "2026-11-15", duration: 120 });
+  });
+
+  test("'in 30 minutes' and out-of-range lengths are left alone", () => {
+    expect(p("Leave in 30 minutes").duration).toBeUndefined();
+    expect(p("Stretch 2 min").duration).toBeUndefined();
+    expect(p("Fast for 30 hours").duration).toBeUndefined();
+  });
+
+  test("a length is highlighted like the other fields", () => {
+    expect(p("Gym for an hour").matched).toEqual([{ field: "duration", text: "for an hour", start: 4, end: 15 }]);
+  });
+});

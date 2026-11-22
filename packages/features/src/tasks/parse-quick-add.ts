@@ -14,12 +14,14 @@ import { addDays, dayOfWeek } from "@nox/utils";
  * - priority: !high/!h/!1/p1, !medium/!med/!m/!2/p2, !low/!l/!3/p3
  * - repeat: daily / every day, weekdays / every weekday, weekly / every week,
  *   every <weekday>[, <weekday>…]
+ * - length: "for 30 minutes", "45 min", "an hour", "half an hour", "1.5 hrs", "1h 30m" (5 min–24 h;
+ *   "in 30 minutes" is not a length)
  *
  * Matches are removed from the title. Only whole words match ("monday" inside "mondays" does not),
  * and a title that would be left empty is not parsed at all — "Today" stays a task called "Today".
  */
 
-export type QuickAddField = "date" | "time" | "priority" | "repeat";
+export type QuickAddField = "date" | "time" | "priority" | "repeat" | "duration";
 
 export interface QuickAddResult {
   /** The title with recognised phrases removed. */
@@ -28,6 +30,8 @@ export interface QuickAddResult {
   time?: string;
   priority?: Task["priority"];
   repeat?: { kind: Exclude<Task["repeat"], "none">; weekdays?: number[] };
+  /** How long it takes, in minutes. */
+  duration?: number;
   /** Internal: "tonight" was typed — resolved to 20:00 unless a time was typed too. */
   tonight?: boolean;
   /** The phrases that were recognised, in the order they appear, with their [start, end) offsets in
@@ -180,6 +184,24 @@ const RULES: Rule[] = [
     apply: (m, today, out) => ((out.date = nextWeekday(today, WEEKDAYS[(m[1] ?? m[2])!.toLowerCase()]!)), true),
   },
 
+  // ── length ── (before times, so "for 2 hours" isn't half-read as anything else)
+  {
+    field: "duration",
+    re: /(?<![\w!])(?<!\bin\s{1,3})(?:for\s+)?(?:(half\s+an?|an?|\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)(?:\s*(?:and\s+)?(\d{1,2})\s*(?:minutes?|mins?|m))?|(\d{1,3})\s*(?:minutes?|mins?|m))(?![\w'’])/i,
+    apply: (m, _t, out) => {
+      let min: number;
+      if (m[3] !== undefined) min = Number(m[3]);
+      else {
+        const h = m[1]!.toLowerCase();
+        const hours = h.startsWith("half") ? 0.5 : h === "a" || h === "an" ? 1 : Number(h);
+        min = Math.round(hours * 60) + Number(m[2] ?? 0);
+      }
+      if (!(min >= 5 && min <= 1440)) return false;
+      out.duration = min;
+      return true;
+    },
+  },
+
   // ── times ──
   { field: "time", re: /(?<![\w])(?:at\s+)?noon(?![\w'’])/i, apply: (_m, _t, out) => ((out.time = "12:00"), true) },
   {
@@ -211,7 +233,7 @@ export function parseQuickAdd(input: string, today: string): QuickAddResult {
     if (!m) continue;
     const trial: QuickAddResult = { ...out, matched: [] };
     if (!rule.apply(m, today, trial)) continue;
-    Object.assign(out, { date: trial.date, time: trial.time, priority: trial.priority, repeat: trial.repeat, tonight: trial.tonight });
+    Object.assign(out, { date: trial.date, time: trial.time, priority: trial.priority, repeat: trial.repeat, duration: trial.duration, tonight: trial.tonight });
     claimed.add(rule.field);
     spans.push({ start: m.index, end: m.index + m[0].length, field: rule.field, text: m[0].trim() });
     // Blank the claimed text (same length) so indices stay valid and nothing re-matches it.
