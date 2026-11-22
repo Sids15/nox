@@ -675,6 +675,7 @@ export function PropertyBar({
             icon={Hourglass}
             label={value.duration ? durationLabel(value.duration) : "Duration"}
             set={!!value.duration}
+            auto={autoFields?.has("duration")}
             open={panel === "duration"}
             onPress={() => toggle("duration")}
             onClear={() => onChange({ duration: null })}

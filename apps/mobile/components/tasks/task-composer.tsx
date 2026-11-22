@@ -197,7 +197,7 @@ export function TaskComposer({
   const [manPriority, setManPriority] = useState<TaskProps["priority"] | undefined>(undefined);
   const [manRepeat, setManRepeat] = useState<RepeatValue | undefined>(undefined);
   const [reminders, setReminders] = useState<string[]>([]);
-  const [duration, setDuration] = useState<number | null>(null);
+  const [manDuration, setManDuration] = useState<number | null | undefined>(undefined);
   const askWhenAdding = usePrefs((s) => s.calendar.askWhenAdding);
   const calHours = usePrefs((s) => s.calendar);
   const [asked, setAsked] = useState(false);
@@ -216,7 +216,7 @@ export function TaskComposer({
     manTime: string | null | undefined;
     manPriority: TaskProps["priority"] | undefined;
     manRepeat: RepeatValue | undefined;
-    duration: number | null;
+    manDuration: number | null | undefined;
   }>(null);
   const dictation = useDictation((t) => setRaw((r) => (r.trim() ? `${r.trimEnd()} ${t.trim()}` : t.trim())));
 
@@ -232,6 +232,7 @@ export function TaskComposer({
   if (repeat.kind !== "none" && date === null) date = today;
   const time = date === null ? null : manTime !== undefined ? manTime : (parsed.time ?? initialTime);
   const priority = manPriority ?? parsed.priority ?? "medium";
+  const duration: number | null = manDuration !== undefined ? manDuration : (parsed.duration ?? null);
   const props: TaskProps = { date, time, reminders, repeat, priority, duration };
 
   // Which buttons show a value that came from the text (and wasn't overridden by hand).
@@ -241,8 +242,9 @@ export function TaskComposer({
     if (parsed.time !== undefined && manTime === undefined) set.add("time");
     if (parsed.priority !== undefined && manPriority === undefined) set.add("priority");
     if (parsed.repeat !== undefined && manRepeat === undefined) set.add("repeat");
+    if (parsed.duration !== undefined && manDuration === undefined) set.add("duration");
     return set;
-  }, [parsed, manDate, manTime, manPriority, manRepeat]);
+  }, [parsed, manDate, manTime, manPriority, manRepeat, manDuration]);
 
   // Reminders keep their distance from the task when its date/time moves — whether by hand or
   // because the typed name now says a different day.
@@ -272,14 +274,14 @@ export function TaskComposer({
     if (!sentence || ai.busy) return;
     const draft = await ai.run(sentence, today);
     if (!draft) return;
-    setAiUndo({ raw, description, parsing, manDate, manTime, manPriority, manRepeat, duration });
+    setAiUndo({ raw, description, parsing, manDate, manTime, manPriority, manRepeat, manDuration });
     setParsing(false); // the AI's title is final — don't re-read dates out of it
     setRaw(draft.title);
     if (draft.date) setManDate(draft.date);
     if (draft.time) setManTime(draft.time);
     if (draft.priority) setManPriority(draft.priority);
     if (draft.repeat && draft.repeat !== "none") setManRepeat({ kind: draft.repeat, weekdays: [] });
-    if (draft.duration_minutes) setDuration(draft.duration_minutes);
+    if (draft.duration_minutes) setManDuration(draft.duration_minutes);
     if (draft.notes && !description.trim()) setDescription(draft.notes);
   };
 
@@ -292,7 +294,7 @@ export function TaskComposer({
     setManTime(aiUndo.manTime);
     setManPriority(aiUndo.manPriority);
     setManRepeat(aiUndo.manRepeat);
-    setDuration(aiUndo.duration);
+    setManDuration(aiUndo.manDuration);
     setAiUndo(null);
   };
 
@@ -303,7 +305,7 @@ export function TaskComposer({
     if (patch.priority) setManPriority(patch.priority);
     if (patch.repeat) setManRepeat(patch.repeat);
     if (patch.reminders) setReminders(patch.reminders);
-    if ("duration" in patch) setDuration(patch.duration ?? null);
+    if ("duration" in patch) setManDuration(patch.duration ?? null);
   };
 
   const submit = () => {
@@ -369,7 +371,7 @@ export function TaskComposer({
 
   // One quiet line under the notes: how to type dates while the name is empty, then what was
   // picked up from it (with the way out), or the way back in once recognition is off.
-  const FIELD_NAMES: Record<string, string> = { date: "date", time: "time", priority: "priority", repeat: "repeat" };
+  const FIELD_NAMES: Record<string, string> = { date: "date", time: "time", priority: "priority", repeat: "repeat", duration: "length" };
   const picked = [...new Set(parsed.matched.map((m) => FIELD_NAMES[m.field]!))];
   const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
   const offerAi = aiOn && !aiUndo && wordCount >= 3;
