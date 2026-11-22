@@ -1,9 +1,11 @@
 /** The role inside a legacy Supabase JWT key ("anon" / "service_role"), or null if it isn't one. */
 function jwtRole(key: string): string | null {
   const part = key.split(".")[1];
-  if (!part || typeof atob !== "function") return null;
+  // Reached through globalThis: the packages that import @nox/db don't all include the DOM types.
+  const decode = (globalThis as { atob?: (s: string) => string }).atob;
+  if (!part || typeof decode !== "function") return null;
   try {
-    const json = atob(part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "="));
+    const json = decode(part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "="));
     return (JSON.parse(json) as { role?: string }).role ?? null;
   } catch {
     return null;
