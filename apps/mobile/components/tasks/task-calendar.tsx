@@ -1,5 +1,7 @@
+import { AiRepository } from "@nox/api";
 import {
   autoSchedule,
+  checkPlan,
   minutesToTime,
   tasksOnDay,
   timeToMinutes,
@@ -10,13 +12,16 @@ import {
   useToggleTask,
   useUpdateTask,
   type CalendarPrefs,
+  type PlacedTask,
   type PlannedTask,
 } from "@nox/features";
 import type { Task } from "@nox/types";
 import { addDays, dayOfMonth, dayOfWeek, formatTime12, monthShort, weekdayShort } from "@nox/utils";
 import { Check, ChevronLeft, ChevronRight, Minus, Plus, Repeat, Settings2, Sparkles } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Platform, Pressable, ScrollView, Text, View, type GestureResponderEvent } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View, type GestureResponderEvent } from "react-native";
+import { useAiCall, useAiEnabled } from "../../lib/use-ai";
+import { AiAction, AiPanel } from "../ai/ai-ui";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { MenuDivider, MenuLabel, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
@@ -371,6 +376,108 @@ export function TaskCalendar({
     );
     setTimeout(() => setPlanNote(null), 5000);
   };
+
+  // ── Plan with Nox AI (day view): the day's anytime tasks — and, today, anything overdue — laid out
+  // by the model, checked against the real calendar, and shown as a proposal. Nothing moves until
+  // "Schedule". The quick fit above stays as the free, offline fallback.
+  const aiOn = useAiEnabled();
+  const aiPlan = useAiCall(AiRepository.planDay);
+  const [proposal, setProposal] = useState<null | {
+    day: string;
+    summary: string;
+    placed: (PlacedTask & { task: Task; reason: string })[];
+    skipped: { task: Task; reason: string }[];
+  }>(null);
+  const planDay = days[0]!;
+  const planWithAi = aiOn && mode === "day" && planDay >= today;
+  const aiCandidates = useMemo(() => {
+    if (!planWithAi) return [];
+    const here = (byDay.get(planDay) ?? []).filter((p) => !p.projected && !p.task.due_time && p.task.status !== "complete").map((p) => p.task);
+    if (planDay !== today) return here;
+    const ids = new Set(here.map((t) => t.id));
+    const overdue = tasks.filter(
+      (t) =>
+        !t.deleted &&
+        t.status === "pending" &&
+        !!t.due_date &&
+        t.due_date < today &&
+        !ids.has(t.id) &&
+        !(t.repeat !== "none" && t.origin_task_id === null),
+    );
+    return [...here, ...overdue];
+  }, [planWithAi, byDay, planDay, today, tasks]);
+
+  const runAiPlan = async () => {
+    const day = planDay;
+    const planned = byDay.get(day) ?? [];
+    const offered = aiCandidates;
+    if (offered.length === 0) return;
+    const dayStart = prefs.startHour * 60;
+    const dayEnd = prefs.endHour * 60;
+    const notBefore = day === today ? nowMinutes() + 10 : 0;
+    setProposal(null);
+    const res = await aiPlan.run({
+      date: day,
+      notBefore: minutesToTime(Math.max(dayStart, notBefore)),
+      dayStart: minutesToTime(dayStart),
+      dayEnd: minutesToTime(dayEnd),
+      busy: planned
+        .filter((p) => p.task.status !== "complete" && p.task.due_time)
+        .map((p) => {
+          const s = timeToMinutes(p.task.due_time!);
+          return { title: p.task.title.slice(0, 80), start: minutesToTime(s), end: minutesToTime(s + lengthOf(p.task)) };
+        }),
+      tasks: offered.map((t) => ({
+        id: t.id,
+        title: t.title.slice(0, 120),
+        priority: t.priority,
+        ...(t.duration_minutes ? { minutes: t.duration_minutes } : {}),
+        due: t.due_date,
+        overdue: !!t.due_date && t.due_date < today,
+      })),
+    });
+    if (!res) return;
+    const byId = new Map(offered.map((t) => [t.id, t]));
+    // A length the user set wins over the model's estimate.
+    const slots = res.slots.map((sl) => ({ ...sl, minutes: byId.get(sl.id)?.duration_minutes ?? sl.minutes }));
+    const placed = checkPlan(planned, offered, slots, { dayStart, dayEnd, notBefore });
+    const placedIds = new Set(placed.map((p) => p.id));
+    setProposal({
+      day,
+      summary: res.summary,
+      placed: placed.map((p) => ({ ...p, task: byId.get(p.id)!, reason: res.slots.find((sl) => sl.id === p.id)?.reason ?? "" })),
+      skipped: offered
+        .filter((t) => !placedIds.has(t.id))
+        .map((t) => ({ task: t, reason: res.skipped.find((sk) => sk.id === t.id)?.reason || "Didn't fit today" })),
+    });
+  };
+
+  const applyProposal = () => {
+    if (!proposal) return;
+    for (const p of proposal.placed) {
+      const t = p.task;
+      updateTask.mutate({
+        id: t.id,
+        patch: {
+          due_date: proposal.day,
+          due_time: p.time,
+          ...(t.duration_minutes ? {} : { duration_minutes: p.minutes }),
+          reminder_times: rebaseReminders(t.reminder_times, anchorOf(t.due_date, t.due_time), anchorOf(proposal.day, p.time)),
+        },
+      });
+    }
+    const n = proposal.placed.length;
+    setProposal(null);
+    aiPlan.reset();
+    setPlanNote(`Scheduled ${n} task${n === 1 ? "" : "s"}. Drag any to adjust.`);
+    setTimeout(() => setPlanNote(null), 5000);
+  };
+  const dismissProposal = () => {
+    setProposal(null);
+    aiPlan.reset();
+  };
+  const planCount = planWithAi ? aiCandidates.length : toPlan;
+
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -408,16 +515,30 @@ export function TaskCalendar({
           ))}
         </View>
         <Pressable
-          onPress={planDays}
-          disabled={toPlan === 0}
+          onPress={planWithAi ? runAiPlan : planDays}
+          disabled={planCount === 0 || aiPlan.busy}
           accessibilityRole="button"
-          accessibilityLabel={toPlan ? `Fit ${toPlan} anytime tasks into free time` : "No anytime tasks to plan"}
-          {...({ title: "Fit anytime tasks into the free time, highest priority first" } as object)}
+          accessibilityLabel={
+            planCount === 0 ? "No anytime tasks to plan" : planWithAi ? `Plan ${planCount} tasks into the day with Nox AI` : `Fit ${planCount} anytime tasks into free time`
+          }
+          {...({
+            title: planWithAi
+              ? "Nox AI lays out the day's anytime and overdue tasks — you review before anything moves"
+              : "Fit anytime tasks into the free time, highest priority first",
+          } as object)}
           style={pressScale}
-          className={`h-8 flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${toPlan ? "hover:bg-chip" : "opacity-40"}`}
+          className={`h-8 flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${planCount ? "hover:bg-chip" : "opacity-40"}`}
         >
-          <Sparkles size={14} color={toPlan ? c.accent : c.ink3} strokeWidth={2.2} />
-          {isDesktop && <Text className="text-ink-2 text-[13px] font-semibold">{mode === "day" ? "Plan day" : "Plan week"}</Text>}
+          {aiPlan.busy ? (
+            <ActivityIndicator size="small" color={c.accent} style={{ transform: [{ scale: 0.7 }] }} />
+          ) : (
+            <Sparkles size={14} color={planCount ? c.accent : c.ink3} strokeWidth={2.2} />
+          )}
+          {isDesktop && (
+            <Text className="text-ink-2 text-[13px] font-semibold">
+              {aiPlan.busy ? "Planning…" : mode === "day" ? "Plan day" : "Plan week"}
+            </Text>
+          )}
         </Pressable>
         <View ref={gearRef} collapsable={false}>
           <Pressable
@@ -431,6 +552,62 @@ export function TaskCalendar({
           </Pressable>
         </View>
       </View>
+
+      {(proposal || aiPlan.error) && (
+        <View className="mx-screen mb-2">
+          <AiPanel
+            title={proposal ? (proposal.placed.length ? "Here's a plan for the day" : "Nothing fits the free time") : "Couldn't plan the day"}
+            onClose={dismissProposal}
+            footer={
+              <>
+                <AiAction
+                  label="Quick fit instead"
+                  onPress={() => {
+                    dismissProposal();
+                    planDays();
+                  }}
+                />
+                {proposal && proposal.placed.length > 0 && (
+                  <AiAction primary label={`Schedule ${proposal.placed.length}`} onPress={applyProposal} />
+                )}
+              </>
+            }
+          >
+            {aiPlan.error ? <Text className="text-high text-[13px]">{aiPlan.error}</Text> : null}
+            {proposal ? (
+              <ScrollView style={{ maxHeight: 240 }} nestedScrollEnabled>
+                {proposal.summary ? <Text className="text-ink-2 mb-2 text-[13px] leading-[19px]">{proposal.summary}</Text> : null}
+                {proposal.placed.map((p) => (
+                  <View key={p.id} className="flex-row items-start gap-2.5 py-1">
+                    <Text style={TABULAR} className="text-ink w-[62px] pt-px text-[13px] font-semibold">
+                      {formatTime12(p.time)}
+                    </Text>
+                    <View className="min-w-0 flex-1">
+                      <Text numberOfLines={1} className="text-ink text-[14px] font-medium">
+                        {p.task.title}
+                      </Text>
+                      <Text numberOfLines={2} className="text-ink-3 text-[12px]">
+                        {durationLabel(p.minutes)}
+                        {p.reason ? ` · ${p.reason}` : ""}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+                {proposal.skipped.length > 0 && (
+                  <View className="mt-1.5">
+                    <Text className="text-ink-3 mb-0.5 text-[12px] font-semibold">Left as anytime</Text>
+                    {proposal.skipped.map((sk) => (
+                      <Text key={sk.task.id} numberOfLines={1} className="text-ink-3 text-[13px]">
+                        {sk.task.title} — {sk.reason}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+            ) : null}
+          </AiPanel>
+        </View>
+      )}
 
       {planNote && (
         <View className="bg-accent/[0.08] mx-screen mb-2 flex-row items-center gap-2 rounded-[10px] px-3 py-2">
