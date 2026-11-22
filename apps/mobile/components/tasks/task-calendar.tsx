@@ -392,26 +392,43 @@ export function TaskCalendar({
   const planWithAi = aiOn && mode === "day" && planDay >= today;
   const aiCandidates = useMemo(() => {
     if (!planWithAi) return [];
-    const here = (byDay.get(planDay) ?? []).filter((p) => !p.projected && !p.task.due_time && p.task.status !== "complete").map((p) => p.task);
+    const isTemplate = (t: Task) => t.repeat !== "none" && t.origin_task_id === null;
+    const open = (byDay.get(planDay) ?? []).filter((p) => !p.projected && p.task.status !== "complete");
+    const here = open.filter((p) => !p.task.due_time).map((p) => p.task);
     if (planDay !== today) return here;
-    const ids = new Set(here.map((t) => t.id));
+    // Today, a task whose time has come and gone without being done gets a new slot too.
+    const now = nowMinutes();
+    const missed = open
+      .filter((p) => p.task.due_time && !isTemplate(p.task) && timeToMinutes(p.task.due_time) + lengthOf(p.task) <= now)
+      .map((p) => p.task);
+    const ids = new Set([...here, ...missed].map((t) => t.id));
     const overdue = tasks.filter(
       (t) =>
         !t.deleted &&
-        t.status === "pending" &&
+        t.status !== "complete" &&
         !!t.due_date &&
         t.due_date < today &&
         !ids.has(t.id) &&
-        !(t.repeat !== "none" && t.origin_task_id === null),
+        !isTemplate(t),
     );
-    return [...here, ...overdue];
+    return [...here, ...missed, ...overdue];
   }, [planWithAi, byDay, planDay, today, tasks]);
 
   const runAiPlan = async () => {
     const day = planDay;
-    const planned = byDay.get(day) ?? [];
     const offered = aiCandidates;
-    if (offered.length === 0) return;
+    if (offered.length === 0) {
+      setPlanNote(
+        day === today
+          ? "Nothing to plan: every open task today already has a time that's still ahead. Add a task without a time and Plan day will fit it in."
+          : "Nothing to plan: every task that day already has a time. Add one without a time and Plan day will fit it in.",
+      );
+      setTimeout(() => setPlanNote(null), 6000);
+      return;
+    }
+    const moving = new Set(offered.map((t) => t.id));
+    // What stays put: everything else on the day. The tasks being planned don't block their own new slots.
+    const planned = (byDay.get(day) ?? []).filter((p) => !moving.has(p.task.id));
     const dayStart = prefs.startHour * 60;
     const dayEnd = prefs.endHour * 60;
     const notBefore = day === today ? nowMinutes() + 10 : 0;
@@ -433,7 +450,7 @@ export function TaskCalendar({
         priority: t.priority,
         ...(t.duration_minutes ? { minutes: t.duration_minutes } : {}),
         due: t.due_date,
-        overdue: !!t.due_date && t.due_date < today,
+        overdue: (!!t.due_date && t.due_date < today) || (!!t.due_time && t.due_date === today),
       })),
     });
     if (!res) return;
@@ -516,23 +533,27 @@ export function TaskCalendar({
         </View>
         <Pressable
           onPress={planWithAi ? runAiPlan : planDays}
-          disabled={planCount === 0 || aiPlan.busy}
+          disabled={(planCount === 0 && !planWithAi) || aiPlan.busy}
           accessibilityRole="button"
           accessibilityLabel={
-            planCount === 0 ? "No anytime tasks to plan" : planWithAi ? `Plan ${planCount} tasks into the day with Nox AI` : `Fit ${planCount} anytime tasks into free time`
+            planWithAi
+              ? `Plan the day with Nox AI${planCount ? ` (${planCount} task${planCount === 1 ? "" : "s"} to place)` : ""}`
+              : planCount === 0
+                ? "No anytime tasks to plan"
+                : `Fit ${planCount} anytime tasks into free time`
           }
           {...({
             title: planWithAi
-              ? "Nox AI lays out the day's anytime and overdue tasks — you review before anything moves"
+              ? "Nox AI fits in the day's tasks without a time, ones whose time has passed, and overdue ones — you review before anything moves"
               : "Fit anytime tasks into the free time, highest priority first",
           } as object)}
           style={pressScale}
-          className={`h-8 flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${planCount ? "hover:bg-chip" : "opacity-40"}`}
+          className={`h-8 flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${planCount || planWithAi ? "hover:bg-chip" : "opacity-40"}`}
         >
           {aiPlan.busy ? (
             <ActivityIndicator size="small" color={c.accent} style={{ transform: [{ scale: 0.7 }] }} />
           ) : (
-            <Sparkles size={14} color={planCount ? c.accent : c.ink3} strokeWidth={2.2} />
+            <Sparkles size={14} color={planCount || planWithAi ? c.accent : c.ink3} strokeWidth={2.2} />
           )}
           {isDesktop && (
             <Text className="text-ink-2 text-[13px] font-semibold">
