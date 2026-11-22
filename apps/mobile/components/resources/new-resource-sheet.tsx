@@ -13,6 +13,9 @@ import { pickImage } from "../../lib/media";
 import { uploadToBucket, useSignedUrl } from "../../lib/storage";
 import { fetchUrlMeta, videoThumbnail } from "../../lib/url-meta";
 import { nextTagColor, TAG_PALETTE } from "../../lib/tag-palette";
+import { AiRepository } from "@nox/api";
+import { useAiCall, useAiEnabled } from "../../lib/use-ai";
+import { AiAction, AiButton, AiPanel } from "../ai/ai-ui";
 import { useIsDesktop } from "../../lib/use-responsive";
 
 // Keep in sync with the `images` bucket policy (migration 0006).
@@ -81,6 +84,8 @@ export function NewResourceSheet({
   const titleTouched = useRef(false);
   const fetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchGen = useRef(0); // bumped to invalidate any in-flight URL fetch
+  const aiOn = useAiEnabled();
+  const tagAi = useAiCall(AiRepository.tagResource);
 
   useEffect(() => {
     // Invalidate/cancel any pending or in-flight fetch from a previously-open resource.
@@ -107,6 +112,7 @@ export function NewResourceSheet({
     setLocalImage(null);
     setUploading(false);
     setTagQuery("");
+    tagAi.reset();
     titleTouched.current = false;
   }, [visible, resource?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -172,6 +178,26 @@ export function NewResourceSheet({
     addTag(id);
   };
   const removeTag = (id: string) => setTagIds((s) => s.filter((x) => x !== id));
+
+  /** Add a tag by name — the existing one if it matches, else a new tag. */
+  const addTagNamed = (name: string, offset = 0) => {
+    const existing = tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+    addTag(existing ? existing.id : createTag.create({ name: name.slice(0, 40), color: nextTagColor(tags.length + offset) }).id);
+  };
+  const aiHasInput = type === "text" ? body.trim().length > 10 : !!(url.trim() || title.trim());
+  const suggestTags = () =>
+    void tagAi.run(
+      {
+        title: title.trim() || null,
+        url: type === "text" || type === "image" ? null : url.trim() || null,
+        domain: domain || null,
+        body: type === "text" ? body.trim().slice(0, 3000) : null,
+      },
+      tags.map((t) => t.name),
+    );
+  const aiTags = (tagAi.result?.tags ?? []).filter(
+    (n) => !tagIds.some((id) => tags.find((t) => t.id === id)?.name.toLowerCase() === n.toLowerCase()),
+  );
 
   const selectedTags = tagIds.map((id) => tags.find((t) => t.id === id)).filter(Boolean) as Tag[];
   const q = tagQuery.trim().toLowerCase();
@@ -425,7 +451,53 @@ export function NewResourceSheet({
 
           {/* Tags: every tag you have, tap to add or remove; type to make a new one. */}
           <View className="gap-2">
-            <Text className="text-ink-2 text-[13px] font-semibold">Tags</Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-ink-2 text-[13px] font-semibold">Tags</Text>
+              {aiOn && aiHasInput && !tagAi.result && <AiButton label="Suggest tags" onPress={suggestTags} busy={tagAi.busy} />}
+            </View>
+            {tagAi.error ? <Text className="text-high text-[13px]">{tagAi.error}</Text> : null}
+            {tagAi.result && (
+              <AiPanel
+                title="Suggested"
+                onClose={tagAi.reset}
+                footer={
+                  aiTags.length > 1 ? (
+                    <AiAction
+                      primary
+                      label="Add all"
+                      onPress={() => {
+                        aiTags.forEach((n, i) => addTagNamed(n, i));
+                        tagAi.reset();
+                      }}
+                    />
+                  ) : null
+                }
+              >
+                {tagAi.result.summary ? <Text className="text-ink-2 mb-2 text-[13px] leading-[19px]">{tagAi.result.summary}</Text> : null}
+                <View className="flex-row flex-wrap gap-1.5">
+                  {aiTags.length === 0 ? (
+                    <Text className="text-ink-3 text-[13px]">Its tags are already on.</Text>
+                  ) : (
+                    aiTags.map((n) => {
+                      const isNew = !tags.some((t) => t.name.toLowerCase() === n.toLowerCase());
+                      return (
+                        <Pressable
+                          key={n}
+                          onPress={() => addTagNamed(n)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Add tag ${n}`}
+                          className="border-line hover:bg-chip rounded-pill flex-row items-center gap-1 border px-2.5 py-[4px]"
+                        >
+                          <Plus size={11} color={c.accent} strokeWidth={2.6} />
+                          <Text className="text-ink text-[13px] font-semibold">{n}</Text>
+                          {isNew && <Text className="text-ink-3 text-[11px]">new</Text>}
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </View>
+              </AiPanel>
+            )}
             <View className="flex-row flex-wrap items-center gap-1.5">
               {tags.map((t) => {
                 const on = tagIds.includes(t.id);
