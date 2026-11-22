@@ -12,13 +12,17 @@ import {
 } from "@nox/features";
 import type { TaskInput } from "@nox/types";
 import { formatTime12, todayKey } from "@nox/utils";
-import { ArrowUp, CornerDownLeft, Sparkles, X } from "lucide-react-native";
+import { AiRepository } from "@nox/api";
+import { ArrowUp, AudioLines, CornerDownLeft, Sparkles, X } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, Text, TextInput, View, type TextStyle } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
 import { DayPreview } from "./day-preview";
 import { anchorOf, PropertyBar, rebaseReminders, type RepeatValue, type TaskProps } from "./task-properties";
 import { withAlpha } from "../../lib/color";
+import { useDictation } from "../../lib/dictation";
+import { useAiCall, useAiEnabled } from "../../lib/use-ai";
+import { AiButton } from "../ai/ai-ui";
 
 const WEB = Platform.OS === "web";
 
@@ -200,6 +204,22 @@ export function TaskComposer({
 
   const titleRef = useRef<TextInput>(null);
 
+  // Nox AI: turn a whole sentence ("dentist thursday afternoon, half an hour, urgent") into the fields.
+  const aiOn = useAiEnabled();
+  const ai = useAiCall(AiRepository.parseTask);
+  /** What the composer looked like before AI filled it in, so Undo can put it back. */
+  const [aiUndo, setAiUndo] = useState<null | {
+    raw: string;
+    description: string;
+    parsing: boolean;
+    manDate: string | null | undefined;
+    manTime: string | null | undefined;
+    manPriority: TaskProps["priority"] | undefined;
+    manRepeat: RepeatValue | undefined;
+    duration: number | null;
+  }>(null);
+  const dictation = useDictation((t) => setRaw((r) => (r.trim() ? `${r.trimEnd()} ${t.trim()}` : t.trim())));
+
   const parsed: QuickAddResult = useMemo(
     () => (parsing ? parseQuickAdd(raw, today) : { title: raw.trim(), matched: [] }),
     [raw, parsing, today],
@@ -247,6 +267,35 @@ export function TaskComposer({
     return () => clearTimeout(t);
   }, [added]);
 
+  const fillWithAi = async () => {
+    const sentence = raw.trim();
+    if (!sentence || ai.busy) return;
+    const draft = await ai.run(sentence, today);
+    if (!draft) return;
+    setAiUndo({ raw, description, parsing, manDate, manTime, manPriority, manRepeat, duration });
+    setParsing(false); // the AI's title is final — don't re-read dates out of it
+    setRaw(draft.title);
+    if (draft.date) setManDate(draft.date);
+    if (draft.time) setManTime(draft.time);
+    if (draft.priority) setManPriority(draft.priority);
+    if (draft.repeat && draft.repeat !== "none") setManRepeat({ kind: draft.repeat, weekdays: [] });
+    if (draft.duration_minutes) setDuration(draft.duration_minutes);
+    if (draft.notes && !description.trim()) setDescription(draft.notes);
+  };
+
+  const undoAi = () => {
+    if (!aiUndo) return;
+    setRaw(aiUndo.raw);
+    setDescription(aiUndo.description);
+    setParsing(aiUndo.parsing);
+    setManDate(aiUndo.manDate);
+    setManTime(aiUndo.manTime);
+    setManPriority(aiUndo.manPriority);
+    setManRepeat(aiUndo.manRepeat);
+    setDuration(aiUndo.duration);
+    setAiUndo(null);
+  };
+
   const onChange = (patch: Partial<TaskProps>) => {
     setError(null);
     if ("date" in patch) setManDate(patch.date);
@@ -292,6 +341,8 @@ export function TaskComposer({
     }
     // Create more: keep the settings, clear the words, go again.
     setAsked(false);
+    setAiUndo(null);
+    ai.reset();
     setAdded(title);
     setRaw("");
     setDescription("");
@@ -320,8 +371,18 @@ export function TaskComposer({
   // picked up from it (with the way out), or the way back in once recognition is off.
   const FIELD_NAMES: Record<string, string> = { date: "date", time: "time", priority: "priority", repeat: "repeat" };
   const picked = [...new Set(parsed.matched.map((m) => FIELD_NAMES[m.field]!))];
+  const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
+  const offerAi = aiOn && !aiUndo && wordCount >= 3;
   const hint =
-    raw.trim().length === 0 ? null : picked.length > 0 ? (
+    raw.trim().length === 0 ? null : aiUndo ? (
+      <View className="flex-row flex-wrap items-center gap-1.5">
+        <Sparkles size={11} color={c.accent} strokeWidth={2.2} />
+        <Text className="text-ink-3 text-[12px]">Filled in by Nox AI — check it before adding ·</Text>
+        <Pressable onPress={undoAi} hitSlop={6} accessibilityRole="button">
+          <Text className="text-ink-2 text-[12px] font-semibold underline">Undo</Text>
+        </Pressable>
+      </View>
+    ) : picked.length > 0 ? (
       <View className="flex-row flex-wrap items-center gap-1.5">
         <Sparkles size={11} color={c.accent} strokeWidth={2.2} />
         <Text className="text-ink-3 text-[12px]">
@@ -400,6 +461,18 @@ export function TaskComposer({
           style={{ textAlignVertical: "top" }}
         />
         {hint ? <View className="mt-2.5">{hint}</View> : null}
+        {offerAi || ai.error ? (
+          <View className="mt-2.5 flex-row flex-wrap items-center gap-2">
+            {offerAi && <AiButton label="Fill in with AI" onPress={fillWithAi} busy={ai.busy} />}
+            {ai.error ? <Text className="text-high flex-1 text-[12px]">{ai.error}</Text> : null}
+          </View>
+        ) : null}
+        {dictation.listening ? (
+          <Text numberOfLines={2} className="text-ink-3 mt-2 text-[13px]">
+            {dictation.interim || "Listening… say the task, the day and how long it takes"}
+          </Text>
+        ) : null}
+        {dictation.error ? <Text className="text-high mt-2 text-[12px]">{dictation.error}</Text> : null}
         {clash ? (
           <View className="mt-2 flex-row items-center gap-1.5">
             <View className="bg-medium h-1.5 w-1.5 rounded-full" />
@@ -501,6 +574,24 @@ export function TaskComposer({
           </View>
           <Text className="text-ink-2 text-[13px] font-medium">Create more</Text>
         </Pressable>
+
+        {dictation.supported && (
+          <Pressable
+            onPress={dictation.listening ? dictation.stop : dictation.start}
+            accessibilityRole="button"
+            accessibilityLabel={dictation.listening ? "Stop dictating" : "Dictate the task"}
+            accessibilityState={{ selected: dictation.listening }}
+            style={press}
+            className={`h-8 flex-row items-center gap-1.5 rounded-[8px] px-2 ${dictation.listening ? "bg-accent" : "hover:bg-chip"}`}
+          >
+            <AudioLines size={15} color={dictation.listening ? c.onAccent : c.ink2} strokeWidth={2} />
+            {!compact && (
+              <Text className={`text-[13px] font-medium ${dictation.listening ? "text-on-accent" : "text-ink-2"}`}>
+                {dictation.listening ? "Stop" : "Dictate"}
+              </Text>
+            )}
+          </Pressable>
+        )}
 
         <View className="flex-1">
           {added ? (
