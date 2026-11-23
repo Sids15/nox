@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Make Nox's Android release signing key, once. Run it yourself: bash scripts/android-signing-key
+#
+# Android only installs an update over an app signed with the same key, so this key must be kept
+# forever — lose it and every phone has to uninstall Nox to get a new version. It is written to
+# ~/nox-android-signing (outside the repo; *.p12 is gitignored anyway). Back that folder up.
+#
+# Then add two repository secrets on github.com (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64   = contents of keystore.base64.txt (copied to your clipboard)
+#   ANDROID_KEYSTORE_PASSWORD = contents of password.txt
+set -euo pipefail
+
+dir="$HOME/nox-android-signing"
+if [ -e "$dir/nox-release.p12" ]; then
+  echo "A key already exists at $dir/nox-release.p12 — not overwriting it." >&2
+  exit 1
+fi
+mkdir -p "$dir"
+chmod 700 "$dir"
+cd "$dir"
+
+password=$(openssl rand -hex 24)
+printf '%s' "$password" > password.txt
+
+openssl req -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 10950 \
+  -subj "/CN=Nox/O=Nox" 2>/dev/null
+# 3DES/SHA1 PBE: readable by every Java keystore loader (apksigner on the CI runner).
+openssl pkcs12 -export -name nox -inkey key.pem -in cert.pem -out nox-release.p12 \
+  -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -passout file:password.txt
+rm -f key.pem cert.pem
+
+base64 < nox-release.p12 | tr -d '\n' > keystore.base64.txt
+chmod 600 password.txt nox-release.p12 keystore.base64.txt
+command -v pbcopy >/dev/null && pbcopy < keystore.base64.txt && copied=" (already on your clipboard)" || copied=""
+
+cat <<EOF
+Made $dir/nox-release.p12 — back this folder up somewhere safe.
+
+On github.com → Sids15/nox → Settings → Secrets and variables → Actions → New repository secret:
+  ANDROID_KEYSTORE_BASE64    paste keystore.base64.txt$copied
+  ANDROID_KEYSTORE_PASSWORD  paste password.txt   (open $dir/password.txt)
+EOF
