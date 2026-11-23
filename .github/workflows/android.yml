@@ -1,0 +1,120 @@
+# Android build: an installable APK of the Expo app, built on GitHub's Linux runners (no Android
+# Studio needed on your machine). Runs on demand (Actions → Android → Run workflow), on a version
+# tag, and on pushes to main that touch the app or shared packages. A `v*` tag also attaches the
+# APK to that tag's GitHub Release, next to the desktop installers.
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
+    paths:
+      - "apps/mobile/**"
+      - "packages/**"
+      - "bun.lock"
+      - ".github/workflows/android.yml"
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # React Native 0.81 builds with JDK 17.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install JS deps
+        run: bun install --frozen-lockfile
+
+      # Generates apps/mobile/android from app.json (gitignored; made fresh on every build).
+      - name: Generate the Android project
+        working-directory: apps/mobile
+        run: bunx expo prebuild --platform android --no-install --clean
+
+      # Every build gets a higher versionCode than the last, so a new APK installs over the old one.
+      - name: Set the version code
+        working-directory: apps/mobile/android
+        run: sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/" app/build.gradle
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # EXPO_PUBLIC_* values are inlined into the bundle here, same repo secrets as the desktop build.
+      # The anon key is safe to ship (RLS-protected); never put service_role.
+      - name: Build APK
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+        env:
+          NODE_ENV: production
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+          # No Sentry auth token in CI: skip uploading source maps instead of failing the build.
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
+
+      # The generated project signs release builds with a throwaway debug key. With the
+      # ANDROID_KEYSTORE_BASE64 + ANDROID_KEYSTORE_PASSWORD secrets (see scripts/android-signing-key)
+      # the APK is re-signed with your own key instead — Android only installs an update over an app
+      # signed with the same key, so set this up before handing the APK to anyone.
+      - name: Sign and name the APK
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./apps/mobile/app.json').expo.version")
+          src=apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          mkdir -p out
+          out="out/Nox_${version}_android.apk"
+          if [ -n "${KEYSTORE_B64}" ] && [ -n "${KEYSTORE_PASSWORD}" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/nox-release.p12"
+            apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+            "$apksigner" sign --ks "$RUNNER_TEMP/nox-release.p12" --ks-type PKCS12 \
+              --ks-pass env:KEYSTORE_PASSWORD --out "$out" "$src"
+            "$apksigner" verify "$out"
+            rm -f "$RUNNER_TEMP/nox-release.p12"
+            echo "Signed with your release key."
+          else
+            cp "$src" "$out"
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: this APK is signed with a debug key. Later APKs signed with your real key won't install over it without uninstalling first."
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nox-android
+          if-no-files-found: error
+          path: out/*.apk
+
+      # On a version tag: add the APK to that tag's release (or start a draft if the desktop workflow
+      # hasn't made one yet; if both race to create it, fall back to uploading).
+      - name: Attach to the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" out/*.apk --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" out/*.apk --title "Nox $GITHUB_REF_NAME" --generate-notes --draft \
+              || gh release upload "$GITHUB_REF_NAME" out/*.apk --clobber
+          fi
+    permissions:
+      contents: write
