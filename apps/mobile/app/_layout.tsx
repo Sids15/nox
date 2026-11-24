@@ -23,7 +23,7 @@ import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { colorScheme, vars } from "nativewind";
 import { useEffect, type ReactNode } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -35,6 +35,11 @@ import { useNotifications } from "../lib/use-notifications";
 import { useHeadingFont } from "../lib/heading-font";
 import { useWebViewport } from "../lib/web-viewport";
 import { useAiAccountSync } from "../lib/use-ai";
+import { isWidgetWindow, useOpenFromWidget } from "../lib/desktop-widget";
+import { DesktopWidget } from "../components/widget/desktop-widget";
+
+/** This window is the desktop widget (a second Tauri window), not the app. Fixed for its lifetime. */
+const WIDGET_WINDOW = isWidgetWindow();
 
 initSentry();
 // Wire real connectivity so offline writes pause (queue) instead of failing, and register every
@@ -87,9 +92,12 @@ function NotificationsBridge() {
 
 function RootNavigator() {
   useAuthBootstrap();
-  useAuthDeepLink();
+  // Sign-in links are the main window's job; the widget redeeming the same one would fail it.
+  // WIDGET_WINDOW never changes while the window lives, so the hook order is stable.
+  if (!WIDGET_WINDOW) useAuthDeepLink(); // eslint-disable-line react-hooks/rules-of-hooks
   useRealtimeSync();
   useAiAccountSync();
+  useOpenFromWidget();
   const status = useSessionStore((s) => s.status);
   const prefsHydrated = usePrefs((s) => s.hydrated);
   const c = useThemeColors();
@@ -102,7 +110,7 @@ function RootNavigator() {
   const segments = useSegments();
   const area = segments[0] as string | undefined;
   useEffect(() => {
-    if (status !== "unauthenticated") return;
+    if (status !== "unauthenticated" || WIDGET_WINDOW) return;
     if (area === undefined || area === "(auth)" || area === "auth-callback") return;
     router.replace("/(auth)/login");
   }, [status, area, router]);
@@ -113,6 +121,16 @@ function RootNavigator() {
     return (
       <View className="bg-bg flex-1 items-center justify-center">
         <ActivityIndicator color={c.accent} />
+      </View>
+    );
+  }
+
+  if (WIDGET_WINDOW) {
+    return status === "authenticated" ? (
+      <DesktopWidget />
+    ) : (
+      <View className="bg-bg flex-1 items-center justify-center px-6">
+        <Text className="text-ink-2 text-center text-[13px]">Sign in to Nox in the main window, and your day shows here.</Text>
       </View>
     );
   }

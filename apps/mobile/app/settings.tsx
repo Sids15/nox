@@ -1,4 +1,4 @@
-import { useAuth, usePrefs, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
+import { WIDGET_SECTION_LABEL, useAuth, usePrefs, useSpaces, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
 import { AiRepository } from "@nox/api";
 import { setNoxAi } from "../lib/use-ai";
 import { accents, type AccentName, type ThemeName } from "@nox/ui";
@@ -6,6 +6,9 @@ import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import type { LucideIcon } from "lucide-react-native";
 import {
+  ArrowDown,
+  ArrowUp,
+  LayoutDashboard,
   BellRing,
   CalendarDays,
   Check,
@@ -25,6 +28,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TABULAR, pressScale } from "../components/menu";
+import { useWidgetSnapshot } from "../components/widget/use-widget-snapshot";
+import { WidgetView } from "../components/widget/widget-view";
+import { canOpenDesktopWidget, toggleDesktopWidget } from "../lib/desktop-widget";
 import { Sidebar } from "../components/sidebar";
 import { Alert } from "../lib/alert";
 import { goBack } from "../lib/go-back";
@@ -45,11 +51,12 @@ const APP_VERSION = Constants.expoConfig?.version ?? "dev";
 const hourLabel = (h: number) => (h === 0 || h === 24 ? "12 AM" : h === 12 ? "12 PM" : h < 12 ? `${h} AM` : `${h - 12} PM`);
 const MOD = Platform.OS === "web" && typeof navigator !== "undefined" && /Mac/.test(navigator.platform) ? "⌘" : "Ctrl";
 
-type SectionKey = "appearance" | "tasks" | "ai" | "notifications" | "account" | "about";
+type SectionKey = "appearance" | "tasks" | "ai" | "widget" | "notifications" | "account" | "about";
 const SECTIONS: { key: SectionKey; label: string; Icon: LucideIcon }[] = [
   { key: "appearance", label: "Appearance", Icon: Palette },
   { key: "tasks", label: "Tasks & calendar", Icon: CalendarDays },
   { key: "ai", label: "Nox AI", Icon: Sparkles },
+  { key: "widget", label: "Widget", Icon: LayoutDashboard },
   { key: "notifications", label: "Notifications", Icon: BellRing },
   { key: "account", label: "Account & sync", Icon: UserRound },
   { key: "about", label: "About", Icon: Info },
@@ -141,6 +148,95 @@ function Row({ title, detail, children, last, onPress }: { title: string; detail
 
 function Group({ children }: { children: ReactNode }) {
   return <View className="border-line bg-surface overflow-hidden rounded-[14px] border">{children}</View>;
+}
+
+/**
+ * Settings → Widget: what the widget shows and in what order, with a live preview. The same settings
+ * drive the desktop widget window and the Android home-screen widget.
+ */
+function WidgetSettings() {
+  const c = useThemeColors();
+  const widget = usePrefs((s) => s.widget);
+  const setWidget = usePrefs((s) => s.setWidget);
+  const { data: spaces = [] } = useSpaces();
+  const snapshot = useWidgetSnapshot();
+  const desktop = canOpenDesktopWidget();
+  const move = (i: number, d: -1 | 1) => {
+    const j = i + d;
+    if (j < 0 || j >= widget.sections.length) return;
+    const next = [...widget.sections];
+    [next[i], next[j]] = [next[j]!, next[i]!];
+    setWidget({ sections: next });
+  };
+  const spaceOn = widget.sections.some((s) => s.key === "space" && s.on);
+
+  return (
+    <View className="gap-3">
+      <Group>
+        {desktop ? (
+          <Row title="Show the widget" detail="A small window with your day, beside whatever you're doing. Also in the menu-bar / tray icon." onPress={() => void toggleDesktopWidget()}>
+            <LayoutDashboard size={17} color={c.accent} strokeWidth={2} />
+          </Row>
+        ) : Platform.OS === "android" ? (
+          <Row title="Add it to your home screen" detail="Long-press your home screen → Widgets → Nox. It uses the settings below and updates as your day changes." />
+        ) : (
+          <Row title="Where it lives" detail="On the Mac and Windows apps (a small floating window) and on Android (a home-screen widget). These settings apply to both." />
+        )}
+        {widget.sections.map((sec, i) => (
+          <Row key={sec.key} title={WIDGET_SECTION_LABEL[sec.key]} last={false}>
+            <View className="flex-row items-center gap-1">
+              <Pressable onPress={() => move(i, -1)} disabled={i === 0} accessibilityLabel={`Move ${WIDGET_SECTION_LABEL[sec.key]} up`} className="hover:bg-chip h-8 w-8 items-center justify-center rounded-[8px]" style={{ opacity: i === 0 ? 0.3 : 1 }}>
+                <ArrowUp size={15} color={c.ink2} strokeWidth={2} />
+              </Pressable>
+              <Pressable onPress={() => move(i, 1)} disabled={i === widget.sections.length - 1} accessibilityLabel={`Move ${WIDGET_SECTION_LABEL[sec.key]} down`} className="hover:bg-chip h-8 w-8 items-center justify-center rounded-[8px]" style={{ opacity: i === widget.sections.length - 1 ? 0.3 : 1 }}>
+                <ArrowDown size={15} color={c.ink2} strokeWidth={2} />
+              </Pressable>
+              <Toggle label={WIDGET_SECTION_LABEL[sec.key]} value={sec.on} onChange={(on) => setWidget({ sections: widget.sections.map((x) => (x.key === sec.key ? { ...x, on } : x)) })} />
+            </View>
+          </Row>
+        ))}
+        {spaceOn ? (
+          <View className="border-line border-b px-4 py-3">
+            <Text className="text-ink text-[15px] font-medium">Which space</Text>
+            {spaces.length === 0 ? (
+              <Text className="text-ink-3 mt-0.5 text-[13px]">Make a space first, in Spaces.</Text>
+            ) : (
+              <View className="mt-2 flex-row flex-wrap gap-1.5">
+                {spaces.map((sp) => {
+                  const on = (widget.spaceId ?? spaces[0]?.id) === sp.id;
+                  return (
+                    <Pressable key={sp.id} onPress={() => setWidget({ spaceId: sp.id })} accessibilityRole="radio" accessibilityState={{ checked: on }} className={`rounded-pill border px-3 py-1.5 ${on ? "border-accent bg-accent/[0.1]" : "border-line hover:bg-chip"}`}>
+                      <Text className={`text-[13px] ${on ? "text-accent font-semibold" : "text-ink-2"}`}>{`${sp.icon ? `${sp.icon} ` : ""}${sp.name}`}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ) : null}
+        <Row title="Rows per list" detail="How many tasks or notes each list shows.">
+          <Stepper label="rows" value={String(widget.maxItems)} onDec={() => setWidget({ maxItems: widget.maxItems - 1 })} onInc={() => setWidget({ maxItems: widget.maxItems + 1 })} />
+        </Row>
+        <Row title="Show finished tasks" detail="Keep today's done tasks in the list, crossed out.">
+          <Toggle label="Show finished tasks" value={widget.showDone} onChange={(v) => setWidget({ showDone: v })} />
+        </Row>
+        <Row title="Compact" detail="Tighter rows, more on screen." last={!desktop}>
+          <Toggle label="Compact" value={widget.compact} onChange={(v) => setWidget({ compact: v })} />
+        </Row>
+        {desktop ? (
+          <Row title="Keep on top" detail="The widget floats above other windows. The pin in its top bar does the same." last>
+            <Toggle label="Keep on top" value={widget.alwaysOnTop} onChange={(v) => setWidget({ alwaysOnTop: v })} />
+          </Row>
+        ) : null}
+      </Group>
+
+      {/* Live preview: exactly what the widget will show, from your real day. */}
+      <Text className="text-ink-3 mt-1 text-[12px] font-semibold tracking-[0.05em]">PREVIEW</Text>
+      <View className="border-line bg-bg self-start overflow-hidden rounded-[16px] border p-3" style={{ width: 320, maxWidth: "100%" }}>
+        <WidgetView snapshot={snapshot} actions={{ onToggleTask: () => {}, onOpen: () => {}, onCapture: () => {} }} />
+      </View>
+    </View>
+  );
 }
 
 /** A miniature page of the app in a theme, for picking Paper or Night. */
@@ -429,6 +525,8 @@ export default function SettingsScreen() {
           />
         </Group>,
       )}
+
+      {section("widget", "Widget", "Your day at a glance, outside the app. Pick what it shows and in what order.", <WidgetSettings />)}
 
       {section(
         "notifications",

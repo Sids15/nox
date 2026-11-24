@@ -1,5 +1,6 @@
 mod notify;
 mod secret_store;
+mod widget;
 
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -44,6 +45,8 @@ pub fn run() {
             notify::set_notifications,
             notify::clear_notifications,
             notify::notify_now,
+            widget::toggle_widget,
+            widget::show_main,
         ])
         // Close-to-tray: the reminder scheduler must keep running after the window is closed, so a
         // close request hides the window instead of quitting. The tray "Quit" item is the real exit.
@@ -65,14 +68,18 @@ pub fn run() {
             // Tray icon so a tray-resident (window-closed) app is still reachable — click or "Show"
             // to reopen, "Quit" to actually exit.
             let show = MenuItem::with_id(app, "show", "Show Nox", true, None::<&str>)?;
+            let widget_item = MenuItem::with_id(app, "widget", "Show or hide widget", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &widget_item, &quit])?;
             let mut tray = TrayIconBuilder::new()
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .tooltip("Nox")
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => reveal_main(app),
+                    "widget" => {
+                        let _ = widget::toggle(app);
+                    }
                     "quit" => app.exit(0),
                     _ => {}
                 })

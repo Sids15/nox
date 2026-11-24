@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "widget",
+  "description": "The desktop widget window: what the main window has (it runs the same app and reads the same session), plus moving itself by its top bar, staying on top, and hiding itself.",
+  "windows": ["widget"],
+  "permissions": [
+    "core:default",
+    "notification:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-hide",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://**" }, { "url": "http://**" }]
+    }
+  ]
+}
