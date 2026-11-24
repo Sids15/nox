@@ -180,7 +180,7 @@ export default function SpacesScreen() {
                   style={(st) => [pressScale(st), isDesktop ? { width: 260 } : null]}
                   className="border-line bg-surface hover:border-accent/[0.4] rounded-card border p-4"
                 >
-                  <Text style={{ fontSize: 22 }}>{p.icon || "＋"}</Text>
+                  <SpaceMark space={{ icon: p.icon }} size={34} />
                   <Text className="text-ink mt-2 text-[15px] font-semibold">{p.label}</Text>
                   <Text numberOfLines={2} className="text-ink-3 mt-0.5 text-[13px] leading-[18px]">
                     {p.stages.length ? p.stages.join(" → ") : p.hint}

@@ -31,6 +31,7 @@ import { TABULAR, pressScale } from "../components/menu";
 import { useWidgetSnapshot } from "../components/widget/use-widget-snapshot";
 import { WidgetView } from "../components/widget/widget-view";
 import { WidgetIntro } from "../components/widget/widget-intro";
+import { SpaceMark } from "../components/brain/space-mark";
 import { canOpenDesktopWidget, toggleDesktopWidget } from "../lib/desktop-widget";
 import { Sidebar } from "../components/sidebar";
 import { Alert } from "../lib/alert";
@@ -208,7 +209,10 @@ function WidgetSettings() {
                   const on = (widget.spaceId ?? spaces[0]?.id) === sp.id;
                   return (
                     <Pressable key={sp.id} onPress={() => setWidget({ spaceId: sp.id })} accessibilityRole="radio" accessibilityState={{ checked: on }} className={`rounded-pill border px-3 py-1.5 ${on ? "border-accent bg-accent/[0.1]" : "border-line hover:bg-chip"}`}>
-                      <Text className={`text-[13px] ${on ? "text-accent font-semibold" : "text-ink-2"}`}>{`${sp.icon ? `${sp.icon} ` : ""}${sp.name}`}</Text>
+                      <View className="flex-row items-center gap-1.5">
+                        <SpaceMark space={sp} size={18} active={on} />
+                        <Text className={`text-[13px] ${on ? "text-accent font-semibold" : "text-ink-2"}`}>{sp.name}</Text>
+                      </View>
                     </Pressable>
                   );
                 })}

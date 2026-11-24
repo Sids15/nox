@@ -143,8 +143,7 @@ class NoxWidgetProvider : AppWidgetProvider() {
           }
           "capture" -> row("+", "Add a task", null, "nox://tasks", markAccent = true)
           "space" -> {
-            val icon = s.optString("icon")
-            heading((if (icon.isNotEmpty()) "$icon " else "") + s.optString("name"))
+            heading(s.optString("name"))
             val stages = s.optJSONArray("stages")
             val parts = mutableListOf<String>()
             if (stages != null) for (j in 0 until stages.length()) {

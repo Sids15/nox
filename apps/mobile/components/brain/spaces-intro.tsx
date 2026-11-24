@@ -3,18 +3,17 @@ import { ArrowRight, ChevronRight, FileText, Lightbulb, Link2, SquareCheckBig, X
 import { vars } from "nativewind";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AccessibilityInfo, Animated, Modal, Pressable, Text, View } from "react-native";
+import { SpaceMark } from "./space-mark";
 
 /** A tiny drawn version of the real screen, so each step shows what it means instead of describing it. */
 export function Frame({ children }: { children: ReactNode }) {
   return <View className="bg-bg border-line h-[176px] justify-center overflow-hidden rounded-[14px] border px-4">{children}</View>;
 }
 
-function MiniSpace({ mark, name, meta, tint }: { mark: string; name: string; meta: string; tint: string }) {
+function MiniSpace({ icon, name, meta }: { icon: string; name: string; meta: string }) {
   return (
     <View className="bg-surface border-line flex-row items-center gap-2.5 rounded-[10px] border px-2.5 py-2">
-      <View style={{ width: 26, height: 26, borderRadius: 7, backgroundColor: `${tint}26`, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ fontSize: 14 }}>{mark}</Text>
-      </View>
+      <SpaceMark space={{ icon }} size={26} />
       <View className="flex-1">
         <Text className="text-ink text-[12px] font-semibold">{name}</Text>
         <Text className="text-ink-3 text-[11px]">{meta}</Text>
@@ -27,9 +26,9 @@ export function StepSpaces() {
   return (
     <Frame>
       <View className="gap-1.5">
-        <MiniSpace mark="🎬" name="Tech channel" meta="12 pages · 3 open tasks" tint="#D2604A" />
-        <MiniSpace mark="🚀" name="Nox launch" meta="8 pages · 5 open tasks" tint="#4C7FE0" />
-        <MiniSpace mark="📝" name="PRDs" meta="6 pages · 1 open task" tint="#2F9D72" />
+        <MiniSpace icon="clapperboard" name="Tech channel" meta="12 pages · 3 open tasks" />
+        <MiniSpace icon="rocket" name="Nox launch" meta="8 pages · 5 open tasks" />
+        <MiniSpace icon="file-text" name="PRDs" meta="6 pages · 1 open task" />
       </View>
     </Frame>
   );

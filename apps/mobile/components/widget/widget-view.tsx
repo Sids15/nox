@@ -102,7 +102,7 @@ function Section({ section, compact, actions }: { section: WidgetSection; compac
     case "space":
       return (
         <View>
-          <Heading right={`${section.pages} pages`}>{`${section.icon ? `${section.icon} ` : ""}${section.name}`}</Heading>
+          <Heading right={`${section.pages} pages`}>{section.name}</Heading>
           <Pressable onPress={() => actions.onOpen(`/space/${section.spaceId}`)} className="hover:bg-chip flex-row flex-wrap gap-1.5 rounded-[8px] px-1 py-1">
             {section.stages.length === 0 ? <Text className="text-ink-3 text-[13px]">No stages in this space.</Text> : null}
             {section.stages.map((st) => (

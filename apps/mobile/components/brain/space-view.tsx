@@ -10,9 +10,8 @@ import { MenuDivider, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { usePages } from "./pages";
 import { SpaceBoard } from "./space-board";
-import { SpaceMark } from "./space-mark";
+import { SpaceIconPicker, SpaceMark } from "./space-mark";
 import { GettingStarted, NewInSpace, ResourceList, TaskList, type SpacePage } from "./space-parts";
-import { SPACE_EMOJI } from "./space-presets";
 import { SpaceTable } from "./space-table";
 import { SpacesIntro } from "./spaces-intro";
 import { StageEditor } from "./stage-editor";
@@ -83,7 +82,7 @@ export function SpaceView({ space }: { space: Space }) {
             <ChevronLeft size={20} color={c.ink2} strokeWidth={2.2} />
           </Pressable>
           <View ref={markRef} collapsable={false}>
-            <Pressable onPress={() => setMarkOpen(true)} accessibilityRole="button" accessibilityLabel="Change mark" style={pressScale}>
+            <Pressable onPress={() => setMarkOpen(true)} accessibilityRole="button" accessibilityLabel="Change icon" style={pressScale}>
               <SpaceMark space={space} size={36} />
             </Pressable>
           </View>
@@ -175,16 +174,15 @@ export function SpaceView({ space }: { space: Space }) {
           />
         </View>
       </Popover>
-      <Popover anchorRef={markRef} open={markOpen} onClose={() => setMarkOpen(false)} width={236} accessibilityLabel="Mark">
-        <View className="flex-row flex-wrap gap-1 p-2">
-          {SPACE_EMOJI.map((e) => (
-            <Pressable key={e} onPress={() => { setMarkOpen(false); updateSpace.mutate({ id: space.id, patch: { icon: e } }); }} className={`h-9 w-9 items-center justify-center rounded-[9px] ${space.icon === e ? "bg-accent/[0.16]" : "hover:bg-chip"}`}>
-              <Text style={{ fontSize: 18 }}>{e}</Text>
-            </Pressable>
-          ))}
-          <Pressable onPress={() => { setMarkOpen(false); updateSpace.mutate({ id: space.id, patch: { icon: "" } }); }} className="hover:bg-chip h-9 items-center justify-center rounded-[9px] px-2">
-            <Text className="text-ink-2 text-[13px]">Letter</Text>
-          </Pressable>
+      <Popover anchorRef={markRef} open={markOpen} onClose={() => setMarkOpen(false)} width={212} accessibilityLabel="Icon">
+        <View className="p-2">
+          <SpaceIconPicker
+            value={space.icon}
+            onChange={(icon) => {
+              setMarkOpen(false);
+              if (icon !== space.icon) updateSpace.mutate({ id: space.id, patch: { icon } });
+            }}
+          />
         </View>
       </Popover>
       <StageEditor space={space} visible={stagesOpen} onClose={() => setStagesOpen(false)} />

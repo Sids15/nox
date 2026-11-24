@@ -30,7 +30,7 @@ export function WidgetArt({ highlight }: { highlight?: "sections" | "where" }) {
           {row(false, "Send sponsor deck")}
         </View>
         <View className="mt-1 rounded-[8px] p-1" style={ring}>
-          <Text className="text-ink-3 text-[11px] font-bold">🎬 TECH CHANNEL</Text>
+          <Text className="text-ink-3 text-[11px] font-bold">TECH CHANNEL</Text>
           <Text className="text-ink-2 text-[11px]">Idea 3 · Script 1 · Edit 2</Text>
         </View>
       </View>
