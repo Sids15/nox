@@ -1,7 +1,7 @@
-import { useThemeColors } from "@nox/features";
+import { useSpaces, useThemeColors, useUpdateResource } from "@nox/features";
 import type { Resource, Tag } from "@nox/types";
 import { relativeAge } from "@nox/utils";
-import { Archive, ArchiveRestore, Copy, ExternalLink, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Play, Quote, Trash2 } from "lucide-react-native";
+import { Archive, ArchiveRestore, Copy, ExternalLink, Image as ImageIcon, Layers, Link2, MoreHorizontal, Pencil, Play, Quote, Trash2 } from "lucide-react-native";
 import { useRef, useState, type ReactNode } from "react";
 import { Image, type ImageStyle, Platform, Pressable, type StyleProp, Text, View } from "react-native";
 import { useSignedUrl } from "../../lib/storage";
@@ -9,6 +9,7 @@ import { TAG_PALETTE } from "../../lib/tag-palette";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { MenuDivider, MenuRow } from "../menu";
 import { Popover } from "../popover";
+import { SpaceMark } from "../brain/space-mark";
 
 function hashColor(seed: string): string {
   let h = 0;
@@ -70,6 +71,9 @@ export function ResourceCard({
   const c = useThemeColors();
   const [hover, setHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [spacesView, setSpacesView] = useState(false);
+  const { data: spaces = [] } = useSpaces();
+  const updateResource = useUpdateResource();
   const anchor = useRef<View>(null);
   const web = Platform.OS === "web";
   // Hover-revealed only where there is a mouse; always shown on phones (web or native).
@@ -79,6 +83,7 @@ export function ResourceCard({
   const hasUrl = !!resource.url;
   const run = (fn: () => void) => () => {
     setMenuOpen(false);
+    setSpacesView(false);
     fn();
   };
 
@@ -100,7 +105,15 @@ export function ResourceCard({
   );
 
   const menu = (
-      <Popover anchorRef={anchor} open={menuOpen} onClose={() => setMenuOpen(false)} width={220} accessibilityLabel="Resource options">
+      <Popover anchorRef={anchor} open={menuOpen} onClose={() => { setMenuOpen(false); setSpacesView(false); }} width={220} accessibilityLabel="Resource options">
+      {spacesView ? (
+        <View className="p-1.5">
+          <MenuRow label="No space" selected={!resource.space_id} icon={<Layers size={15} color={c.ink2} strokeWidth={2} />} onPress={run(() => resource.space_id && updateResource.mutate({ id: resource.id, patch: { space_id: null } }))} />
+          {spaces.map((s) => (
+            <MenuRow key={s.id} label={s.name} selected={resource.space_id === s.id} icon={<SpaceMark space={s} size={18} />} onPress={run(() => resource.space_id !== s.id && updateResource.mutate({ id: resource.id, patch: { space_id: s.id } }))} />
+          ))}
+        </View>
+      ) : (
       <View className="p-1.5">
         {hasUrl && (
           <MenuRow label="Open" icon={<ExternalLink size={15} color={c.ink2} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onOpen)} />
@@ -126,9 +139,18 @@ export function ResourceCard({
           trailing={<View />}
           onPress={run(actions.onToggleUsed)}
         />
+        {spaces.length > 0 ? (
+          <MenuRow
+            label={resource.space_id ? `Space: ${spaces.find((s) => s.id === resource.space_id)?.name ?? "…"}` : "Move to space…"}
+            icon={<Layers size={15} color={c.ink2} strokeWidth={2} />}
+            trailing={<View />}
+            onPress={() => setSpacesView(true)}
+          />
+        ) : null}
         <MenuDivider />
         <MenuRow label="Delete" danger icon={<Trash2 size={15} color={c.high} strokeWidth={2} />} trailing={<View />} onPress={run(actions.onDelete)} />
       </View>
+      )}
     </Popover>
   );
 

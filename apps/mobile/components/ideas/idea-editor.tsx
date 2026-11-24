@@ -1,5 +1,6 @@
 import {
   useArchiveIdea,
+  useCreateTemplate,
   useDeleteIdea,
   useIdeas,
   useSetIdeaStatus,
@@ -7,7 +8,7 @@ import {
   useUpdateIdea,
 } from "@nox/features";
 import type { ContentBlock, IdeaInput } from "@nox/types";
-import { Archive, ArchiveRestore, ChevronLeft, CircleOff, Trash2, Undo2 } from "lucide-react-native";
+import { Archive, ArchiveRestore, ChevronLeft, CircleOff, LayoutTemplate, Trash2, Undo2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
@@ -18,6 +19,11 @@ import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { EditorTopBar } from "../editor-top-bar";
 import { IdeaProperties } from "./idea-properties";
 import { DocAssist } from "../ai/doc-assist";
+import { Backlinks } from "../brain/backlinks";
+import { PageFields } from "../brain/page-fields";
+import { TemplateStarter } from "../brain/template-starter";
+import { fromTemplate, isBlankPage, toTemplate } from "../brain/templates";
+import { Alert } from "../../lib/alert";
 import { IdeaCoachButton, IdeaCoachPanel, useIdeaCoach } from "../ai/idea-coach";
 import { useKnownTags } from "../tag-editor";
 import { confirmDelete } from "../../lib/confirm";
@@ -43,6 +49,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
   const setStatus = useSetIdeaStatus();
   const archive = useArchiveIdea();
   const del = useDeleteIdea();
+  const createTemplate = useCreateTemplate();
   const patch = (p: Partial<IdeaInput>) => idea && updateIdea.mutate({ id: idea.id, patch: p });
 
   const [title, setTitle] = useState("");
@@ -108,6 +115,15 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
                   },
                 },
             {
+              label: "Save as template",
+              icon: <LayoutTemplate size={15} color={c.ink2} strokeWidth={2} />,
+              onPress: () => {
+                const name = title.trim() || "Idea template";
+                createTemplate.create(toTemplate(name, "idea", null, editor.blocks, idea.properties));
+                Alert.alert("Template saved", `“${name}” is now in your templates. It shows on every new blank page.`);
+              },
+            },
+            {
               label: "Delete idea",
               danger: true,
               divided: true,
@@ -147,6 +163,26 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             onPriority={(priority) => patch({ priority })}
             onTags={(tags) => patch({ tags })}
           />
+          <PageFields
+            spaceId={idea.space_id}
+            stage={idea.stage}
+            properties={idea.properties}
+            onPatch={(p) => patch(p)}
+            labelWidth={92}
+          />
+          {isBlankPage(title, editor.blocks, idea.properties) ? (
+            <TemplateStarter
+              kind="idea"
+              onPick={(t) => {
+                const made = fromTemplate(t);
+                editor.replaceAll(made.content);
+                if (made.title) {
+                  setTitle(made.title);
+                  patch({ title: made.title.slice(0, 200), properties: made.properties });
+                } else patch({ properties: made.properties });
+              }}
+            />
+          ) : null}
 
           {coach.result ? (
             <View className="mt-3">
@@ -173,7 +209,14 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
 
         <View className="mx-screen border-line mt-4 border-t" />
         <View className="px-screen mt-5 flex-1">
-          <BlockList editor={editor} minHeight={280} firstPlaceholder="Write it out: what is it, why it matters, what you'd try first…" />
+          <BlockList
+            editor={editor}
+            minHeight={280}
+            firstPlaceholder="Write it out: what is it, why it matters, what you'd try first…"
+            self={{ kind: "idea", id: idea.id }}
+            spaceId={idea.space_id}
+          />
+          <Backlinks target={{ kind: "idea", id: idea.id }} content={editor.blocks} />
         </View>
       </ScrollView>
 
@@ -184,6 +227,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
         onAddImage={media.addImage}
         onRecordComplete={media.addAudio}
         onDictate={editor.insertText}
+        onLinkPage={editor.startLink}
       />
 
     </View>

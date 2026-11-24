@@ -133,6 +133,7 @@ function RootNavigator() {
           <Stack.Screen name="idea/[id]" />
           <Stack.Screen name="note/[id]" />
           <Stack.Screen name="folder/[id]" />
+          <Stack.Screen name="space/[id]" />
         </Stack>
       </SyncChrome>
       {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}

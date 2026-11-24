@@ -4,6 +4,7 @@ import { BlurView } from "expo-blur";
 import {
   Bookmark,
   FileText,
+  Layers,
   Lightbulb,
   SquareCheckBig,
   type LucideIcon,
@@ -18,6 +19,7 @@ const TAB_META: Record<string, { label: string; Icon: LucideIcon }> = {
   notes: { label: "Notes", Icon: FileText },
   tasks: { label: "Tasks", Icon: SquareCheckBig },
   resources: { label: "Resources", Icon: Bookmark },
+  spaces: { label: "Spaces", Icon: Layers },
 };
 
 /**

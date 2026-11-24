@@ -483,7 +483,7 @@ export default function SettingsScreen() {
                 <Text className="text-ink text-[15px] font-medium">Keyboard shortcuts</Text>
               </View>
               <Shortcut keys={[MOD, "K"]} label="Search everything" />
-              <Shortcut keys={["⌥", "1–4"]} label="Ideas, Notes, Tasks, Resources" />
+              <Shortcut keys={["⌥", "1–5"]} label="Ideas, Notes, Tasks, Resources, Spaces" />
               <Shortcut keys={["Enter"]} label="Add the task you're typing" />
               <Shortcut keys={[MOD, "Enter"]} label="Add a task from anywhere in the box" />
               <View className="flex-row items-center px-4 py-2.5">

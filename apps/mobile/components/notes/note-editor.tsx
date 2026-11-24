@@ -1,4 +1,5 @@
 import {
+  useCreateTemplate,
   useDeleteNote,
   useFolders,
   useNotes,
@@ -8,7 +9,7 @@ import {
 } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
-import { ChevronDown, ChevronLeft, Folder, FolderInput, Inbox, Pin, PinOff, Trash2 } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, Folder, FolderInput, Inbox, LayoutTemplate, Pin, PinOff, Trash2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
@@ -18,6 +19,11 @@ import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { EditorTopBar } from "../editor-top-bar";
 import { DocAssist } from "../ai/doc-assist";
+import { Backlinks } from "../brain/backlinks";
+import { PageFields } from "../brain/page-fields";
+import { TemplateStarter } from "../brain/template-starter";
+import { fromTemplate, isBlankPage, toTemplate } from "../brain/templates";
+import { Alert } from "../../lib/alert";
 import { MenuLabel, MenuRow } from "../menu";
 import { Popover } from "../popover";
 import { TagEditor, useKnownTags } from "../tag-editor";
@@ -42,6 +48,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
   const updateNote = useUpdateNote();
   const setPinned = useSetNotePinned();
   const del = useDeleteNote();
+  const createTemplate = useCreateTemplate();
 
   const [title, setTitle] = useState("");
   const [moving, setMoving] = useState(false);
@@ -128,6 +135,15 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
               onPress: () => setMoving(true),
             },
             {
+              label: "Save as template",
+              icon: <LayoutTemplate size={15} color={c.ink2} strokeWidth={2} />,
+              onPress: () => {
+                const name = title.trim() || noteTitle(note);
+                createTemplate.create(toTemplate(name, "note", null, editor.blocks, note.properties));
+                Alert.alert("Template saved", `“${name}” is now in your templates. It shows on every new blank page.`);
+              },
+            },
+            {
               label: "Delete note",
               danger: true,
               divided: true,
@@ -191,7 +207,24 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
                 />
               </View>
             </View>
+            <PageFields
+              spaceId={note.space_id}
+              stage={note.stage}
+              properties={note.properties}
+              onPatch={(p) => updateNote.mutate({ id: note.id, patch: p })}
+            />
           </View>
+          {isBlankPage(title, editor.blocks, note.properties) ? (
+            <TemplateStarter
+              kind="note"
+              onPick={(t) => {
+                const made = fromTemplate(t);
+                editor.replaceAll(made.content);
+                if (made.title) onTitle(made.title);
+                updateNote.mutate({ id: note.id, patch: { properties: made.properties } });
+              }}
+            />
+          ) : null}
           <DocAssist
             docId={note.id}
             editor={editor}
@@ -222,7 +255,8 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
         {/* Blocks */}
         <View className="border-line mx-[22px] mt-3 border-t" />
         <View className="px-[22px] pt-4">
-          <BlockList editor={editor} minHeight={320} />
+          <BlockList editor={editor} minHeight={320} self={{ kind: "note", id: note.id }} spaceId={note.space_id} />
+          <Backlinks target={{ kind: "note", id: note.id }} content={editor.blocks} />
         </View>
       </ScrollView>
 
@@ -233,6 +267,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
         onAddImage={media.addImage}
         onRecordComplete={media.addAudio}
         onDictate={editor.insertText}
+        onLinkPage={editor.startLink}
       />
 
     </View>

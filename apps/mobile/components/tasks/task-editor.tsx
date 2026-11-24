@@ -5,6 +5,8 @@ import { formatTime12, relativeDayLabel, relativeFromNow, shortDate, todayKey } 
 import { Check, ChevronLeft, CircleCheck, CircleDashed, MoreHorizontal, Repeat, RotateCcw, Sparkles, Trash2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { SpaceField } from "../brain/space-field";
+import { Backlinks } from "../brain/backlinks";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { isRepeating, useTaskDelete } from "../../lib/use-task-delete";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
@@ -227,6 +229,10 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
               className="text-ink-2 mt-1 text-[15px] leading-[23px]"
               style={{ textAlignVertical: "top" }}
             />
+            <View className="mt-1.5">
+              <SpaceField spaceId={task.space_id} onChange={(space_id) => patch({ space_id })} />
+            </View>
+            <Backlinks target={{ kind: "task", id: task.id }} />
 
             {statusLines.length > 0 && (
               <View className="mt-3 gap-1.5">

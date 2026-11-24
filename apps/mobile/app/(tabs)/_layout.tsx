@@ -17,7 +17,7 @@ export default function TabsLayout() {
   // First run: onboarding, unless it was finished here or on another device (recorded on the account).
   if (!onboardedHere && !session?.user.user_metadata?.onboarded_at) return <Redirect href="/onboarding" />;
 
-  // Ideas · Notes · Tasks · Resources — no Settings tab (avatar/profile opens Settings). Tasks first.
+  // Ideas · Notes · Tasks · Resources · Spaces — no Settings tab (avatar/profile opens Settings). Tasks first.
   // Desktop: a left Sidebar with the scene beside it. Mobile: the floating pill tab bar.
   const tabs = (
     <Tabs
@@ -28,6 +28,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="notes" options={{ title: "Notes" }} />
       <Tabs.Screen name="tasks" options={{ title: "Tasks" }} />
       <Tabs.Screen name="resources" options={{ title: "Resources" }} />
+      <Tabs.Screen name="spaces" options={{ title: "Spaces" }} />
     </Tabs>
   );
 

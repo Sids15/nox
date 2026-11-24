@@ -1,7 +1,7 @@
-import { useIdeas, useNotes, useResources, useTasks, useThemeColors } from "@nox/features";
+import { useIdeas, useNotes, useResources, useSpaces, useTasks, useThemeColors } from "@nox/features";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, FileText, Lightbulb, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, FileText, Layers, Lightbulb, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +10,8 @@ import { clockLabel, greeting, skyColor, useClock } from "../lib/use-clock";
 import { useIdentity } from "../lib/use-identity";
 import { useSyncLabel } from "../lib/use-sync-label";
 import { CommandPalette } from "./command-palette";
+import { NewSpaceDialog } from "./brain/new-space-dialog";
+import { SpaceMark } from "./brain/space-mark";
 
 type NavItem = { label: string; icon: LucideIcon; path: string; count: number };
 
@@ -18,9 +20,9 @@ const IS_MAC_WEB =
 /** The palette shortcut as the user's OS actually types it (⌘K is a lie on Windows). */
 export const SEARCH_CHORD = IS_MAC_WEB ? "⌘K" : "Ctrl K";
 /** Module-switch chord hint (Alt — Ctrl/⌘+digits belong to the browser's tabs). */
-export const MODULE_CHORD = IS_MAC_WEB ? "⌥ 1–4" : "Alt 1–4";
+export const MODULE_CHORD = IS_MAC_WEB ? "⌥ 1–5" : "Alt 1–5";
 
-const NAV_PATHS = ["/", "/notes", "/tasks", "/resources"] as const;
+const NAV_PATHS = ["/", "/notes", "/tasks", "/resources", "/spaces"] as const;
 /**
  * Where each module really lives. The bare "/" is claimed twice — by the Ideas tab and by the root
  * redirect (which sends a signed-in user to Tasks) — so from a page outside the tabs (Settings,
@@ -46,7 +48,7 @@ function BreathingDot({ color }: { color: string }) {
 
 /**
  * Desktop rail. A faint crown gradient carries the sky right now (violet at night — Nox at night is
- * itself, gold by day, ember at dusk), over an hour-true greeting and a live clock. Alt+1–4 switches
+ * itself, gold by day, ember at dusk), over an hour-true greeting and a live clock. Alt+1–5 switches
  * modules; Ctrl/⌘K opens search.
  */
 export function Sidebar() {
@@ -61,8 +63,10 @@ export function Sidebar() {
   const { data: notes = [] } = useNotes();
   const { data: tasks = [] } = useTasks();
   const { data: resources = [] } = useResources();
+  const { data: spaces = [] } = useSpaces();
+  const [newSpace, setNewSpace] = useState(false);
 
-  // Keyboard: Ctrl/⌘K → search; Alt+1–4 → modules (web only).
+  // Keyboard: Ctrl/⌘K → search; Alt+1–5 → modules (web only).
   useEffect(() => {
     if (Platform.OS !== "web") return;
     const onKey = (e: KeyboardEvent) => {
@@ -90,6 +94,7 @@ export function Sidebar() {
     { label: "Notes", icon: FileText, path: "/notes", count: notes.filter((n) => !n.is_archived).length },
     { label: "Tasks", icon: SquareCheckBig, path: "/tasks", count: tasks.filter((t) => t.status !== "complete").length },
     { label: "Resources", icon: Bookmark, path: "/resources", count: resources.filter((r) => !r.is_archived).length },
+    { label: "Spaces", icon: Layers, path: "/spaces", count: spaces.length },
   ];
 
   const { name, firstName, initials } = useIdentity();
@@ -169,6 +174,45 @@ export function Sidebar() {
         })}
       </View>
 
+      {/* Spaces: one tap into each area of work or life */}
+      <View className="border-line mt-5 border-t pt-4">
+        <View className="flex-row items-center justify-between px-2.5 pb-1.5">
+          <Text className="text-ink-2 text-[13px] font-semibold">Spaces</Text>
+          <Pressable
+            onPress={() => setNewSpace(true)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="New space"
+            className="hover:bg-chip h-6 w-6 items-center justify-center rounded-[6px]"
+          >
+            <Plus size={14} color={c.ink3} strokeWidth={2.2} />
+          </Pressable>
+        </View>
+        {spaces.length === 0 ? (
+          <Pressable onPress={() => setNewSpace(true)} className="hover:bg-chip rounded-[8px] px-2.5 py-1.5">
+            <Text className="text-ink-3 text-[13px] leading-[18px]">Make a space for a channel, a project or your PRDs.</Text>
+          </Pressable>
+        ) : (
+          spaces.map((s) => {
+            const active = pathname === `/space/${s.id}`;
+            return (
+              <Pressable
+                key={s.id}
+                onPress={() => router.navigate(`/space/${s.id}` as never)}
+                accessibilityRole="link"
+                accessibilityState={{ selected: active }}
+                className={`h-[32px] flex-row items-center gap-2.5 rounded-[8px] px-2.5 ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
+              >
+                <SpaceMark space={s} size={18} />
+                <Text numberOfLines={1} className={`flex-1 text-[13px] ${active ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>
+                  {s.name}
+                </Text>
+              </Pressable>
+            );
+          })
+        )}
+      </View>
+
       {/* Up next: today's next timed tasks, so the rail is useful and not just empty space */}
       <View className="border-line mt-5 border-t pt-4">
         <View className="flex-row items-center justify-between px-2.5 pb-1.5">
@@ -230,6 +274,7 @@ export function Sidebar() {
       </Pressable>
 
       <CommandPalette visible={searchOpen} onClose={() => setSearchOpen(false)} />
+      <NewSpaceDialog visible={newSpace} onClose={() => setNewSpace(false)} />
     </View>
   );
 }
