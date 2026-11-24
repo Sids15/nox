@@ -21,7 +21,7 @@ import { EditorTopBar } from "../editor-top-bar";
 import { DocAssist } from "../ai/doc-assist";
 import { Backlinks } from "../brain/backlinks";
 import { PageFields } from "../brain/page-fields";
-import { TemplateStarter } from "../brain/template-starter";
+import { DetailsToggle, MetaSummary, TemplateMenu } from "../brain/page-meta";
 import { fromTemplate, isBlankPage, toTemplate } from "../brain/templates";
 import { Alert } from "../../lib/alert";
 import { MenuLabel, MenuRow } from "../menu";
@@ -53,6 +53,8 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
   const [title, setTitle] = useState("");
   const [moving, setMoving] = useState(false);
   const [folderOpen, setFolderOpen] = useState(false);
+  // Every property lives behind "Details"; what's set shows as chips above it.
+  const [details, setDetails] = useState(false);
   const folderRef = useRef<View>(null);
   const knownTags = useKnownTags();
   const closeMenu = useRef<(() => void) | null>(null);
@@ -180,51 +182,14 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
           />
           <Text className="text-ink-3 mt-1.5 text-[12px]">Saved · edited {relativeFromNow(note.updated_at)}</Text>
 
-          {/* Properties: where it lives and how it's tagged */}
-          <View className="mt-3.5">
-            <View className="min-h-[34px] flex-row items-center">
-              <Text className="text-ink-3 w-[72px] text-[14px]">Folder</Text>
-              <View ref={folderRef} collapsable={false}>
-                <Pressable
-                  onPress={() => setFolderOpen(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Folder: ${folderName ?? "None"}`}
-                  className={`-ml-2 h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2 ${folderOpen ? "bg-chip" : "hover:bg-chip"}`}
-                >
-                  {note.folder_id ? <Folder size={14} color={c.ink2} strokeWidth={2} /> : <Inbox size={14} color={c.ink3} strokeWidth={2} />}
-                  <Text className={`text-[14px] ${note.folder_id ? "text-ink font-medium" : "text-ink-3"}`}>{folderName ?? "No folder"}</Text>
-                  <ChevronDown size={13} color={c.ink3} strokeWidth={2.2} />
-                </Pressable>
-              </View>
-            </View>
-            <View className="flex-row py-1">
-              <Text className="text-ink-3 w-[72px] pt-1 text-[14px]">Tags</Text>
-              <View className="min-w-0 flex-1">
-                <TagEditor
-                  tags={note.tags}
-                  onChange={(tags) => updateNote.mutate({ id: note.id, patch: { tags } })}
-                  known={knownTags}
-                />
-              </View>
-            </View>
-            <PageFields
-              spaceId={note.space_id}
-              stage={note.stage}
-              properties={note.properties}
-              onPatch={(p) => updateNote.mutate({ id: note.id, patch: p })}
-            />
-          </View>
-          {isBlankPage(title, editor.blocks, note.properties) ? (
-            <TemplateStarter
-              kind="note"
-              onPick={(t) => {
-                const made = fromTemplate(t);
-                editor.replaceAll(made.content);
-                if (made.title) onTitle(made.title);
-                updateNote.mutate({ id: note.id, patch: { properties: made.properties } });
-              }}
-            />
-          ) : null}
+          <MetaSummary
+            folderName={folderName}
+            spaceId={note.space_id}
+            stage={note.stage}
+            tags={note.tags}
+            properties={note.properties}
+            onOpen={() => setDetails(true)}
+          />
           <DocAssist
             docId={note.id}
             editor={editor}
@@ -233,6 +198,56 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
             tags={note.tags}
             onTags={(tags) => updateNote.mutate({ id: note.id, patch: { tags } })}
             knownTags={knownTags}
+            leading={
+              <>
+                <DetailsToggle open={details} onPress={() => setDetails((v) => !v)} />
+                {isBlankPage(title, editor.blocks, note.properties) ? (
+                  <TemplateMenu
+                    kind="note"
+                    onPick={(t) => {
+                      const made = fromTemplate(t);
+                      editor.replaceAll(made.content);
+                      if (made.title) onTitle(made.title);
+                      updateNote.mutate({ id: note.id, patch: { properties: made.properties } });
+                    }}
+                  />
+                ) : null}
+              </>
+            }
+            drawer={
+              details ? (
+                /* Every property of the note: where it lives, how it's tagged, its fields. */
+                <View className="border-line rounded-[12px] border px-3 py-1.5">
+                  <View className="min-h-[36px] flex-row items-center">
+                    <Text className="text-ink-3 w-[72px] text-[14px]">Folder</Text>
+                    <View ref={folderRef} collapsable={false}>
+                      <Pressable
+                        onPress={() => setFolderOpen(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Folder: ${folderName ?? "None"}`}
+                        className={`-ml-2 h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2 ${folderOpen ? "bg-chip" : "hover:bg-chip"}`}
+                      >
+                        {note.folder_id ? <Folder size={14} color={c.ink2} strokeWidth={2} /> : <Inbox size={14} color={c.ink3} strokeWidth={2} />}
+                        <Text className={`text-[14px] ${note.folder_id ? "text-ink font-medium" : "text-ink-3"}`}>{folderName ?? "No folder"}</Text>
+                        <ChevronDown size={13} color={c.ink3} strokeWidth={2.2} />
+                      </Pressable>
+                    </View>
+                  </View>
+                  <View className="flex-row py-1">
+                    <Text className="text-ink-3 w-[72px] pt-1 text-[14px]">Tags</Text>
+                    <View className="min-w-0 flex-1">
+                      <TagEditor tags={note.tags} onChange={(tags) => updateNote.mutate({ id: note.id, patch: { tags } })} known={knownTags} />
+                    </View>
+                  </View>
+                  <PageFields
+                    spaceId={note.space_id}
+                    stage={note.stage}
+                    properties={note.properties}
+                    onPatch={(p) => updateNote.mutate({ id: note.id, patch: p })}
+                  />
+                </View>
+              ) : null
+            }
           />
           <Popover anchorRef={folderRef} open={folderOpen} onClose={() => setFolderOpen(false)} width={230} accessibilityLabel="Folder">
             <View className="p-1.5">

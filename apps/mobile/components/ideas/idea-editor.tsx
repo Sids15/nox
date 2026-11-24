@@ -17,11 +17,11 @@ import { BlockToolbar } from "../blocks/block-toolbar";
 import { useBlockEditor } from "../blocks/use-block-editor";
 import { useMediaBlocks } from "../blocks/use-media-blocks";
 import { EditorTopBar } from "../editor-top-bar";
-import { IdeaProperties } from "./idea-properties";
+import { IdeaProperties, IdeaStatusChips } from "./idea-properties";
 import { DocAssist } from "../ai/doc-assist";
 import { Backlinks } from "../brain/backlinks";
 import { PageFields } from "../brain/page-fields";
-import { TemplateStarter } from "../brain/template-starter";
+import { DetailsToggle, MetaSummary, TemplateMenu } from "../brain/page-meta";
 import { fromTemplate, isBlankPage, toTemplate } from "../brain/templates";
 import { Alert } from "../../lib/alert";
 import { IdeaCoachButton, IdeaCoachPanel, useIdeaCoach } from "../ai/idea-coach";
@@ -53,6 +53,8 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
   const patch = (p: Partial<IdeaInput>) => idea && updateIdea.mutate({ id: idea.id, patch: p });
 
   const [title, setTitle] = useState("");
+  // Every property lives behind "Details"; status, priority and what's set show as chips above it.
+  const [details, setDetails] = useState(false);
 
   useEffect(() => {
     if (idea) setTitle(idea.title === UNTITLED ? "" : idea.title);
@@ -157,38 +159,14 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             className="text-ink font-serif text-[24px] font-bold leading-[30px] tracking-[-0.01em]"
           />
 
-          <IdeaProperties
-            idea={idea}
-            onStatus={(status) => setStatus.mutate({ id: idea.id, status })}
-            onPriority={(priority) => patch({ priority })}
-            onTags={(tags) => patch({ tags })}
-          />
-          <PageFields
+          <MetaSummary
             spaceId={idea.space_id}
             stage={idea.stage}
+            tags={idea.tags}
             properties={idea.properties}
-            onPatch={(p) => patch(p)}
-            labelWidth={92}
+            onOpen={() => setDetails(true)}
+            leading={<IdeaStatusChips idea={idea} onPress={() => setDetails(true)} />}
           />
-          {isBlankPage(title, editor.blocks, idea.properties) ? (
-            <TemplateStarter
-              kind="idea"
-              onPick={(t) => {
-                const made = fromTemplate(t);
-                editor.replaceAll(made.content);
-                if (made.title) {
-                  setTitle(made.title);
-                  patch({ title: made.title.slice(0, 200), properties: made.properties });
-                } else patch({ properties: made.properties });
-              }}
-            />
-          ) : null}
-
-          {coach.result ? (
-            <View className="mt-3">
-              <IdeaCoachPanel coach={coach} idea={idea} onAddToIdea={(blocks) => editor.replaceAll([...editor.blocks, ...blocks])} />
-            </View>
-          ) : null}
           <DocAssist
             docId={idea.id}
             editor={editor}
@@ -201,9 +179,45 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             onTags={(tags) => patch({ tags })}
             knownTags={knownTags}
             modes={["summarize", "tidy", "title_tags", "actions"]}
+            leading={
+              <>
+                <DetailsToggle open={details} onPress={() => setDetails((v) => !v)} />
+                {isBlankPage(title, editor.blocks, idea.properties) ? (
+                  <TemplateMenu
+                    kind="idea"
+                    onPick={(t) => {
+                      const made = fromTemplate(t);
+                      editor.replaceAll(made.content);
+                      if (made.title) {
+                        setTitle(made.title);
+                        patch({ title: made.title.slice(0, 200), properties: made.properties });
+                      } else patch({ properties: made.properties });
+                    }}
+                  />
+                ) : null}
+              </>
+            }
+            drawer={
+              details ? (
+                <View className="border-line rounded-[12px] border px-3 pb-1.5">
+                  <IdeaProperties
+                    idea={idea}
+                    onStatus={(status) => setStatus.mutate({ id: idea.id, status })}
+                    onPriority={(priority) => patch({ priority })}
+                    onTags={(tags) => patch({ tags })}
+                  />
+                  <PageFields spaceId={idea.space_id} stage={idea.stage} properties={idea.properties} onPatch={(p) => patch(p)} labelWidth={92} />
+                </View>
+              ) : null
+            }
           >
             {!coach.result && <IdeaCoachButton coach={coach} idea={idea} blocks={editor.blocks} />}
           </DocAssist>
+          {coach.result ? (
+            <View className="mt-3">
+              <IdeaCoachPanel coach={coach} idea={idea} onAddToIdea={(blocks) => editor.replaceAll([...editor.blocks, ...blocks])} />
+            </View>
+          ) : null}
           {coach.error ? <Text className="text-high mt-1 text-[13px]">{coach.error}</Text> : null}
         </View>
 

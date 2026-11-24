@@ -2,13 +2,15 @@ import { AiRepository } from "@nox/api";
 import { useCreateTask, useThemeColors } from "@nox/features";
 import type { AiNoteAssist, AiNoteMode, ContentBlock } from "@nox/types";
 import { todayKey } from "@nox/utils";
-import { Check } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { Check, ChevronDown, Sparkles } from "lucide-react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useAiCall, useAiEnabled } from "../../lib/use-ai";
 import type { BlockEditor } from "../blocks/use-block-editor";
 import { isText } from "../blocks/clean-blocks";
-import { AiAction, AiButton, AiPanel } from "./ai-ui";
+import { AiAction, AiPanel } from "./ai-ui";
+import { MenuRow, pressScale } from "../menu";
+import { Popover } from "../popover";
 
 /** The words of a document, headings and paragraphs in order, for sending to the AI. */
 export function docText(blocks: ContentBlock[]): string {
@@ -52,7 +54,13 @@ export function DocAssist({
   knownTags,
   modes,
   children,
+  leading,
+  drawer,
 }: {
+  /** Page controls that share the AI's line (Details, Template). Shown even with AI off. */
+  leading?: ReactNode;
+  /** What opens under that line (the page's details), above any AI result. */
+  drawer?: ReactNode;
   /** Which actions to offer (default: all). */
   modes?: AiNoteMode[];
   /** Extra AI buttons to show in the same row (the idea coach). */
@@ -72,6 +80,8 @@ export function DocAssist({
   const [mode, setMode] = useState<AiNoteMode | null>(null);
   const [dropped, setDropped] = useState<Set<number>>(new Set());
   const [undo, setUndo] = useState<ContentBlock[] | null>(null);
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef<View>(null);
 
   // A different note: forget the last result.
   useEffect(() => {
@@ -81,7 +91,13 @@ export function DocAssist({
     setDropped(new Set());
   }, [docId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!aiOn) return null;
+  if (!aiOn)
+    return leading || drawer ? (
+      <View className="mt-3 gap-2">
+        {leading ? <View className="flex-row flex-wrap items-center gap-1">{leading}</View> : null}
+        {drawer}
+      </View>
+    ) : null;
 
   const text = docText(editor.blocks);
   const run = (m: AiNoteMode) => {
@@ -228,21 +244,48 @@ export function DocAssist({
 
   const available = MODES.filter((m) => text.length >= m.needs && (!modes || modes.includes(m.mode)));
 
+  const busyLabel = MODES.find((m) => m.mode === mode)?.label;
   return (
     <View className="mt-3 gap-2">
+      <View className="flex-row flex-wrap items-center gap-1">
+        {leading}
+        {children}
+        <View ref={menuRef} collapsable={false}>
+          <Pressable
+            onPress={() => setMenu(true)}
+            disabled={call.busy}
+            accessibilityRole="button"
+            accessibilityLabel="Nox AI"
+            accessibilityState={{ busy: call.busy, expanded: menu }}
+            style={pressScale}
+            className={`h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2.5 ${menu ? "bg-accent/[0.14]" : "bg-accent/[0.08] hover:bg-accent/[0.14]"}`}
+          >
+            <Sparkles size={13} color={c.accent} strokeWidth={2.2} />
+            <Text className="text-accent text-[13px] font-semibold">{call.busy && busyLabel ? `${busyLabel}…` : "Nox AI"}</Text>
+            {!call.busy ? <ChevronDown size={12} color={c.accent} strokeWidth={2.2} /> : null}
+          </Pressable>
+        </View>
+      </View>
+      {drawer}
       {panel}
-      {!panel && (
-        <View className="flex-row flex-wrap items-center gap-1.5">
-          {children}
-          {available.length === 0 && !children ? (
-            <Text className="text-ink-3 text-[12px]">Write a little and Nox AI can summarize, tidy or pull out to-dos.</Text>
+      <Popover anchorRef={menuRef} open={menu} onClose={() => setMenu(false)} width={220} accessibilityLabel="Nox AI">
+        <View className="p-1.5">
+          {available.length === 0 ? (
+            <Text className="text-ink-3 px-2.5 py-2 text-[13px] leading-[18px]">Write a little first — then Nox AI can summarize, tidy or pull out to-dos.</Text>
           ) : (
             available.map((m) => (
-              <AiButton key={m.mode} label={m.label} onPress={() => run(m.mode)} busy={call.busy && mode === m.mode} disabled={call.busy && mode !== m.mode} />
+              <MenuRow
+                key={m.mode}
+                label={m.label}
+                onPress={() => {
+                  setMenu(false);
+                  run(m.mode);
+                }}
+              />
             ))
           )}
         </View>
-      )}
+      </Popover>
       {call.error ? <Text className="text-high text-[13px]">{call.error}</Text> : null}
       {undo && (
         <Pressable

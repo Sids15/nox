@@ -87,7 +87,7 @@ export function IdeaProperties({
 
 
   return (
-    <View className="mt-4">
+    <View className="mt-1">
       <Row label="Status">
         <Trigger innerRef={statusRef} open={menu === "status"} onPress={() => setMenu("status")} label={`Status: ${capitalize(stage)}`}>
           <View className="h-2 w-2 rounded-full" style={{ backgroundColor: stageTint[stage] }} />
@@ -161,5 +161,25 @@ export function IdeaProperties({
         </View>
       </Popover>
     </View>
+  );
+}
+
+/** Status and priority as two small chips, for the summary line above the details. */
+export function IdeaStatusChips({ idea, onPress }: { idea: Idea; onPress: () => void }) {
+  const c = useThemeColors();
+  const stageTint: Record<Stage, string> = { raw: c.ink3, exploring: c.info, validating: c.success, complete: c.accent };
+  const priorityColor: Record<Idea["priority"], string> = { low: c.ink3, medium: c.medium, high: c.high, critical: c.critical };
+  const stage = (STAGES.some((s) => s.key === idea.status) ? idea.status : "raw") as Stage;
+  return (
+    <>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Status: ${capitalize(stage)}`} style={pressScale} className="bg-chip hover:opacity-80 h-[26px] flex-row items-center gap-1.5 rounded-[7px] px-2">
+        <View className="h-2 w-2 rounded-full" style={{ backgroundColor: stageTint[stage] }} />
+        <Text className="text-ink-2 text-[12px] font-medium">{capitalize(stage)}</Text>
+      </Pressable>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Priority: ${capitalize(idea.priority)}`} style={pressScale} className="bg-chip hover:opacity-80 h-[26px] flex-row items-center gap-1.5 rounded-[7px] px-2">
+        <Flag size={11} color={priorityColor[idea.priority]} fill={idea.priority === "low" ? "transparent" : priorityColor[idea.priority]} strokeWidth={2.2} />
+        <Text className="text-ink-2 text-[12px] font-medium">{capitalize(idea.priority)}</Text>
+      </Pressable>
+    </>
   );
 }

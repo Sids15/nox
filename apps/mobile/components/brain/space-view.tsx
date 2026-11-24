@@ -43,7 +43,7 @@ import { openRef, usePages, type Page } from "./pages";
 import { SpaceMark } from "./space-mark";
 import { SPACE_EMOJI } from "./space-presets";
 import { StageEditor } from "./stage-editor";
-import { useAllTemplates } from "./template-starter";
+import { useAllTemplates } from "./use-templates";
 import { fromTemplate, type TemplateLike } from "./templates";
 
 type Tab = "board" | "pages" | "tasks" | "resources";
