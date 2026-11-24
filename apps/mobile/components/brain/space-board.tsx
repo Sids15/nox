@@ -54,6 +54,9 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
   // ── Drag between columns: measure the columns when a drag starts, drop on the one under the pointer.
   const colRefs = useRef(new Map<string, View | null>());
   const rects = useRef<{ key: string; x: number; w: number }[]>([]);
+  const cardRefs = useRef(new Map<string, View | null>());
+  // Where in the card it was grabbed, and its size, so the lifted copy stays under the pointer.
+  const grab = useRef({ dx: 0, dy: 0, w: 0 });
   const gesture = useRef<{ page: SpacePage; x0: number; y0: number; moved: boolean } | null>(null);
   const [drag, setDrag] = useState<{ page: SpacePage; x: number; y: number; over: string | null } | null>(null);
   const columnAt = (x: number) => rects.current.find((r) => x >= r.x && x <= r.x + r.w)?.key ?? null;
@@ -62,7 +65,9 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
     onStartShouldSetResponder: () => true,
     onResponderTerminationRequest: () => !gesture.current?.moved,
     onResponderGrant: (e: GestureResponderEvent) => {
-      gesture.current = { page, x0: e.nativeEvent.pageX, y0: e.nativeEvent.pageY, moved: false };
+      const { pageX, pageY } = e.nativeEvent;
+      gesture.current = { page, x0: pageX, y0: pageY, moved: false };
+      cardRefs.current.get(`${page.kind}:${page.id}`)?.measureInWindow((x, y, w) => (grab.current = { dx: pageX - x, dy: pageY - y, w }));
       rects.current = [];
       colRefs.current.forEach((el, key) => el?.measureInWindow((x, _y, w) => rects.current.push({ key, x, w })));
     },
@@ -93,44 +98,24 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
   const touch = Platform.OS !== "web" || (typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches);
 
   const card = (p: SpacePage, index: number) => {
-    const values = p.properties.map((f) => fieldValue(f)).filter((v): v is string => !!v).slice(0, 2);
     const dragging = drag?.page.id === p.id;
     return (
       <View
         key={`${p.kind}:${p.id}`}
+        ref={(el) => {
+          cardRefs.current.set(`${p.kind}:${p.id}`, el);
+        }}
+        collapsable={false}
         {...dragHandlers(p)}
         accessibilityRole="button"
         accessibilityLabel={`${p.title}. Drag to another stage, or tap to open.`}
         className="bg-surface border-line hover:border-ink-3 rounded-[10px] border px-3 py-2.5"
         style={[
-          { opacity: dragging ? 0.35 : 1, shadowColor: "#1B2131", shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
+          { opacity: dragging ? 0.4 : 1, shadowColor: "#1B2131", shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
           Platform.OS === "web" ? ({ cursor: "grab", userSelect: "none" } as object) : null,
         ]}
       >
-        <View className="flex-row items-start gap-2">
-          <View className="pt-[3px]">
-            <KindIcon kind={p.kind} color={c.ink3} size={13} />
-          </View>
-          <Text numberOfLines={3} className="text-ink flex-1 text-[14px] font-medium leading-[20px]">
-            {p.title}
-          </Text>
-        </View>
-        {values.length > 0 || p.tags.length > 0 ? (
-          <View className="ml-[21px] mt-1.5 flex-row flex-wrap gap-1">
-            {values.map((v) => (
-              <View key={v} className="bg-chip rounded-[5px] px-1.5 py-[1px]">
-                <Text numberOfLines={1} className="text-ink-2 max-w-[180px] text-[12px]">
-                  {v}
-                </Text>
-              </View>
-            ))}
-            {p.tags.slice(0, 2).map((t) => (
-              <Text key={t} className="text-ink-3 text-[12px]">
-                #{t}
-              </Text>
-            ))}
-          </View>
-        ) : null}
+        <CardBody page={p} />
         {touch && index >= 0 ? (
           <View className="-mb-1 mt-1 flex-row justify-end">
             <Pressable onPress={() => setStage(p, index <= 0 ? null : columns[index - 1]!)} disabled={index === 0} hitSlop={6} accessibilityRole="button" accessibilityLabel="Move to the previous stage" className="h-7 w-7 items-center justify-center" style={{ opacity: index === 0 ? 0.25 : 0.8 }}>
@@ -194,29 +179,62 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
         {orphans.length > 0 ? column(NO_STAGE, "No stage", orphans, -1) : null}
         {columns.map((s, i) => column(s, s, pages.filter((p) => p.stage === s), i))}
       </ScrollView>
-      {/* The card under the pointer while dragging (web: window coordinates map straight to fixed). */}
+      {/* While dragging (web): the same card, lifted — a soft shadow, no tilt — held where it was grabbed. */}
       {drag && Platform.OS === "web" ? (
         <View
           pointerEvents="none"
-          className="bg-surface border-accent rounded-[12px] border px-3 py-2.5"
+          className="bg-surface border-line rounded-[10px] border px-3 py-2.5"
           style={{
             position: "fixed" as "absolute",
-            left: drag.x - COLUMN / 2 + 10,
-            top: drag.y - 22,
-            width: COLUMN - 20,
-            shadowColor: "#000",
-            shadowOpacity: 0.18,
-            shadowRadius: 14,
-            shadowOffset: { width: 0, height: 6 },
+            left: drag.x - grab.current.dx,
+            top: drag.y - grab.current.dy,
+            width: grab.current.w || COLUMN - 12,
+            shadowColor: "#1B2131",
+            shadowOpacity: 0.14,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 8 },
             elevation: 8,
-            transform: [{ rotate: "-1.5deg" }],
-          }}
+            transform: [{ scale: 1.02 }],
+            cursor: "grabbing",
+          } as object}
         >
-          <Text numberOfLines={2} className="text-ink text-[14px] font-medium">
-            {drag.page.title}
-          </Text>
+          <CardBody page={drag.page} />
         </View>
       ) : null}
     </View>
+  );
+}
+
+/** A card's content: what the card on the board and its lifted copy while dragging both show. */
+function CardBody({ page }: { page: SpacePage }) {
+  const c = useThemeColors();
+  const values = page.properties.map((f) => fieldValue(f)).filter((v): v is string => !!v).slice(0, 2);
+  return (
+    <>
+        <View className="flex-row items-start gap-2">
+          <View className="pt-[3px]">
+            <KindIcon kind={page.kind} color={c.ink3} size={13} />
+          </View>
+          <Text numberOfLines={3} className="text-ink flex-1 text-[14px] font-medium leading-[20px]">
+            {page.title}
+          </Text>
+        </View>
+        {values.length > 0 || page.tags.length > 0 ? (
+          <View className="ml-[21px] mt-1.5 flex-row flex-wrap gap-1">
+            {values.map((v) => (
+              <View key={v} className="bg-chip rounded-[5px] px-1.5 py-[1px]">
+                <Text numberOfLines={1} className="text-ink-2 max-w-[180px] text-[12px]">
+                  {v}
+                </Text>
+              </View>
+            ))}
+            {page.tags.slice(0, 2).map((t) => (
+              <Text key={t} className="text-ink-3 text-[12px]">
+                #{t}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+    </>
   );
 }
