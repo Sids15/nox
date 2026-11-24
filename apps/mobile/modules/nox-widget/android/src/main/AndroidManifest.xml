@@ -1,0 +1,16 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- The home-screen widget. Merged into the app's manifest; the system delivers its updates. -->
+    <receiver
+      android:name="app.nox.widget.NoxWidgetProvider"
+      android:exported="false"
+      android:label="@string/nox_widget_label">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/nox_widget_info" />
+    </receiver>
+  </application>
+</manifest>

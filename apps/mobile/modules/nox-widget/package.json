@@ -1,0 +1,6 @@
+{
+  "name": "nox-widget",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nox's Android home-screen widget (a local Expo module, autolinked from apps/mobile/modules)."
+}

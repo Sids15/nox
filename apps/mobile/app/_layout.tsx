@@ -36,6 +36,7 @@ import { useHeadingFont } from "../lib/heading-font";
 import { useWebViewport } from "../lib/web-viewport";
 import { useAiAccountSync } from "../lib/use-ai";
 import { isWidgetWindow, useOpenFromWidget } from "../lib/desktop-widget";
+import { clearAndroidWidget, useAndroidWidgetSync } from "../lib/android-widget";
 import { DesktopWidget } from "../components/widget/desktop-widget";
 
 /** This window is the desktop widget (a second Tauri window), not the app. Fixed for its lifetime. */
@@ -87,6 +88,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
 /** Mounts the notification scheduler only while authed (it reads the tasks query). Renders nothing. */
 function NotificationsBridge() {
   useNotifications();
+  useAndroidWidgetSync();
   return null;
 }
 
@@ -110,6 +112,7 @@ function RootNavigator() {
   const segments = useSegments();
   const area = segments[0] as string | undefined;
   useEffect(() => {
+    if (status === "unauthenticated") clearAndroidWidget();
     if (status !== "unauthenticated" || WIDGET_WINDOW) return;
     if (area === undefined || area === "(auth)" || area === "auth-callback") return;
     router.replace("/(auth)/login");
