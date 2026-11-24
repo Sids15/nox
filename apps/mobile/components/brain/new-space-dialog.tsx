@@ -3,10 +3,10 @@ import { router } from "expo-router";
 import { vars } from "nativewind";
 import { useEffect, useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
-import { SPACE_EMOJI, SPACE_PRESETS } from "./space-presets";
+import { SPACE_EMOJI, SPACE_PRESETS, type SpacePreset } from "./space-presets";
 
 /** Name a new space, pick a kind (which sets its pipeline) and a mark; opens it once made. */
-export function NewSpaceDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function NewSpaceDialog({ visible, onClose, initialPreset }: { visible: boolean; onClose: () => void; initialPreset?: SpacePreset }) {
   const c = useThemeColors();
   const themeVars = useThemeVars();
   const create = useCreateSpace();
@@ -16,10 +16,11 @@ export function NewSpaceDialog({ visible, onClose }: { visible: boolean; onClose
 
   useEffect(() => {
     if (!visible) return;
+    const start = initialPreset ?? SPACE_PRESETS[0]!;
     setName("");
-    setPreset(SPACE_PRESETS[0]!);
-    setIcon(SPACE_PRESETS[0]!.icon);
-  }, [visible]);
+    setPreset(start);
+    setIcon(start.icon);
+  }, [visible, initialPreset]);
 
   const submit = () => {
     const n = name.trim() || preset.label;

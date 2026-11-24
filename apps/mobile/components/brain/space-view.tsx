@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
+  CircleHelp,
   CircleCheck,
   FileText,
   Kanban,
@@ -40,7 +41,9 @@ import { MenuDivider, MenuLabel, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { KindIcon } from "./kind-icon";
 import { openRef, usePages, type Page } from "./pages";
-import { SpaceMark } from "./space-mark";
+import { SpaceMark, spaceColor } from "./space-mark";
+import { SpacesIntro } from "./spaces-intro";
+import { LinearGradient } from "expo-linear-gradient";
 import { SPACE_EMOJI } from "./space-presets";
 import { StageEditor } from "./stage-editor";
 import { useAllTemplates } from "./use-templates";
@@ -70,6 +73,8 @@ export function SpaceView({ space }: { space: Space }) {
   const [menu, setMenu] = useState(false);
   const [markOpen, setMarkOpen] = useState(false);
   const [stagesOpen, setStagesOpen] = useState(false);
+  const [intro, setIntro] = useState(false);
+  const tint = spaceColor(space);
   const menuRef = useRef<View>(null);
   const markRef = useRef<View>(null);
 
@@ -107,6 +112,8 @@ export function SpaceView({ space }: { space: Space }) {
   return (
     <View className="flex-1">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140, ...(isDesktop ? { paddingTop: 20 } : null) }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        {/* The space's colour washes the top of its page, so you always know where you are. */}
+        <LinearGradient colors={[`${tint}30`, `${tint}00`]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 220 }} />
         {/* Top bar: back, and the space's menu */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           <Pressable onPress={() => goBack("/spaces")} hitSlop={6} accessibilityRole="button" accessibilityLabel="Back to spaces" style={pressScale} className="hover:bg-chip -ml-2 h-[34px] flex-row items-center gap-0.5 rounded-[10px] pl-1 pr-2.5">
@@ -145,30 +152,35 @@ export function SpaceView({ space }: { space: Space }) {
         </View>
 
         {/* Tabs + add */}
-        <View className="px-screen mt-5 flex-row items-center gap-1.5">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} style={{ flexGrow: 1, flexShrink: 1 }}>
-            {tabs.map(({ key, label, Icon, count }) => {
+        <View className="px-screen mt-6 flex-row items-end gap-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 18 }} style={{ flexGrow: 1, flexShrink: 1 }}>
+            {tabs.map(({ key, label, count }) => {
               const on = tab === key;
               return (
-                <Pressable
-                  key={key}
-                  onPress={() => setTab(key)}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: on }}
-                  className={`h-[32px] flex-row items-center gap-1.5 rounded-pill px-3 ${on ? "bg-ink" : "bg-chip hover:opacity-80"}`}
-                >
-                  <Icon size={14} color={on ? c.bg : c.ink2} strokeWidth={2} />
-                  <Text className={`text-[13px] font-semibold ${on ? "text-bg" : "text-ink-2"}`}>{label}</Text>
-                  {count ? <Text style={TABULAR} className={`text-[12px] ${on ? "text-bg" : "text-ink-3"}`}>{count}</Text> : null}
+                <Pressable key={key} onPress={() => setTab(key)} accessibilityRole="tab" accessibilityState={{ selected: on }} className="pb-2 pt-1">
+                  <View className="flex-row items-center gap-1.5">
+                    <Text className={`text-[15px] ${on ? "text-ink font-semibold" : "text-ink-3 font-medium"}`}>{label}</Text>
+                    {count ? (
+                      <Text style={TABULAR} className={`text-[12px] ${on ? "text-ink-2" : "text-ink-3"}`}>
+                        {count}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View className="mt-2 h-[2px] rounded-full" style={{ backgroundColor: on ? tint : "transparent" }} />
                 </Pressable>
               );
             })}
           </ScrollView>
-          <NewInSpace space={space} stage={space.stages[0] ?? null} />
+          <View className="pb-2">
+            <NewInSpace space={space} stage={space.stages[0] ?? null} />
+          </View>
         </View>
+        <View className="border-line mx-screen border-t" />
 
         <View className="mt-4">
-          {tab === "board" ? (
+          {boardPages.length === 0 && tasks.length === 0 && resources.length === 0 && (tab === "board" || tab === "pages") ? (
+            <GettingStarted space={space} onStages={() => setStagesOpen(true)} onHelp={() => setIntro(true)} />
+          ) : tab === "board" ? (
             <Board space={space} pages={boardPages} />
           ) : tab === "pages" ? (
             <PageList pages={boardPages} />
@@ -183,6 +195,7 @@ export function SpaceView({ space }: { space: Space }) {
       <Popover anchorRef={menuRef} open={menu} onClose={() => setMenu(false)} width={230} accessibilityLabel="Space options">
         <View className="p-1.5">
           <MenuRow label={space.stages.length ? "Edit pipeline stages" : "Add a pipeline board"} icon={<Waypoints size={15} color={c.ink2} strokeWidth={2} />} onPress={() => { setMenu(false); setStagesOpen(true); }} />
+          <MenuRow label="How Spaces work" icon={<CircleHelp size={15} color={c.ink2} strokeWidth={2} />} onPress={() => { setMenu(false); setIntro(true); }} />
           <MenuDivider />
           <MenuRow
             label="Delete space"
@@ -215,6 +228,7 @@ export function SpaceView({ space }: { space: Space }) {
         </View>
       </Popover>
       <StageEditor space={space} visible={stagesOpen} onClose={() => setStagesOpen(false)} />
+      <SpacesIntro visible={intro} onClose={() => setIntro(false)} />
     </View>
   );
 }
@@ -291,9 +305,12 @@ function Board({ space, pages }: { space: Space; pages: BoardPage[] }) {
   const setStage = (p: BoardPage, stage: string | null) =>
     p.kind === "note" ? updateNote.mutate({ id: p.id, patch: { stage } }) : updateIdea.mutate({ id: p.id, patch: { stage } });
 
+  const tint = spaceColor(space);
   const column = (key: string, label: string, items: BoardPage[], index: number) => (
     <View key={key} className="bg-surface border-line rounded-card border p-2" style={{ width: 264 }}>
-      <View className="mb-1.5 flex-row items-center justify-between px-1.5 pt-0.5">
+      <View className="mb-2 flex-row items-center gap-2 px-1.5 pt-0.5">
+        {/* Later stages are a deeper shade of the space's colour: the pipeline reads left to right. */}
+        <View className="h-2 w-2 rounded-full" style={{ backgroundColor: index < 0 ? c.ink3 : tint, opacity: index < 0 ? 0.6 : 0.35 + (0.65 * (index + 1)) / Math.max(1, columns.length) }} />
         <Text numberOfLines={1} className="text-ink flex-1 text-[13px] font-semibold">
           {label}
         </Text>
@@ -302,6 +319,11 @@ function Board({ space, pages }: { space: Space; pages: BoardPage[] }) {
         </Text>
       </View>
       <View className="gap-1.5">
+        {items.length === 0 ? (
+          <View className="border-line items-center rounded-[10px] border border-dashed py-4">
+            <Text className="text-ink-3 text-[12px]">Nothing here yet</Text>
+          </View>
+        ) : null}
         {items.map((p) => (
           <Pressable key={`${p.kind}:${p.id}`} onPress={() => openRef(p)} accessibilityRole="link" className="bg-bg border-line hover:border-accent/[0.4] rounded-[10px] border px-2.5 py-2">
             <View className="flex-row items-start gap-2">
@@ -351,6 +373,45 @@ function Board({ space, pages }: { space: Space; pages: BoardPage[] }) {
       {orphans.length > 0 ? column(NO_STAGE, "No stage", orphans, -1) : null}
       {columns.map((s, i) => column(s, s, pages.filter((p) => p.stage === s), i))}
     </ScrollView>
+  );
+}
+
+/** An empty space: three clear first steps instead of four empty tabs. */
+function GettingStarted({ space, onStages, onHelp }: { space: Space; onStages: () => void; onHelp: () => void }) {
+  const c = useThemeColors();
+  const step = (n: number, title: string, body: string, action: ReactNode) => (
+    <View className="border-line flex-row gap-3 border-b py-3.5">
+      <View className="bg-accent/[0.12] h-6 w-6 items-center justify-center rounded-full">
+        <Text className="text-accent text-[12px] font-bold">{n}</Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-ink text-[15px] font-semibold">{title}</Text>
+        <Text className="text-ink-3 mt-0.5 text-[13px] leading-[19px]">{body}</Text>
+        <View className="mt-2 flex-row">{action}</View>
+      </View>
+    </View>
+  );
+  const link = (label: string, onPress: () => void) => (
+    <Pressable onPress={onPress} accessibilityRole="button" className="hover:bg-chip -ml-1.5 rounded-[8px] px-1.5 py-1">
+      <Text className="text-accent text-[14px] font-semibold">{label}</Text>
+    </Pressable>
+  );
+  return (
+    <View className="px-screen">
+      <View className="bg-surface border-line rounded-card border px-4 pt-1">
+        {step(1, "Add your first page", "A note or an idea, blank or from a template like Video idea or PRD.", <NewInSpace space={space} stage={space.stages[0] ?? null} compact />)}
+        {step(
+          2,
+          space.stages.length ? "Check your pipeline" : "Want a board?",
+          space.stages.length ? `Pages move through ${space.stages.join(" → ")}. Rename or reorder the stages to match how you work.` : "Add stages and this space gets a board to move work through.",
+          link(space.stages.length ? "Edit stages" : "Add stages", onStages),
+        )}
+        {step(3, "Bring things in", "Any note, idea, task or saved link can join this space from its Details or menu. Type [[ in a page to link it to another.", link("How Spaces work", onHelp))}
+      </View>
+      <Text className="text-ink-3 mt-2 text-center text-[12px]" style={{ color: c.ink3 }}>
+        This goes away once the space has something in it.
+      </Text>
+    </View>
   );
 }
 
