@@ -24,6 +24,7 @@ const base: Task = {
   streak_count: 0,
   longest_streak: 0,
   last_completed_on: null,
+  space_id: null,
 };
 const mk = (o: Partial<Task>): Task => ({ ...base, ...o });
 const ids = (r: { task: Task; projected: boolean }[]) => r.map((p) => `${p.task.id}${p.projected ? "*" : ""}`);
