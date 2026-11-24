@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AccessibilityInfo, Animated, Modal, Pressable, Text, View } from "react-native";
 
 /** A tiny drawn version of the real screen, so each step shows what it means instead of describing it. */
-function Frame({ children }: { children: ReactNode }) {
+export function Frame({ children }: { children: ReactNode }) {
   return <View className="bg-bg border-line h-[176px] justify-center overflow-hidden rounded-[14px] border px-4">{children}</View>;
 }
 
@@ -23,7 +23,7 @@ function MiniSpace({ mark, name, meta, tint }: { mark: string; name: string; met
   );
 }
 
-function StepSpaces() {
+export function StepSpaces() {
   return (
     <Frame>
       <View className="gap-1.5">
@@ -62,7 +62,7 @@ function StepInside() {
   );
 }
 
-function StepBoard() {
+export function StepBoard() {
   const c = useThemeColors();
   const cols: { name: string; cards: string[] }[] = [
     { name: "Idea", cards: ["Rust in 100s", "Desk tour"] },
@@ -94,7 +94,7 @@ function StepBoard() {
   );
 }
 
-function StepLinks() {
+export function StepLinks() {
   const c = useThemeColors();
   return (
     <Frame>

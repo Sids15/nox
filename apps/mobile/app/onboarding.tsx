@@ -29,6 +29,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { StepBoard } from "../components/brain/spaces-intro";
+import { WidgetArt } from "../components/widget/widget-intro";
+import { canOpenDesktopWidget, toggleDesktopWidget } from "../lib/desktop-widget";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COVER, COVER_DIM, COVER_INK, NotebookPage } from "../components/auth-shell";
 import { pressScale } from "../components/menu";
@@ -36,7 +39,7 @@ import { SegmentedControl } from "../components/tasks/segmented-control";
 import { useIdentity } from "../lib/use-identity";
 import { ensurePermission } from "../lib/notifications";
 
-const STEPS = 5;
+const STEPS = 7;
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 const ACCENT_ORDER: AccentName[] = ["vermilion", "indigo", "moss", "plum"];
 const EXAMPLES = ["Call mum tomorrow at 6pm", "Gym every mon and thu 7am", "Pay rent friday !high"];
@@ -305,7 +308,41 @@ function Onboarding() {
       </View>
     </View>,
 
-    /* 4 — first task */
+    /* 4 — spaces */
+    <View key="spaces">
+      <Title>A second brain, by area</Title>
+      <Lead>
+        Make a space for each YouTube channel, project or set of PRDs. Its notes, ideas, tasks and links live together, on a board
+        that moves work through your stages. Type [[ in any page to link it to another.
+      </Lead>
+      <View className="mt-7 gap-3">
+        <StepBoard />
+      </View>
+      <Text className="text-ink-3 mt-3 text-[13px] leading-[19px]">Find it in the Spaces tab. It walks you through the rest the first time.</Text>
+    </View>,
+
+    /* 5 — widget */
+    <View key="widget">
+      <Title>Your day, at a glance</Title>
+      <Lead>
+        {canOpenDesktopWidget()
+          ? "A small Nox widget can float beside your work with today's tasks, what's next and your spaces. Tick things off without opening the app."
+          : Platform.OS === "android"
+            ? "Add the Nox widget to your home screen for today's tasks, what's next and your spaces. Long-press the home screen → Widgets → Nox."
+            : "On the Mac, Windows and Android apps, a Nox widget shows today's tasks, what's next and your spaces outside the app."}
+      </Lead>
+      <View className="mt-7">
+        <WidgetArt />
+      </View>
+      {canOpenDesktopWidget() ? (
+        <View className="mt-5">
+          <GhostButton label="Show the widget now" onPress={() => void toggleDesktopWidget()} />
+        </View>
+      ) : null}
+      <Text className="text-ink-3 mt-3 text-[13px] leading-[19px]">Choose what it shows in Settings → Widget.</Text>
+    </View>,
+
+    /* 6 — first task */
     <View key="task">
       <Title>Add your first task</Title>
       <Lead>Type it the way you'd say it. Nox picks out the day, time, repeat and priority.</Lead>

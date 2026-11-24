@@ -30,6 +30,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { TABULAR, pressScale } from "../components/menu";
 import { useWidgetSnapshot } from "../components/widget/use-widget-snapshot";
 import { WidgetView } from "../components/widget/widget-view";
+import { WidgetIntro } from "../components/widget/widget-intro";
 import { canOpenDesktopWidget, toggleDesktopWidget } from "../lib/desktop-widget";
 import { Sidebar } from "../components/sidebar";
 import { Alert } from "../lib/alert";
@@ -169,6 +170,7 @@ function WidgetSettings() {
     setWidget({ sections: next });
   };
   const spaceOn = widget.sections.some((s) => s.key === "space" && s.on);
+  const [intro, setIntro] = useState(false);
 
   return (
     <View className="gap-3">
@@ -229,6 +231,11 @@ function WidgetSettings() {
           </Row>
         ) : null}
       </Group>
+
+      <Pressable onPress={() => setIntro(true)} accessibilityRole="button" className="hover:bg-chip self-start rounded-[8px] px-1.5 py-1">
+        <Text className="text-accent text-[14px] font-semibold">How the widget works</Text>
+      </Pressable>
+      <WidgetIntro visible={intro} onClose={() => setIntro(false)} />
 
       {/* Live preview: exactly what the widget will show, from your real day. */}
       <Text className="text-ink-3 mt-1 text-[12px] font-semibold tracking-[0.05em]">PREVIEW</Text>
