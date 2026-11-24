@@ -11,7 +11,12 @@ import { withAlpha } from "../../lib/color";
 import { NewInSpace, type SpacePage } from "./space-parts";
 
 const NO_STAGE = "\u0000none";
-const COLUMN = 264;
+/** Column widths: share the page so every stage is on screen, never narrower than MIN (then scroll). */
+const MIN_COLUMN = 180;
+const MAX_COLUMN = 320;
+const PHONE_COLUMN = 264;
+const GAP = 10;
+const PAD = 20;
 
 /** A field's value as short text for a card, or null when empty. */
 export function fieldValue(p: Property): string | null {
@@ -34,6 +39,11 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
   const tint = c.accent;
   const columns = space.stages;
   const orphans = pages.filter((p) => !p.stage || !columns.includes(p.stage));
+  const [boardWidth, setBoardWidth] = useState(0);
+  const count = columns.length + (orphans.length > 0 ? 1 : 0);
+  const fitted = Math.floor((boardWidth - PAD * 2 - GAP * Math.max(0, count - 1)) / Math.max(1, count));
+  // Desktop and iPad: every stage on one screen. Phones: swipe across fixed-width columns.
+  const COLUMN = isDesktop && boardWidth > 0 ? Math.min(MAX_COLUMN, Math.max(MIN_COLUMN, fitted)) : PHONE_COLUMN;
 
   const setStage = (p: SpacePage, stage: string | null) => {
     if (p.stage === stage) return;
@@ -168,19 +178,18 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
               <Text className="text-ink-3 text-[12px]">Drop here</Text>
             </View>
           ) : null}
-          {key !== NO_STAGE && !drag ? <NewInSpace space={space} stage={label} variant="row" /> : null}
         </View>
       </View>
     );
   };
 
   return (
-    <View>
+    <View onLayout={(e) => setBoardWidth(e.nativeEvent.layout.width)}>
       <ScrollView
         horizontal
         scrollEnabled={!drag}
         showsHorizontalScrollIndicator={isDesktop}
-        contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 12, alignItems: "flex-start" }}
+        contentContainerStyle={{ gap: GAP, paddingHorizontal: PAD, paddingBottom: 12, alignItems: "flex-start" }}
       >
         {orphans.length > 0 ? column(NO_STAGE, "No stage", orphans, -1) : null}
         {columns.map((s, i) => column(s, s, pages.filter((p) => p.stage === s), i))}
