@@ -1,0 +1,12 @@
+{
+  "name": "Nox",
+  "short_name": "Nox",
+  "description": "Tasks, ideas, notes and resources in one place.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F5F1E8",
+  "theme_color": "#F5F1E8",
+  "icons": [{ "src": "/apple-touch-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }]
+}
