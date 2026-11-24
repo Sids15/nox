@@ -1,0 +1,225 @@
+import { useThemeColors, useUpdateIdea, useUpdateNote } from "@nox/features";
+import type { Property, Space } from "@nox/types";
+import { relativeFromNow } from "@nox/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { useRef, useState } from "react";
+import { Platform, Pressable, ScrollView, Text, View, type GestureResponderEvent } from "react-native";
+import { useIsDesktop } from "../../lib/use-responsive";
+import { TABULAR } from "../menu";
+import { KindIcon } from "./kind-icon";
+import { openRef } from "./pages";
+import { spaceColor } from "./space-mark";
+import { NewInSpace, type SpacePage } from "./space-parts";
+
+const NO_STAGE = "\u0000none";
+const COLUMN = 272;
+
+/** A field's value as short text for a card, or null when empty. */
+export function fieldValue(p: Property): string | null {
+  if (p.value === null || p.value === "") return null;
+  if (p.type === "checkbox") return p.value ? `✓ ${p.name}` : null;
+  if (p.type === "url") return p.name;
+  return String(p.value);
+}
+
+/**
+ * The pipeline board: a column per stage. Drag a card to another column (mouse or finger), or use
+ * ‹ › on it. Cards show the page's fields and tags, like a Notion board.
+ */
+export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] }) {
+  const c = useThemeColors();
+  const isDesktop = useIsDesktop();
+  const updateNote = useUpdateNote();
+  const updateIdea = useUpdateIdea();
+  const tint = spaceColor(space);
+  const columns = space.stages;
+  const orphans = pages.filter((p) => !p.stage || !columns.includes(p.stage));
+
+  const setStage = (p: SpacePage, stage: string | null) => {
+    if (p.stage === stage) return;
+    if (p.kind === "note") updateNote.mutate({ id: p.id, patch: { stage } });
+    else updateIdea.mutate({ id: p.id, patch: { stage } });
+  };
+
+  // ── Drag between columns: measure the columns when a drag starts, drop on the one under the pointer.
+  const colRefs = useRef(new Map<string, View | null>());
+  const rects = useRef<{ key: string; x: number; w: number }[]>([]);
+  const gesture = useRef<{ page: SpacePage; x0: number; y0: number; moved: boolean } | null>(null);
+  const [drag, setDrag] = useState<{ page: SpacePage; x: number; y: number; over: string | null } | null>(null);
+  const columnAt = (x: number) => rects.current.find((r) => x >= r.x && x <= r.x + r.w)?.key ?? null;
+
+  const dragHandlers = (page: SpacePage) => ({
+    onStartShouldSetResponder: () => true,
+    onResponderTerminationRequest: () => !gesture.current?.moved,
+    onResponderGrant: (e: GestureResponderEvent) => {
+      gesture.current = { page, x0: e.nativeEvent.pageX, y0: e.nativeEvent.pageY, moved: false };
+      rects.current = [];
+      colRefs.current.forEach((el, key) => el?.measureInWindow((x, _y, w) => rects.current.push({ key, x, w })));
+    },
+    onResponderMove: (e: GestureResponderEvent) => {
+      const g = gesture.current;
+      if (!g) return;
+      const { pageX: x, pageY: y } = e.nativeEvent;
+      if (!g.moved && Math.hypot(x - g.x0, y - g.y0) < 6) return;
+      g.moved = true;
+      setDrag({ page: g.page, x, y, over: columnAt(x) });
+    },
+    onResponderRelease: (e: GestureResponderEvent) => {
+      const g = gesture.current;
+      gesture.current = null;
+      setDrag(null);
+      if (!g) return;
+      if (!g.moved) return openRef(g.page);
+      const over = columnAt(e.nativeEvent.pageX);
+      if (over && over !== NO_STAGE) setStage(g.page, over);
+    },
+    onResponderTerminate: () => {
+      gesture.current = null;
+      setDrag(null);
+    },
+  });
+
+  const card = (p: SpacePage, index: number) => {
+    const values = p.properties.map((f) => fieldValue(f)).filter((v): v is string => !!v).slice(0, 2);
+    const dragging = drag?.page.id === p.id;
+    return (
+      <View
+        key={`${p.kind}:${p.id}`}
+        {...dragHandlers(p)}
+        accessibilityRole="button"
+        accessibilityLabel={`${p.title}. Drag to another stage, or tap to open.`}
+        className="bg-surface border-line hover:border-accent/[0.4] rounded-[12px] border px-3 py-2.5"
+        style={[{ opacity: dragging ? 0.35 : 1 }, Platform.OS === "web" ? ({ cursor: "grab", userSelect: "none" } as object) : null]}
+      >
+        <View className="flex-row items-start gap-2">
+          <View className="pt-[3px]">
+            <KindIcon kind={p.kind} color={c.ink3} size={13} />
+          </View>
+          <Text numberOfLines={3} className="text-ink flex-1 text-[14px] font-medium leading-[19px]">
+            {p.title}
+          </Text>
+        </View>
+        {values.length > 0 || p.tags.length > 0 ? (
+          <View className="mt-2 flex-row flex-wrap gap-1">
+            {values.map((v) => (
+              <View key={v} className="bg-chip rounded-[5px] px-1.5 py-[2px]">
+                <Text numberOfLines={1} className="text-ink-2 max-w-[200px] text-[11px]">
+                  {v}
+                </Text>
+              </View>
+            ))}
+            {p.tags.slice(0, 2).map((t) => (
+              <View key={t} className="rounded-[5px] px-1.5 py-[2px]" style={{ backgroundColor: `${tint}1F` }}>
+                <Text className="text-[11px]" style={{ color: tint }}>
+                  #{t}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        <View className="mt-2 flex-row items-center justify-between">
+          <Text className="text-ink-3 text-[11px]">{relativeFromNow(p.updated_at)}</Text>
+          {/* Touch fallback for moving along the pipeline (and keyboard users). */}
+          {index >= 0 || !isDesktop ? (
+            <View className="flex-row items-center">
+              <Pressable
+                onPress={() => setStage(p, index <= 0 ? null : columns[index - 1]!)}
+                disabled={index < 0}
+                hitSlop={4}
+                accessibilityRole="button"
+                accessibilityLabel="Move to the previous stage"
+                className="hover:bg-chip h-6 w-6 items-center justify-center rounded-[6px]"
+                style={{ opacity: index < 0 ? 0.2 : 0.8 }}
+              >
+                <ChevronLeft size={13} color={c.ink2} strokeWidth={2.2} />
+              </Pressable>
+              <Pressable
+                onPress={() => setStage(p, columns[index + 1] ?? columns[0]!)}
+                disabled={index >= columns.length - 1}
+                hitSlop={4}
+                accessibilityRole="button"
+                accessibilityLabel="Move to the next stage"
+                className="hover:bg-chip h-6 w-6 items-center justify-center rounded-[6px]"
+                style={{ opacity: index >= columns.length - 1 ? 0.2 : 0.8 }}
+              >
+                <ChevronRight size={13} color={c.ink2} strokeWidth={2.2} />
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    );
+  };
+
+  const column = (key: string, label: string, items: SpacePage[], index: number) => {
+    const over = drag?.over === key && key !== NO_STAGE;
+    const shade = index < 0 ? 0.5 : 0.35 + (0.65 * (index + 1)) / Math.max(1, columns.length);
+    return (
+      <View
+        key={key}
+        ref={(el) => {
+          colRefs.current.set(key, el);
+        }}
+        collapsable={false}
+        className="rounded-[16px] p-1.5"
+        style={{ width: COLUMN, backgroundColor: over ? `${tint}1A` : `${c.ink3}0F`, borderWidth: 1, borderColor: over ? tint : "transparent" }}
+      >
+        <View className="mb-1.5 flex-row items-center gap-2 px-2 pt-1.5">
+          <View className="h-2 w-2 rounded-full" style={{ backgroundColor: index < 0 ? c.ink3 : tint, opacity: shade }} />
+          <Text numberOfLines={1} className="text-ink flex-shrink text-[13px] font-semibold">
+            {label}
+          </Text>
+          <Text style={TABULAR} className="text-ink-3 flex-1 text-[12px]">
+            {items.length}
+          </Text>
+          {key !== NO_STAGE ? <NewInSpace space={space} stage={label} variant="plus" /> : null}
+        </View>
+        <View className="gap-1.5">
+          {items.map((p) => card(p, index))}
+          {items.length === 0 ? (
+            <View className="items-center rounded-[12px] py-5" style={{ borderWidth: 1, borderStyle: "dashed", borderColor: over ? tint : c.line }}>
+              <Text className="text-ink-3 text-[12px]">{drag ? "Drop here" : "Empty"}</Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View>
+      <ScrollView
+        horizontal
+        scrollEnabled={!drag}
+        showsHorizontalScrollIndicator={isDesktop}
+        contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 12, alignItems: "flex-start" }}
+      >
+        {orphans.length > 0 ? column(NO_STAGE, "No stage", orphans, -1) : null}
+        {columns.map((s, i) => column(s, s, pages.filter((p) => p.stage === s), i))}
+      </ScrollView>
+      {/* The card under the pointer while dragging (web: window coordinates map straight to fixed). */}
+      {drag && Platform.OS === "web" ? (
+        <View
+          pointerEvents="none"
+          className="bg-surface border-accent rounded-[12px] border px-3 py-2.5"
+          style={{
+            position: "fixed" as "absolute",
+            left: drag.x - COLUMN / 2 + 10,
+            top: drag.y - 22,
+            width: COLUMN - 20,
+            shadowColor: "#000",
+            shadowOpacity: 0.18,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 8,
+            transform: [{ rotate: "-1.5deg" }],
+          }}
+        >
+          <Text numberOfLines={2} className="text-ink text-[14px] font-medium">
+            {drag.page.title}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
