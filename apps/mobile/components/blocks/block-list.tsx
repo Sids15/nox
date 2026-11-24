@@ -1,11 +1,13 @@
-import { useThemeColors } from "@nox/features";
+import { openLinkQuery, parseRef, refBlock, useThemeColors, type Ref } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, TextInput, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from "react-native";
 import { AudioBlock } from "./audio-block";
 import { AutoGrowInput } from "./auto-grow-input";
 import { ImageBlock } from "./image-block";
 import { LinkCard } from "./link-card";
+import { LinkPicker } from "../brain/link-picker";
+import { RefCard } from "../brain/ref-card";
 import type { BlockEditor } from "./use-block-editor";
 
 type KeyEvent = NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean; preventDefault?: () => void }>;
@@ -22,15 +24,24 @@ export function BlockList({
   editor,
   firstPlaceholder = "Start writing…",
   minHeight = 240,
+  self,
+  spaceId,
 }: {
   editor: BlockEditor;
   firstPlaceholder?: string;
   /** Height of the tappable writing area (the space under the text focuses the end). */
   minHeight?: number;
+  /** The page being edited, so `[[` doesn't offer it as a link to itself. */
+  self?: Ref;
+  /** Notes created from the `[[` picker join this space. */
+  spaceId?: string | null;
 }) {
   const c = useThemeColors();
   const inputs = useRef(new Map<string, TextInput | null>());
   const { blocks, keys, focusTarget } = editor;
+  // The paragraph the caret was last in: the `[[` picker shows under it while its text ends in an
+  // open `[[…`. Not cleared on blur — tapping the picker blurs the input first.
+  const [active, setActive] = useState<number | null>(null);
 
   // Move the caret where the editor asked (after an insert, a split or a delete).
   useEffect(() => {
@@ -94,14 +105,18 @@ export function BlockList({
                   className="text-ink mt-2 font-serif text-[20px] font-bold leading-[28px]"
                 />
               );
-            case "paragraph":
+            case "paragraph": {
+              const linkQuery = active === i ? openLinkQuery(block.text) : null;
               return (
+                <View key={key} className="gap-1.5">
                 <AutoGrowInput
-                  key={key}
                   ref={register}
                   value={block.text}
                   onChangeText={(t) => editor.setText(i, t)}
-                  onFocus={() => editor.setFocused(i)}
+                  onFocus={() => {
+                    editor.setFocused(i);
+                    setActive(i);
+                  }}
                   onKeyPress={onKey(i, block)}
                   // The first block carries the prompt; a lone empty paragraph anywhere else reads
                   // as a place to type, not as nothing.
@@ -112,9 +127,25 @@ export function BlockList({
                   className="text-ink text-[16px] leading-[26px]"
                   style={{ textAlignVertical: "top" }}
                 />
+                {linkQuery !== null ? (
+                  <LinkPicker
+                    query={linkQuery}
+                    exclude={self}
+                    spaceId={spaceId}
+                    onPick={(t) => {
+                      setActive(null);
+                      editor.linkPage(i, refBlock({ kind: t.kind, id: t.id }, t.title));
+                    }}
+                  />
+                ) : null}
+                </View>
               );
-            case "link":
+            }
+            case "link": {
+              const ref = parseRef(block.url);
+              if (ref) return <RefCard key={key} target={ref} storedTitle={block.title} onRemove={() => editor.removeBlock(i)} />;
               return <LinkCard key={key} block={block} onRemove={() => editor.removeBlock(i)} />;
+            }
             case "image":
               return <ImageBlock key={key} block={block} onRemove={() => editor.removeBlock(i)} />;
             case "audio":

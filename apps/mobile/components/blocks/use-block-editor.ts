@@ -1,3 +1,4 @@
+import { withoutLinkQuery } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { domainFrom } from "@nox/utils";
 import { useEffect, useRef, useState } from "react";
@@ -37,6 +38,10 @@ export interface BlockEditor {
   insertText: (text: string) => void;
   /** Swap the whole document (AI tidy / summary), saving it. */
   replaceAll: (blocks: ContentBlock[]) => void;
+  /** Finish a `[[` in paragraph `i`: drop the typed query and put the page link after it. */
+  linkPage: (i: number, link: ContentBlock) => void;
+  /** Start a page link at the caret (the toolbar button): types `[[` so the picker opens. */
+  startLink: () => void;
 }
 
 /**
@@ -197,6 +202,44 @@ export function useBlockEditor(
       } else {
         const at = insertIndex(doc.blocks.length);
         insertAt(at, [{ type: "paragraph", text: text.charAt(0).toUpperCase() + text.slice(1) }]);
+        focusAt(at, "end");
+      }
+    },
+    linkPage: (i, link) => {
+      const b = doc.blocks[i];
+      if (!isText(b)) return;
+      const text = withoutLinkQuery(b.text);
+      const after = doc.blocks[i + 1];
+      const trailing: ContentBlock[] = isText(after) ? [] : [{ type: "paragraph", text: "" }];
+      if (text === "" && b.type === "paragraph") {
+        // Nothing else on the line: the link takes its place.
+        update(({ blocks, keys }) => ({
+          blocks: [...blocks.slice(0, i), link, ...trailing, ...blocks.slice(i + 1)],
+          keys: [...keys.slice(0, i), newKey(), ...trailing.map(newKey), ...keys.slice(i + 1)],
+        }));
+        focusAt(i + 1, "start");
+        return;
+      }
+      update(({ blocks, keys }) => ({
+        blocks: [...blocks.slice(0, i), { ...b, text }, link, ...trailing, ...blocks.slice(i + 1)],
+        keys: [...keys.slice(0, i + 1), newKey(), ...trailing.map(newKey), ...keys.slice(i + 1)],
+      }));
+      focusAt(i + 2, "start");
+    },
+    startLink: () => {
+      const i = focused.current;
+      const cur = i === null ? undefined : doc.blocks[i];
+      if (i !== null && cur?.type === "paragraph") {
+        update((d) => {
+          const b = d.blocks[i];
+          if (b?.type !== "paragraph") return d;
+          const sep = b.text === "" || /\s$/.test(b.text) ? "" : " ";
+          return { blocks: d.blocks.map((x, j) => (j === i ? { ...b, text: `${b.text}${sep}[[` } : x)), keys: d.keys };
+        });
+        focusAt(i, "end");
+      } else {
+        const at = insertIndex(doc.blocks.length);
+        insertAt(at, [{ type: "paragraph", text: "[[" }]);
         focusAt(at, "end");
       }
     },

@@ -1,5 +1,5 @@
 import { useThemeColors, useThemeVars } from "@nox/features";
-import { AudioLines, Heading, Image as ImageIcon, Link2, Mic, Pilcrow, Square } from "lucide-react-native";
+import { AudioLines, FileSymlink, Heading, Image as ImageIcon, Link2, Mic, Pilcrow, Square } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
@@ -25,6 +25,7 @@ export function BlockToolbar({
   onAddImage,
   onRecordComplete,
   onDictate,
+  onLinkPage,
 }: {
   onAddHeading: () => void;
   onAddParagraph: () => void;
@@ -33,6 +34,8 @@ export function BlockToolbar({
   onRecordComplete?: (rec: Recording) => void;
   /** Dictated phrases, as they're recognised. The button shows only where the platform supports it. */
   onDictate?: (text: string) => void;
+  /** Link another page (types `[[` at the caret). */
+  onLinkPage?: () => void;
 }) {
   const c = useThemeColors();
   const themeVars = useThemeVars();
@@ -114,6 +117,7 @@ export function BlockToolbar({
               {[
               { key: "h", label: "Heading", Icon: Heading, onPress: onAddHeading, on: true },
               { key: "p", label: "Text", Icon: Pilcrow, onPress: onAddParagraph, on: true },
+              ...(onLinkPage ? [{ key: "r", label: "Page link", Icon: FileSymlink, onPress: onLinkPage, on: true }] : []),
               { key: "l", label: "Link", Icon: Link2, onPress: () => setLinkOpen(true), on: true },
               { key: "i", label: "Image", Icon: ImageIcon, onPress: () => onAddImage?.(), on: !!onAddImage },
               { key: "v", label: "Voice note", Icon: Mic, onPress: () => void startRec(), on: !!onRecordComplete },
@@ -127,7 +131,7 @@ export function BlockToolbar({
                   disabled={!on}
                   hitSlop={4}
                   accessibilityRole="button"
-                  accessibilityLabel={key === "d" ? "Dictate" : `Add ${label.toLowerCase()}`}
+                  accessibilityLabel={key === "d" ? "Dictate" : key === "r" ? "Link to another page" : `Add ${label.toLowerCase()}`}
                   // Hover tooltip where the label is hidden.
                   {...({ title: labelled ? undefined : label } as object)}
                   className="hover:bg-chip h-[34px] flex-row items-center gap-1.5 rounded-[9px] px-2.5"
