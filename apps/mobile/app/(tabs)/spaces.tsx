@@ -1,7 +1,6 @@
 import { usePrefs, useSpaces, useThemeColors } from "@nox/features";
 import type { Space } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { CircleHelp, Plus } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
@@ -9,7 +8,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NewSpaceDialog } from "../../components/brain/new-space-dialog";
 import { usePages } from "../../components/brain/pages";
-import { SpaceMark, spaceColor } from "../../components/brain/space-mark";
+import { SpaceMark } from "../../components/brain/space-mark";
 import { SPACE_PRESETS, type SpacePreset } from "../../components/brain/space-presets";
 import { SpacesIntro } from "../../components/brain/spaces-intro";
 import { pressScale, TABULAR } from "../../components/menu";
@@ -77,7 +76,6 @@ export default function SpacesScreen() {
 
   const card = (s: Space) => {
     const st = stats.get(s.id) ?? { pages: 0, tasks: 0, perStage: [], lastActive: null };
-    const tint = spaceColor(s);
     const total = st.perStage.reduce((a, b) => a + b, 0);
     return (
       <Pressable
@@ -88,7 +86,6 @@ export default function SpacesScreen() {
         style={pressScale}
         className="border-line bg-surface hover:border-accent/[0.35] overflow-hidden rounded-card border"
       >
-        <LinearGradient colors={[`${tint}2E`, `${tint}00`]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 86 }} />
         <View className="p-4">
           <View className="flex-row items-center gap-3">
             <SpaceMark space={s} size={42} />
@@ -108,7 +105,7 @@ export default function SpacesScreen() {
               <View className="bg-chip h-[6px] flex-row overflow-hidden rounded-full">
                 {total > 0
                   ? st.perStage.map((n, i) =>
-                      n > 0 ? <View key={i} style={{ flex: n, backgroundColor: tint, opacity: 0.35 + (0.65 * (i + 1)) / s.stages.length }} /> : null,
+                      n > 0 ? <View key={i} style={{ flex: n, backgroundColor: c.accent, opacity: 0.35 + (0.65 * (i + 1)) / s.stages.length }} /> : null,
                     )
                   : null}
               </View>

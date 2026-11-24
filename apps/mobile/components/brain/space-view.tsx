@@ -1,6 +1,5 @@
 import { useDeleteSpace, useThemeColors, useUpdateSpace } from "@nox/features";
 import type { Space } from "@nox/types";
-import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft, CircleHelp, Kanban, Link2, MoreHorizontal, SquareCheckBig, Table2, Trash2, Waypoints } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -11,7 +10,7 @@ import { MenuDivider, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { usePages } from "./pages";
 import { SpaceBoard } from "./space-board";
-import { SpaceMark, spaceColor } from "./space-mark";
+import { SpaceMark } from "./space-mark";
 import { GettingStarted, NewInSpace, ResourceList, TaskList, type SpacePage } from "./space-parts";
 import { SPACE_EMOJI } from "./space-presets";
 import { SpaceTable } from "./space-table";
@@ -30,7 +29,6 @@ export function SpaceView({ space }: { space: Space }) {
   const pages = usePages();
   const updateSpace = useUpdateSpace();
   const del = useDeleteSpace();
-  const tint = spaceColor(space);
   const [view, setView] = useState<SpaceTab>(space.stages.length ? "board" : "table");
   const [name, setName] = useState(space.name);
   const [menu, setMenu] = useState(false);
@@ -78,7 +76,6 @@ export function SpaceView({ space }: { space: Space }) {
   return (
     <View className="flex-1">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140, ...(isDesktop ? { paddingTop: 16 } : null) }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <LinearGradient colors={[`${tint}22`, `${tint}00`]} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 180 }} />
 
         {/* One header line: back · mark + name + counts · menu */}
         <View className="px-screen flex-row items-center gap-3 pt-2">
@@ -126,7 +123,7 @@ export function SpaceView({ space }: { space: Space }) {
                   className={`h-[32px] flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${on ? "bg-surface border-line border" : "hover:bg-chip"}`}
                   style={on ? { shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
                 >
-                  <Icon size={14} color={on ? tint : c.ink3} strokeWidth={2.1} />
+                  <Icon size={14} color={on ? c.accent : c.ink3} strokeWidth={2.1} />
                   <Text className={`text-[13px] ${on ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{label}</Text>
                   {count ? (
                     <Text style={TABULAR} className="text-ink-3 text-[12px]">

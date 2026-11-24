@@ -3,7 +3,7 @@ import type { Task } from "@nox/types";
 import { capitalize, formatTime12, relativeDayLabel, todayKey } from "@nox/utils";
 import { AlignLeft, Bell, Check, Repeat, RotateCcw } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
-import { SpaceMark, spaceColor } from "../brain/space-mark";
+import { SpaceMark } from "../brain/space-mark";
 import { pressScale, TABULAR } from "../menu";
 
 /**
@@ -127,9 +127,9 @@ export function TaskRow({
             {task.notes ? <AlignLeft size={11} color={c.ink3} strokeWidth={2} /> : null}
             {space ? (
               // Which space it came from — tasks added in a space say so everywhere they appear.
-              <View className="flex-row items-center gap-1 rounded-[5px] px-1.5 py-[2px]" style={{ backgroundColor: `${spaceColor(space)}1F` }}>
+              <View className="bg-chip flex-row items-center gap-1 rounded-[5px] px-1.5 py-[2px]">
                 <SpaceMark space={space} size={12} />
-                <Text numberOfLines={1} className="max-w-[140px] text-[11px] font-semibold" style={{ color: spaceColor(space) }}>
+                <Text numberOfLines={1} className="text-ink-2 max-w-[140px] text-[11px] font-semibold">
                   {space.name}
                 </Text>
               </View>

@@ -7,7 +7,6 @@ import { useIsDesktop } from "../../lib/use-responsive";
 import { TABULAR } from "../menu";
 import { KindIcon } from "./kind-icon";
 import { openRef } from "./pages";
-import { spaceColor } from "./space-mark";
 import { withAlpha } from "../../lib/color";
 import { NewInSpace, type SpacePage } from "./space-parts";
 
@@ -31,7 +30,8 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
   const isDesktop = useIsDesktop();
   const updateNote = useUpdateNote();
   const updateIdea = useUpdateIdea();
-  const tint = spaceColor(space);
+  // The app accent, like every other board and list — the space's own colour stays on its mark.
+  const tint = c.accent;
   const columns = space.stages;
   const orphans = pages.filter((p) => !p.stage || !columns.includes(p.stage));
 
@@ -139,7 +139,7 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
   const column = (key: string, label: string, items: SpacePage[], index: number) => {
     const over = drag?.over === key && key !== NO_STAGE;
     const strength = index < 0 ? 0 : (index + 1) / Math.max(1, columns.length);
-    const labelBg = index < 0 ? withAlpha(c.ink3, 0.14) : withAlpha(tint, 0.1 + 0.14 * strength);
+    const labelBg = index < 0 ? withAlpha(c.ink3, 0.14) : withAlpha(tint, 0.08 + 0.1 * strength);
     return (
       <View
         key={key}

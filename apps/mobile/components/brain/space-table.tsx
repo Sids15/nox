@@ -7,7 +7,6 @@ import { useIsDesktop } from "../../lib/use-responsive";
 import { KindIcon } from "./kind-icon";
 import { openRef } from "./pages";
 import { fieldValue } from "./space-board";
-import { spaceColor } from "./space-mark";
 import { Empty, type SpacePage } from "./space-parts";
 
 /**
@@ -17,7 +16,6 @@ import { Empty, type SpacePage } from "./space-parts";
 export function SpaceTable({ space, pages }: { space: Space; pages: SpacePage[] }) {
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
-  const tint = spaceColor(space);
   // The fields used across the space's pages, by how often they appear.
   const fields = useMemo(() => {
     const count = new Map<string, number>();
@@ -29,8 +27,8 @@ export function SpaceTable({ space, pages }: { space: Space; pages: SpacePage[] 
 
   const stagePill = (stage: string | null) =>
     stage ? (
-      <View className="self-start rounded-[6px] px-1.5 py-0.5" style={{ backgroundColor: `${tint}1F` }}>
-        <Text numberOfLines={1} className="text-[12px] font-medium" style={{ color: tint }}>
+      <View className="bg-accent/[0.1] self-start rounded-[6px] px-1.5 py-0.5">
+        <Text numberOfLines={1} className="text-accent text-[12px] font-medium">
           {stage}
         </Text>
       </View>
@@ -68,8 +66,8 @@ export function SpaceTable({ space, pages }: { space: Space; pages: SpacePage[] 
   const cell = "px-3 py-2.5 justify-center";
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{ paddingHorizontal: 20 }}>
-      <View className="border-line rounded-[12px] border">
-        <View className="border-line bg-chip/50 flex-row border-b">
+      <View className="border-line bg-bg overflow-hidden rounded-[12px] border">
+        <View className="border-line bg-surface flex-row border-b">
           {[["Name", W.name], ...(space.stages.length ? [["Stage", W.stage]] : []), ...fields.map((f) => [f, W.field]), ["Edited", W.edited]].map(([label, w]) => (
             <View key={String(label)} className={cell} style={{ width: Number(w) }}>
               <Text numberOfLines={1} className="text-ink-3 text-[12px] font-semibold">
