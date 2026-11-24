@@ -454,8 +454,9 @@ export default function NotesScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[0]}
       >
-        <View className="px-screen flex-row items-start justify-between pt-2">
+        <View className="px-screen bg-bg flex-row items-start justify-between pb-2 pt-2">
           <View>
             <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Notes</Text>
             <Text className="text-ink-3 mt-0.5 text-[14px] font-medium">

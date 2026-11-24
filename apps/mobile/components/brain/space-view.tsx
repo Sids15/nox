@@ -74,7 +74,9 @@ export function SpaceView({ space }: { space: Space }) {
 
   return (
     <View className="flex-1">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140, ...(isDesktop ? { paddingTop: 16 } : null) }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140, ...(isDesktop ? { paddingTop: 16 } : null) }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]}>
+        {/* Header and views stay pinned while the board or list scrolls under them. */}
+        <View className="bg-bg pb-3">
 
         {/* One header line: back · mark + name + counts · menu */}
         <View className="px-screen flex-row items-center gap-3 pt-2">
@@ -136,7 +138,8 @@ export function SpaceView({ space }: { space: Space }) {
           <NewInSpace space={space} stage={space.stages[0] ?? null} />
         </View>
 
-        <View className="mt-4">
+        </View>
+        <View className="mt-1">
           {empty && (view === "board" || view === "table") ? (
             <GettingStarted space={space} onStages={() => setStagesOpen(true)} onHelp={() => setIntro(true)} />
           ) : view === "board" ? (

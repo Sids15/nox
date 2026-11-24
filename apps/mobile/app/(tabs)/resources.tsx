@@ -491,8 +491,8 @@ export default function ResourcesScreen() {
             </ScrollView>
           </ResizablePane>
 
-          <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80, paddingTop: 28, paddingHorizontal: 30, maxWidth: 1080, width: "100%", alignSelf: "center" }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <View className="flex-row items-start justify-between">
+          <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80, paddingTop: 28, paddingHorizontal: 30, maxWidth: 1080, width: "100%", alignSelf: "center" }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" stickyHeaderIndices={[0]}>
+            <View className="bg-bg flex-row items-start justify-between pb-2">
               <View className="flex-1 pr-3">
                 <View className="flex-row items-center gap-2.5">
                   {activeTag && <View className="h-3 w-3 rounded-full" style={{ backgroundColor: activeTag.color }} />}
@@ -538,8 +538,8 @@ export default function ResourcesScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
-      <ScrollView onScroll={fab.onScroll} scrollEventThrottle={16} className="flex-1" contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}>
-        <View className="px-screen flex-row items-start justify-between pt-2">
+      <ScrollView onScroll={fab.onScroll} scrollEventThrottle={16} className="flex-1" contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]}>
+        <View className="px-screen bg-bg flex-row items-start justify-between pb-2 pt-2">
           <View className="flex-1 pr-3">
             <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">
               {showUsed ? "Used" : "Resources"}

@@ -421,8 +421,9 @@ export default function IdeasScreen() {
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       showsVerticalScrollIndicator={false}
+      stickyHeaderIndices={[0]}
     >
-      {header}
+      <View className="bg-bg pb-2">{header}</View>
       <View className="px-screen mt-6">{body}</View>
     </ScrollView>
   );

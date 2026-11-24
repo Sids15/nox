@@ -159,8 +159,8 @@ export default function SpacesScreen() {
 
   return (
     <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingTop: 20 } : null) }} showsVerticalScrollIndicator={false}>
-        {header}
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150, ...(isDesktop ? { paddingTop: 20 } : null) }} showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]}>
+        <View className="bg-bg pb-2">{header}</View>
 
         {isLoading ? (
           <View className="px-screen mt-5">

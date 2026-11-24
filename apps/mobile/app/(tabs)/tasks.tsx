@@ -571,8 +571,10 @@ export default function TasksScreen() {
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       showsVerticalScrollIndicator={false}
+      // The title row stays put while the day scrolls under it.
+      stickyHeaderIndices={[0]}
     >
-      {header}
+      <View className="bg-bg pb-2">{header}</View>
       {body}
     </ScrollView>
   );
