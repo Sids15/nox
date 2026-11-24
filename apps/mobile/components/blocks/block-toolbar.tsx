@@ -26,7 +26,10 @@ export function BlockToolbar({
   onRecordComplete,
   onDictate,
   onLinkPage,
+  openLinkSignal,
 }: {
+  /** Bump to open the add-a-URL prompt from elsewhere (the `/link` command). */
+  openLinkSignal?: number;
   onAddHeading: () => void;
   onAddParagraph: () => void;
   onAddLink: (url: string) => void;
@@ -47,6 +50,9 @@ export function BlockToolbar({
   const [barWidth, setBarWidth] = useState(0);
   const labelled = isDesktop && barWidth >= 620;
   const dictation = useDictation((t) => onDictate?.(t));
+  useEffect(() => {
+    if (openLinkSignal) setLinkOpen(true);
+  }, [openLinkSignal]);
   useEffect(() => {
     if (dictation.error) Alert.alert("Dictation", dictation.error);
   }, [dictation.error]);

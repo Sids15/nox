@@ -71,6 +71,8 @@ export {
   backlinks,
   matchTargets,
   openLinkQuery,
+  openSlashQuery,
+  withoutSlashQuery,
   outgoingRefs,
   parseRef,
   refBlock,

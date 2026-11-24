@@ -9,6 +9,8 @@ import {
   refBlock,
   refUrl,
   withoutLinkQuery,
+  openSlashQuery,
+  withoutSlashQuery,
   type LinkingPage,
 } from "./refs";
 
@@ -78,5 +80,18 @@ describe("refs", () => {
     const all = [t("1", "Old pricing", "2026-01-01"), t("2", "Pricing page", "2026-01-02"), t("3", "Thumbnails", "2026-01-03")];
     expect(matchTargets("pric", all).map((x) => x.id)).toEqual(["2", "1"]);
     expect(matchTargets("", all).map((x) => x.id)).toEqual(["3", "2", "1"]);
+  });
+});
+
+describe("slash commands", () => {
+  test("open only at the start or after a space", () => {
+    expect(openSlashQuery("/")).toBe("");
+    expect(openSlashQuery("/head")).toBe("head");
+    expect(openSlashQuery("notes /img")).toBe("img");
+    expect(openSlashQuery("https://x.com/a")).toBeNull();
+    expect(openSlashQuery("1/2")).toBeNull();
+    expect(openSlashQuery("/head ing")).toBeNull();
+    expect(withoutSlashQuery("notes /img")).toBe("notes");
+    expect(withoutSlashQuery("/h")).toBe("");
   });
 });

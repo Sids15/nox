@@ -104,3 +104,17 @@ export function matchTargets(query: string, targets: readonly LinkTarget[], limi
   }
   return [...starts, ...contains].slice(0, limit);
 }
+
+/**
+ * The `/command` someone is typing at the end of a paragraph (Notion-style): the word after the
+ * slash, or null. Only at the start of the paragraph or after a space, so URLs and dates don't open it.
+ */
+export function openSlashQuery(text: string): string | null {
+  const m = /(?:^|\s)\/([a-z]{0,20})$/i.exec(text);
+  return m ? m[1]!.toLowerCase() : null;
+}
+
+/** The paragraph with its trailing `/command` removed. */
+export function withoutSlashQuery(text: string): string {
+  return text.replace(/(^|\s)\/[a-z]{0,20}$/i, "$1").replace(/[ \t]+$/, "");
+}

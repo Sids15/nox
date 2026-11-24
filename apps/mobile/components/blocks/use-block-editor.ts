@@ -1,4 +1,4 @@
-import { withoutLinkQuery } from "@nox/features";
+import { withoutLinkQuery, withoutSlashQuery } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { domainFrom } from "@nox/utils";
 import { useEffect, useRef, useState } from "react";
@@ -42,6 +42,8 @@ export interface BlockEditor {
   linkPage: (i: number, link: ContentBlock) => void;
   /** Start a page link at the caret (the toolbar button): types `[[` so the picker opens. */
   startLink: () => void;
+  /** A `/` command chosen in paragraph `i`: drop the typed `/word`, then do it. */
+  slash: (i: number, command: "heading" | "text" | "page") => void;
 }
 
 /**
@@ -241,6 +243,29 @@ export function useBlockEditor(
         const at = insertIndex(doc.blocks.length);
         insertAt(at, [{ type: "paragraph", text: "[[" }]);
         focusAt(at, "end");
+      }
+    },
+    slash: (i, command) => {
+      const b = doc.blocks[i];
+      if (b?.type !== "paragraph") return;
+      const text = withoutSlashQuery(b.text);
+      if (command === "page") {
+        const sep = text === "" || /\s$/.test(text) ? "" : " ";
+        update((d) => ({ blocks: d.blocks.map((x, j) => (j === i ? { type: "paragraph", text: `${text}${sep}[[` } : x)), keys: d.keys }));
+        focusAt(i, "end");
+        return;
+      }
+      const fresh: ContentBlock = command === "heading" ? { type: "heading", level: 2, text: "" } : { type: "paragraph", text: "" };
+      if (text === "") {
+        // An empty line becomes the block asked for.
+        update((d) => ({ blocks: d.blocks.map((x, j) => (j === i ? fresh : x)), keys: d.keys }));
+        focusAt(i, "start");
+      } else {
+        update(({ blocks, keys }) => ({
+          blocks: [...blocks.slice(0, i), { ...b, text }, fresh, ...blocks.slice(i + 1)],
+          keys: [...keys.slice(0, i + 1), newKey(), ...keys.slice(i + 1)],
+        }));
+        focusAt(i + 1, "start");
       }
     },
     replaceAll: (blocks) => {

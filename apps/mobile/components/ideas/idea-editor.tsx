@@ -69,6 +69,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
     }, 600);
   };
   const editor = useBlockEditor(idea?.id ?? "", idea?.content ?? [], saveContent);
+  const [linkSignal, setLinkSignal] = useState(0);
   const media = useMediaBlocks(idea?.id ?? "", editor);
   const coach = useIdeaCoach(idea);
   const knownTags = useKnownTags();
@@ -228,6 +229,8 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             minHeight={280}
             firstPlaceholder="Write it out: what is it, why it matters, what you'd try first…"
             self={{ kind: "idea", id: idea.id }}
+            onImage={media.addImage}
+            onWebLink={() => setLinkSignal((n) => n + 1)}
             spaceId={idea.space_id}
           />
           <Backlinks target={{ kind: "idea", id: idea.id }} content={editor.blocks} />
@@ -242,6 +245,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
         onRecordComplete={media.addAudio}
         onDictate={editor.insertText}
         onLinkPage={editor.startLink}
+        openLinkSignal={linkSignal}
       />
 
     </View>

@@ -79,6 +79,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
     }, 600);
   };
   const editor = useBlockEditor(note?.id ?? "", note?.content ?? [], saveContent);
+  const [linkSignal, setLinkSignal] = useState(0);
   const media = useMediaBlocks(note?.id ?? "", editor);
 
   if (!note) {
@@ -270,7 +271,9 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
         {/* Blocks */}
         <View className="border-line mx-[22px] mt-3 border-t" />
         <View className="px-[22px] pt-4">
-          <BlockList editor={editor} minHeight={320} self={{ kind: "note", id: note.id }} spaceId={note.space_id} />
+          <BlockList editor={editor} minHeight={320} self={{ kind: "note", id: note.id }}
+            onImage={media.addImage}
+            onWebLink={() => setLinkSignal((n) => n + 1)} spaceId={note.space_id} />
           <Backlinks target={{ kind: "note", id: note.id }} content={editor.blocks} />
         </View>
       </ScrollView>
@@ -283,6 +286,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
         onRecordComplete={media.addAudio}
         onDictate={editor.insertText}
         onLinkPage={editor.startLink}
+        openLinkSignal={linkSignal}
       />
 
     </View>

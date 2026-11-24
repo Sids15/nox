@@ -1,4 +1,4 @@
-import { openLinkQuery, parseRef, refBlock, useThemeColors, type Ref } from "@nox/features";
+import { openLinkQuery, openSlashQuery, parseRef, refBlock, useThemeColors, type Ref } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, TextInput, View, type NativeSyntheticEvent, type TextInputKeyPressEventData } from "react-native";
@@ -8,6 +8,7 @@ import { ImageBlock } from "./image-block";
 import { LinkCard } from "./link-card";
 import { LinkPicker } from "../brain/link-picker";
 import { RefCard } from "../brain/ref-card";
+import { SlashMenu, type SlashCommand } from "./slash-menu";
 import type { BlockEditor } from "./use-block-editor";
 
 type KeyEvent = NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean; preventDefault?: () => void }>;
@@ -26,7 +27,13 @@ export function BlockList({
   minHeight = 240,
   self,
   spaceId,
+  onImage,
+  onWebLink,
 }: {
+  /** `/image` — the screen's picture picker. */
+  onImage?: () => void;
+  /** `/link` — the screen's add-a-URL prompt. */
+  onWebLink?: () => void;
   editor: BlockEditor;
   firstPlaceholder?: string;
   /** Height of the tappable writing area (the space under the text focuses the end). */
@@ -107,6 +114,14 @@ export function BlockList({
               );
             case "paragraph": {
               const linkQuery = active === i ? openLinkQuery(block.text) : null;
+              const slashQuery = active === i && linkQuery === null ? openSlashQuery(block.text) : null;
+              const runSlash = (cmd: SlashCommand) => {
+                if (cmd === "heading" || cmd === "text" || cmd === "page") return editor.slash(i, cmd);
+                // Image / web link: clear the typed command, then hand over to the screen's picker.
+                editor.setText(i, block.text.replace(/(^|\s)\/[a-z]{0,20}$/i, "$1").replace(/[ \t]+$/, ""));
+                if (cmd === "image") onImage?.();
+                else onWebLink?.();
+              };
               return (
                 <View key={key} className="gap-1.5">
                 <AutoGrowInput
@@ -138,6 +153,7 @@ export function BlockList({
                     }}
                   />
                 ) : null}
+                {slashQuery !== null ? <SlashMenu query={slashQuery} onPick={runSlash} hasImage={!!onImage} /> : null}
                 </View>
               );
             }
