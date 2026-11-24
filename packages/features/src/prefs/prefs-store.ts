@@ -52,6 +52,9 @@ interface PrefsState {
   /** Nox AI features (planning, task entry, note help…). Off = no AI buttons and nothing is sent. */
   aiEnabled: boolean;
   setAiEnabled: (v: boolean) => void;
+  /** The Spaces walkthrough has been shown (or skipped) on this device. */
+  spacesIntroSeen: boolean;
+  setSpacesIntroSeen: (v: boolean) => void;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -85,6 +88,8 @@ export const usePrefs = create<PrefsState>()(
       setHeadingFont: (headingFont) => set({ headingFont }),
       aiEnabled: true,
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
+      spacesIntroSeen: false,
+      setSpacesIntroSeen: (spacesIntroSeen) => set({ spacesIntroSeen }),
       hydrated: false,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -127,6 +132,7 @@ export const usePrefs = create<PrefsState>()(
         calendar: s.calendar,
         headingFont: s.headingFont,
         aiEnabled: s.aiEnabled,
+        spacesIntroSeen: s.spacesIntroSeen,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first
