@@ -30,7 +30,7 @@ export interface SpacePage extends Page {
 }
 
 /** "+ New": a blank note or idea, or one from a template, filed in this space (and stage). */
-export function NewInSpace({ space, stage, variant = "button" }: { space: Space; stage: string | null; variant?: "button" | "plus" | "link" }) {
+export function NewInSpace({ space, stage, variant = "button" }: { space: Space; stage: string | null; variant?: "button" | "plus" | "link" | "row" }) {
   const c = useThemeColors();
   const [open, setOpen] = useState(false);
   const ref = useRef<View>(null);
@@ -67,6 +67,11 @@ export function NewInSpace({ space, stage, variant = "button" }: { space: Space;
         {variant === "plus" ? (
           <Pressable onPress={() => setOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Add a page to ${stage ?? "this space"}`} className="hover:bg-chip h-6 w-6 items-center justify-center rounded-[6px]">
             <Plus size={14} color={c.ink3} strokeWidth={2.2} />
+          </Pressable>
+        ) : variant === "row" ? (
+          <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={`New page in ${stage ?? "this space"}`} className="hover:bg-chip flex-row items-center gap-1.5 rounded-[8px] px-2 py-1.5">
+            <Plus size={14} color={c.ink3} strokeWidth={2} />
+            <Text className="text-ink-3 text-[13px]">New</Text>
           </Pressable>
         ) : variant === "link" ? (
           <Pressable onPress={() => setOpen(true)} accessibilityRole="button" className="hover:bg-chip -ml-1.5 rounded-[8px] px-1.5 py-1">
