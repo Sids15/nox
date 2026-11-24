@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { CalendarDays, ChevronDown, ChevronRight, List, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { ResizablePane } from "../../components/resizable-pane";
 import { BriefCard } from "../../components/ai/brief-card";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
@@ -590,9 +591,9 @@ export default function TasksScreen() {
         {detailOpen ? (
           <View className="flex-1 flex-row">
             <View className="border-line flex-1 border-r">{calendar}</View>
-            <View className="w-[440px]">
+            <ResizablePane id="tasks.editor" initial={440} min={340} max={720} edge="left">
               <TaskEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
-            </View>
+            </ResizablePane>
           </View>
         ) : (
           calendar
@@ -610,10 +611,10 @@ export default function TasksScreen() {
         <View className="flex-1 flex-row">
           {/* The list keeps its room; the task opens in a panel beside it (it used to squeeze the
               list into a narrow column and leave the editor mostly empty). */}
-          <View className="border-line min-w-[380px] flex-1 border-r">{list}</View>
-          <View style={{ width: "42%", minWidth: 400, maxWidth: 560 }}>
+          <View className="border-line min-w-[320px] flex-1 border-r">{list}</View>
+          <ResizablePane id="tasks.editor" initial={480} min={340} max={720} edge="left">
             <TaskEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
-          </View>
+          </ResizablePane>
         </View>
         {newTaskDialog}
       </SafeAreaView>

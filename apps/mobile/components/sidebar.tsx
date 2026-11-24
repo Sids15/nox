@@ -1,11 +1,12 @@
-import { useIdeas, useNotes, useResources, useSpaces, useTasks, useThemeColors } from "@nox/features";
+import { useIdeas, useNotes, usePrefs, useResources, useSpaces, useTasks, useThemeColors } from "@nox/features";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, FileText, Layers, Lightbulb, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, FileText, Layers, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Image, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Animated, Image, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { ResizablePane } from "./resizable-pane";
 import { clockLabel, greeting, skyColor, useClock } from "../lib/use-clock";
 import { useIdentity } from "../lib/use-identity";
 import { useSyncLabel } from "../lib/use-sync-label";
@@ -65,11 +66,24 @@ export function Sidebar() {
   const { data: resources = [] } = useResources();
   const { data: spaces = [] } = useSpaces();
   const [newSpace, setNewSpace] = useState(false);
+  // Collapsed to an icon rail: the user's choice, else automatically on narrower windows (an iPad
+  // in landscape, a half-screen window) so the page gets the room.
+  const { width: winWidth } = useWindowDimensions();
+  const collapsedPref = usePrefs((s) => s.sidebarCollapsed);
+  const setCollapsed = usePrefs((s) => s.setSidebarCollapsed);
+  const collapsed = collapsedPref ?? winWidth < 1100;
 
-  // Keyboard: Ctrl/⌘K → search; Alt+1–5 → modules (web only).
+  const collapsedRef = useRef(collapsed);
+  collapsedRef.current = collapsed;
+  // Keyboard: Ctrl/⌘K → search; Ctrl/⌘\ → collapse the sidebar; Alt+1–5 → modules (web only).
   useEffect(() => {
     if (Platform.OS !== "web") return;
     const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+        e.preventDefault();
+        setCollapsed(!collapsedRef.current);
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setSearchOpen(true);
@@ -108,8 +122,56 @@ export function Sidebar() {
     .slice(0, 4);
   const sky = skyColor(now, c.accent);
 
+  if (collapsed) {
+    return (
+      <View className="bg-surface border-line w-[64px] items-center border-r pb-3 pt-4">
+        <Pressable onPress={() => setCollapsed(false)} accessibilityRole="button" accessibilityLabel="Expand the sidebar" {...({ title: "Expand sidebar (Ctrl/⌘ \\)" } as object)} className="hover:bg-chip mb-2 h-10 w-10 items-center justify-center rounded-[10px]">
+          <PanelLeftOpen size={18} color={c.ink2} strokeWidth={2} />
+        </Pressable>
+        <Pressable onPress={() => setSearchOpen(true)} accessibilityRole="button" accessibilityLabel="Search" className="hover:bg-chip mb-3 h-10 w-10 items-center justify-center rounded-[10px]">
+          <Search size={18} color={c.ink3} strokeWidth={2} />
+        </Pressable>
+        <ScrollView className="w-full flex-1" contentContainerStyle={{ alignItems: "center", gap: 2, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
+          {nav.map((item) => {
+            const active = pathname === item.path;
+            return (
+              <Pressable
+                key={item.path}
+                onPress={() => router.navigate(hrefFor(item.path) as never)}
+                accessibilityRole="link"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`${item.label}, ${item.count}`}
+                {...({ title: item.label } as object)}
+                className={`h-11 w-11 items-center justify-center rounded-[11px] ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
+              >
+                <item.icon size={19} color={active ? c.accent : c.ink3} strokeWidth={active ? 2.1 : 1.9} />
+              </Pressable>
+            );
+          })}
+          {spaces.length > 0 ? <View className="bg-line my-2 h-px w-8" /> : null}
+          {spaces.map((sp) => {
+            const active = pathname === `/space/${sp.id}`;
+            return (
+              <Pressable key={sp.id} onPress={() => router.navigate(`/space/${sp.id}` as never)} accessibilityRole="link" accessibilityLabel={sp.name} {...({ title: sp.name } as object)} className={`h-11 w-11 items-center justify-center rounded-[11px] ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}>
+                <SpaceMark space={sp} size={24} />
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        <Pressable onPress={() => router.push("/settings")} accessibilityRole="button" accessibilityLabel={`Settings. ${name}, ${sync.title}`} className="hover:bg-chip h-11 w-11 items-center justify-center rounded-full">
+          <View className="bg-accent/[0.14] h-8 w-8 items-center justify-center rounded-full">
+            <Text className="text-accent text-[12px] font-semibold">{initials}</Text>
+          </View>
+          <View style={{ position: "absolute", right: 4, bottom: 4, width: 8, height: 8, borderRadius: 4, backgroundColor: sync.color }} />
+        </Pressable>
+        <CommandPalette visible={searchOpen} onClose={() => setSearchOpen(false)} />
+        <NewSpaceDialog visible={newSpace} onClose={() => setNewSpace(false)} />
+      </View>
+    );
+  }
+
   return (
-    <View className="bg-surface border-line w-[232px] border-r px-3 pb-3 pt-4">
+    <ResizablePane id="sidebar" initial={232} min={200} max={320} className="bg-surface border-line border-r px-3 pb-3 pt-4">
       {/* The sky faintly colors the sidebar's crown — dawn, day, dusk, night. */}
       <LinearGradient
         colors={[`${sky}17`, "transparent"]}
@@ -126,7 +188,12 @@ export function Sidebar() {
           resizeMode="contain"
           accessibilityLabel="Nox"
         />
-        <Text className="text-ink-3 text-[11px] font-medium">{clockLabel(now)}</Text>
+        <View className="flex-row items-center gap-1">
+          <Text className="text-ink-3 text-[11px] font-medium">{clockLabel(now)}</Text>
+          <Pressable onPress={() => setCollapsed(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Collapse the sidebar" {...({ title: "Collapse sidebar (Ctrl/⌘ \\)" } as object)} className="hover:bg-chip h-7 w-7 items-center justify-center rounded-[7px]">
+            <PanelLeftClose size={15} color={c.ink3} strokeWidth={2} />
+          </Pressable>
+        </View>
       </View>
       <Text numberOfLines={1} className="text-ink-2 px-2 pb-4 text-[13px]" style={{ flexShrink: 0, lineHeight: 18 }}>
         {greeting(now, firstName)}
@@ -275,6 +342,6 @@ export function Sidebar() {
 
       <CommandPalette visible={searchOpen} onClose={() => setSearchOpen(false)} />
       <NewSpaceDialog visible={newSpace} onClose={() => setNewSpace(false)} />
-    </View>
+    </ResizablePane>
   );
 }

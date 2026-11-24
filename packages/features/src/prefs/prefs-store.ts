@@ -59,6 +59,12 @@ interface PrefsState {
   /** Home-screen / desktop widget settings. */
   widget: WidgetConfig;
   setWidget: (patch: Partial<WidgetConfig>) => void;
+  /** Widths the user dragged panes to (sidebar, notes folders, lists…), by pane id. */
+  panes: Record<string, number>;
+  setPane: (id: string, width: number | null) => void;
+  /** Sidebar shrunk to an icon rail; null = decide by window width. */
+  sidebarCollapsed: boolean | null;
+  setSidebarCollapsed: (v: boolean | null) => void;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -94,6 +100,16 @@ export const usePrefs = create<PrefsState>()(
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
       spacesIntroSeen: false,
       setSpacesIntroSeen: (spacesIntroSeen) => set({ spacesIntroSeen }),
+      panes: {},
+      setPane: (id, width) =>
+        set((s) => {
+          const panes = { ...s.panes };
+          if (width === null) delete panes[id];
+          else panes[id] = Math.round(width);
+          return { panes };
+        }),
+      sidebarCollapsed: null,
+      setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       widget: DEFAULT_WIDGET,
       setWidget: (patch) => set((s) => ({ widget: normalizeWidgetConfig({ ...s.widget, ...patch }) })),
       hydrated: false,
@@ -140,6 +156,8 @@ export const usePrefs = create<PrefsState>()(
         aiEnabled: s.aiEnabled,
         spacesIntroSeen: s.spacesIntroSeen,
         widget: s.widget,
+        panes: s.panes,
+        sidebarCollapsed: s.sidebarCollapsed,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first

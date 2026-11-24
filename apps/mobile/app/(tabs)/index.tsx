@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { Lightbulb, ListFilter, Plus, Search, X } from "lucide-react-native";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View, type GestureResponderEvent } from "react-native";
+import { ResizablePane } from "../../components/resizable-pane";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
 import { Fab, useHideOnScroll } from "../../components/fab";
@@ -430,7 +431,9 @@ export default function IdeasScreen() {
     return (
       <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
         <View className="flex-1 flex-row">
-          <View className="border-line w-[400px] border-r">{list}</View>
+          <ResizablePane id="ideas.list" initial={400} min={300} max={640} className="border-line border-r">
+            {list}
+          </ResizablePane>
           <View className="flex-1">
             <IdeaEditor key={selectedId} id={selectedId!} onClose={() => setSelectedId(null)} />
           </View>

@@ -15,6 +15,7 @@ import { Folder, FolderPlus, Hash, MoreHorizontal, NotebookPen, Plus, Search } f
 import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ResizablePane } from "../../components/resizable-pane";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fab, useHideOnScroll } from "../../components/fab";
 import { DesktopHeader } from "../../components/desktop-header";
@@ -222,7 +223,7 @@ export default function NotesScreen() {
       <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
         <View className="flex-1 flex-row">
           {/* Pane 1 — folders */}
-          <View className="border-line w-[248px] border-r px-2 pt-6">
+          <ResizablePane id="notes.folders" initial={248} min={180} max={380} className="border-line border-r px-2 pt-6">
             <View className="px-[9px]">
               <Text className="text-ink font-serif text-[20px] font-bold">Notes</Text>
             </View>
@@ -285,10 +286,10 @@ export default function NotesScreen() {
                 </View>
               )}
             </ScrollView>
-          </View>
+          </ResizablePane>
 
           {/* Pane 2 — note list */}
-          <View className="border-line w-[320px] border-r pt-6">
+          <ResizablePane id="notes.list" initial={320} min={240} max={560} className="border-line border-r pt-6">
             <View className="px-3">
               {/* Scope header — folder name + rename/delete (act on the selected folder) */}
               <View className="mb-3 flex-row items-center justify-between">
@@ -396,7 +397,7 @@ export default function NotesScreen() {
                 </View>
               </>
             )}
-          </View>
+          </ResizablePane>
 
           {/* Pane 3 — editor */}
           <View className="flex-1">

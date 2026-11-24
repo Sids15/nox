@@ -31,6 +31,7 @@ import {
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ResizablePane } from "../../components/resizable-pane";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "../../components/empty-state";
 import { Fab, useHideOnScroll } from "../../components/fab";
@@ -433,7 +434,7 @@ export default function ResourcesScreen() {
     return (
       <SafeAreaView className="bg-bg flex-1" edges={["top"]}>
         <View className="flex-1 flex-row">
-          <View className="border-line w-[236px] border-r px-2 pt-6">
+          <ResizablePane id="resources.library" initial={236} min={180} max={360} className="border-line border-r px-2 pt-6">
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
               <Text className="text-ink px-[11px] font-serif text-[20px] font-bold">Library</Text>
               <View className="mt-3 gap-0.5">
@@ -488,7 +489,7 @@ export default function ResourcesScreen() {
                 </View>
               </View>
             </ScrollView>
-          </View>
+          </ResizablePane>
 
           <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80, paddingTop: 28, paddingHorizontal: 30, maxWidth: 1080, width: "100%", alignSelf: "center" }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View className="flex-row items-start justify-between">
