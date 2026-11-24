@@ -17,7 +17,7 @@ function MiniSpace({ mark, name, meta, tint }: { mark: string; name: string; met
       </View>
       <View className="flex-1">
         <Text className="text-ink text-[12px] font-semibold">{name}</Text>
-        <Text className="text-ink-3 text-[10px]">{meta}</Text>
+        <Text className="text-ink-3 text-[11px]">{meta}</Text>
       </View>
     </View>
   );
@@ -48,7 +48,7 @@ function StepInside() {
       <View className="mb-2 flex-row gap-1">
         {["Board", "Pages", "Tasks", "Resources"].map((t, i) => (
           <View key={t} className={`rounded-pill px-2 py-[3px] ${i === 1 ? "bg-ink" : "bg-chip"}`}>
-            <Text className={`text-[10px] font-semibold ${i === 1 ? "text-bg" : "text-ink-2"}`}>{t}</Text>
+            <Text className={`text-[11px] font-semibold ${i === 1 ? "text-bg" : "text-ink-2"}`}>{t}</Text>
           </View>
         ))}
       </View>
@@ -74,10 +74,10 @@ export function StepBoard() {
       <View className="flex-row gap-1.5">
         {cols.map((col, i) => (
           <View key={col.name} className="bg-surface border-line flex-1 rounded-[9px] border p-1.5" style={{ minHeight: 120 }}>
-            <Text className="text-ink mb-1 text-[10px] font-semibold">{col.name}</Text>
+            <Text className="text-ink mb-1 text-[11px] font-semibold">{col.name}</Text>
             {col.cards.map((t) => (
               <View key={t} className="bg-bg border-line mb-1 rounded-[6px] border px-1.5 py-1">
-                <Text className="text-ink text-[10px]">{t}</Text>
+                <Text className="text-ink text-[11px]">{t}</Text>
                 {i === 0 && t === "Rust in 100s" ? (
                   <View className="mt-0.5 flex-row justify-end">
                     <View className="bg-accent/[0.16] rounded-[4px] px-0.5">
@@ -109,7 +109,7 @@ export function StepLinks() {
           </View>
         ))}
       </View>
-      <Text className="text-ink-3 mt-2.5 text-[10px] font-semibold">Linked from · 2</Text>
+      <Text className="text-ink-3 mt-2.5 text-[11px] font-semibold">Linked from · 2</Text>
       <Text className="text-ink-2 text-[11px]">Video PRD · Sponsor notes</Text>
     </Frame>
   );
@@ -179,7 +179,7 @@ export function SpacesIntro({ visible, onClose, onCreate }: { visible: boolean; 
 
           <Animated.View style={{ opacity: fade }}>
             {s.art()}
-            <Text className="text-ink mt-4 font-serif text-[21px] font-bold leading-[27px] tracking-[-0.01em]">{s.title}</Text>
+            <Text className="text-ink mt-4 font-serif text-[20px] font-bold leading-[26px] tracking-[-0.01em]">{s.title}</Text>
             <Text className="text-ink-2 mt-1.5 text-[14px] leading-[21px]" style={{ minHeight: 84 }}>
               {s.body}
             </Text>

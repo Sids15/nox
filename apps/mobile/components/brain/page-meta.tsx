@@ -1,6 +1,6 @@
 import { useDeleteTemplate, useSpaces, useThemeColors } from "@nox/features";
 import type { Property } from "@nox/types";
-import { ChevronDown, CircleDot, Folder, LayoutTemplate, SlidersHorizontal, X } from "lucide-react-native";
+import { ChevronDown, CircleDot, Folder, LayoutTemplate, ListFilter, X } from "lucide-react-native";
 import { useRef, useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { confirmDelete } from "../../lib/confirm";
@@ -113,7 +113,7 @@ export function DetailsToggle({ open, onPress }: { open: boolean; onPress: () =>
       style={pressScale}
       className={`h-[30px] flex-row items-center gap-1.5 rounded-[8px] px-2.5 ${open ? "bg-chip" : "hover:bg-chip"}`}
     >
-      <SlidersHorizontal size={13} color={c.ink2} strokeWidth={2} />
+      <ListFilter size={13} color={c.ink2} strokeWidth={2} />
       <Text className="text-ink-2 text-[13px] font-medium">Details</Text>
       <ChevronDown size={12} color={c.ink3} strokeWidth={2.2} style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }} />
     </Pressable>

@@ -123,7 +123,7 @@ export function SpaceView({ space }: { space: Space }) {
                   className={`h-[32px] flex-row items-center gap-1.5 rounded-[9px] px-2.5 ${on ? "bg-surface border-line border" : "hover:bg-chip"}`}
                   style={on ? { shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } } : undefined}
                 >
-                  <Icon size={14} color={on ? c.accent : c.ink3} strokeWidth={2.1} />
+                  <Icon size={14} color={on ? c.accent : c.ink3} strokeWidth={2} />
                   <Text className={`text-[13px] ${on ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{label}</Text>
                   {count ? (
                     <Text style={TABULAR} className="text-ink-3 text-[12px]">

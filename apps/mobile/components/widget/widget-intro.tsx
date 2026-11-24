@@ -12,7 +12,7 @@ export function WidgetArt({ highlight }: { highlight?: "sections" | "where" }) {
     <View key={t} className="flex-row items-center gap-1.5 py-[3px]">
       <View style={{ width: 11, height: 11, borderRadius: 6, borderWidth: 1.5, borderColor: done ? c.accent : c.ink3, backgroundColor: done ? c.accent : "transparent" }} />
       <Text className={`flex-1 text-[11px] ${done ? "text-ink-3 line-through" : "text-ink"}`}>{t}</Text>
-      {time ? <Text className="text-ink-3 text-[10px]">{time}</Text> : null}
+      {time ? <Text className="text-ink-3 text-[11px]">{time}</Text> : null}
     </View>
   );
   const ring = highlight === "sections" ? { borderColor: c.accent, borderWidth: 1.5 } : null;
@@ -21,17 +21,17 @@ export function WidgetArt({ highlight }: { highlight?: "sections" | "where" }) {
       <View className="bg-surface border-line w-[200px] rounded-[14px] border p-2.5" style={{ shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } }}>
         <View className="mb-1 flex-row justify-between">
           <Text className="text-ink text-[11px] font-bold">Nox</Text>
-          <Text className="text-ink-3 text-[10px]">Tue 25 Nov</Text>
+          <Text className="text-ink-3 text-[11px]">Tue 25 Nov</Text>
         </View>
         <View className="rounded-[8px] p-1" style={ring}>
-          <Text className="text-ink-3 text-[9px] font-bold">TODAY · 1/3</Text>
+          <Text className="text-ink-3 text-[11px] font-bold">TODAY · 1/3</Text>
           {row(true, "Morning run")}
           {row(false, "Record the intro", "2:00 PM")}
           {row(false, "Send sponsor deck")}
         </View>
         <View className="mt-1 rounded-[8px] p-1" style={ring}>
-          <Text className="text-ink-3 text-[9px] font-bold">🎬 TECH CHANNEL</Text>
-          <Text className="text-ink-2 text-[10px]">Idea 3 · Script 1 · Edit 2</Text>
+          <Text className="text-ink-3 text-[11px] font-bold">🎬 TECH CHANNEL</Text>
+          <Text className="text-ink-2 text-[11px]">Idea 3 · Script 1 · Edit 2</Text>
         </View>
       </View>
     </View>
@@ -79,7 +79,7 @@ export function WidgetIntro({ visible, onClose }: { visible: boolean; onClose: (
             </Pressable>
           </View>
           <WidgetArt highlight={step === 1 ? "sections" : undefined} />
-          <Text className="text-ink mt-4 font-serif text-[21px] font-bold leading-[27px] tracking-[-0.01em]">{s.title}</Text>
+          <Text className="text-ink mt-4 font-serif text-[20px] font-bold leading-[26px] tracking-[-0.01em]">{s.title}</Text>
           <Text className="text-ink-2 mt-1.5 text-[14px] leading-[21px]" style={{ minHeight: 84 }}>
             {s.body}
           </Text>
