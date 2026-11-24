@@ -177,8 +177,10 @@ const ACTIONS: Record<string, Action> = {
       "- tidy: `text` = the same note with spelling, grammar and structure fixed; keep the author's " +
       "voice, meaning and language; don't add content.\n" +
       "- continue: `text` = one or two sentences that naturally continue the note.\n" +
-      "- title_tags: `title` = a short title (max 6 words) and `tags` = up to 4 lower-case tags, " +
-      "preferring `existing_tags`.\n" +
+      "- title_tags: `title` = a short, specific title (max 6 words) and `tags` = 3–4 lower-case " +
+      "tags naming what the note is actually about (its topic, format, project). Reuse a tag from " +
+      "`existing_tags` only when it genuinely fits this note — never just because it exists — and " +
+      "make new short tags for the rest. Ignore template headings (Hook, Outline…) when judging the topic.\n" +
       "- actions: `tasks` = the to-dos the note mentions.\n" +
       "Leave out fields the mode doesn't use. " + RULES,
     schema: obj({ text: str(), title: str(), tags: arr(str()), tasks: arr(taskDraft) }, []),
