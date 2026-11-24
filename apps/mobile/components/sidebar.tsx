@@ -1,5 +1,6 @@
 import { useIdeas, useNotes, usePrefs, useResources, useSpaces, useTasks, useThemeColors } from "@nox/features";
 import { LinearGradient } from "expo-linear-gradient";
+import { useIsFocused } from "@react-navigation/native";
 import { usePathname, useRouter } from "expo-router";
 import { Bookmark, FileText, Layers, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { formatTime12, toDateKey } from "@nox/utils";
@@ -75,9 +76,13 @@ export function Sidebar() {
 
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
+  // A screen opened on top (a space, a note) has its own sidebar while this one stays mounted
+  // underneath. Only the sidebar on screen answers the keyboard — two of them used to open two search
+  // boxes at once, so it took two clicks outside to get back to the app.
+  const onScreen = useIsFocused();
   // Keyboard: Ctrl/⌘K → search; Ctrl/⌘\ → collapse the sidebar; Alt+1–5 → modules (web only).
   useEffect(() => {
-    if (Platform.OS !== "web") return;
+    if (Platform.OS !== "web" || !onScreen) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
         e.preventDefault();
@@ -101,7 +106,7 @@ export function Sidebar() {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [router]);
+  }, [router, onScreen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const nav: NavItem[] = [
     { label: "Ideas", icon: Lightbulb, path: "/", count: ideas.filter((i) => !i.is_archived && i.status !== "dropped").length },
