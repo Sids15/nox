@@ -83,3 +83,15 @@ export {
   type Ref,
   type RefKind,
 } from "./links/refs";
+export {
+  DEFAULT_WIDGET,
+  WIDGET_SECTION_LABEL,
+  buildWidgetSnapshot,
+  normalizeWidgetConfig,
+  widgetSectionKeys,
+  type WidgetConfig,
+  type WidgetSection,
+  type WidgetSectionKey,
+  type WidgetSnapshot,
+  type WidgetTaskRow,
+} from "./widget/widget";

@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { accents, DEFAULT_ACCENT, type AccentName, type ThemeName } from "@nox/ui";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { DEFAULT_WIDGET, normalizeWidgetConfig, type WidgetConfig } from "../widget/widget";
 
 export type NotifKey = "morningSummary" | "endOfDayPrompt" | "taskReminders";
 
@@ -55,6 +56,9 @@ interface PrefsState {
   /** The Spaces walkthrough has been shown (or skipped) on this device. */
   spacesIntroSeen: boolean;
   setSpacesIntroSeen: (v: boolean) => void;
+  /** Home-screen / desktop widget settings. */
+  widget: WidgetConfig;
+  setWidget: (patch: Partial<WidgetConfig>) => void;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -90,6 +94,8 @@ export const usePrefs = create<PrefsState>()(
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
       spacesIntroSeen: false,
       setSpacesIntroSeen: (spacesIntroSeen) => set({ spacesIntroSeen }),
+      widget: DEFAULT_WIDGET,
+      setWidget: (patch) => set((s) => ({ widget: normalizeWidgetConfig({ ...s.widget, ...patch }) })),
       hydrated: false,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
@@ -119,7 +125,7 @@ export const usePrefs = create<PrefsState>()(
       // Fill in calendar settings added after the stored copy was written.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<PrefsState>;
-        return { ...current, ...p, calendar: { ...DEFAULT_CALENDAR, ...(p.calendar ?? {}) } };
+        return { ...current, ...p, calendar: { ...DEFAULT_CALENDAR, ...(p.calendar ?? {}) }, widget: normalizeWidgetConfig(p.widget) };
       },
       partialize: (s) => ({
         theme: s.theme,
@@ -133,6 +139,7 @@ export const usePrefs = create<PrefsState>()(
         headingFont: s.headingFont,
         aiEnabled: s.aiEnabled,
         spacesIntroSeen: s.spacesIntroSeen,
+        widget: s.widget,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first
