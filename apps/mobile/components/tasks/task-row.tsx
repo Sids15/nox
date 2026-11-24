@@ -1,8 +1,9 @@
-import { useThemeColors } from "@nox/features";
+import { useSpaces, useThemeColors } from "@nox/features";
 import type { Task } from "@nox/types";
 import { capitalize, formatTime12, relativeDayLabel, todayKey } from "@nox/utils";
 import { AlignLeft, Bell, Check, Repeat, RotateCcw } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
+import { SpaceMark, spaceColor } from "../brain/space-mark";
 import { pressScale, TABULAR } from "../menu";
 
 /**
@@ -44,7 +45,9 @@ export function TaskRow({
 
   const day = task.due_date && (showDate || overdue) ? capitalize(relativeDayLabel(task.due_date, todayKey())) : null;
   const when = [day, timeGutter ? null : time].filter(Boolean).join(" · ");
-  const hasMeta = !complete && (when || recurring || reminders > 0 || carried || task.notes);
+  const { data: spaces = [] } = useSpaces();
+  const space = task.space_id ? spaces.find((s) => s.id === task.space_id) : undefined;
+  const hasMeta = !complete && (when || recurring || reminders > 0 || carried || task.notes || space);
 
   return (
     <Pressable
@@ -122,6 +125,15 @@ export function TaskRow({
               </View>
             )}
             {task.notes ? <AlignLeft size={11} color={c.ink3} strokeWidth={2} /> : null}
+            {space ? (
+              // Which space it came from — tasks added in a space say so everywhere they appear.
+              <View className="flex-row items-center gap-1 rounded-[5px] px-1.5 py-[2px]" style={{ backgroundColor: `${spaceColor(space)}1F` }}>
+                <SpaceMark space={space} size={12} />
+                <Text numberOfLines={1} className="max-w-[140px] text-[11px] font-semibold" style={{ color: spaceColor(space) }}>
+                  {space.name}
+                </Text>
+              </View>
+            ) : null}
           </View>
         )}
       </View>
