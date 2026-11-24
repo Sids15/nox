@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { contentBlock } from "./block";
 import { priorityLevels, syncedRow } from "./common";
+import { pageExtras, pageExtrasInput } from "./space";
 
 export const ideaStatuses = [
   "raw",
@@ -19,16 +20,19 @@ export const idea = syncedRow.extend({
   status: z.enum(ideaStatuses).default("raw"),
   tags: z.array(z.string().min(1).max(40)).default([]),
   is_archived: z.boolean().default(false),
+  ...pageExtras,
 });
 export type Idea = z.infer<typeof idea>;
 
 /** Fields a user may set when creating/editing an idea. */
-export const ideaInput = idea.pick({
-  title: true,
-  description: true,
-  content: true,
-  priority: true,
-  status: true,
-  tags: true,
-});
+export const ideaInput = idea
+  .pick({
+    title: true,
+    description: true,
+    content: true,
+    priority: true,
+    status: true,
+    tags: true,
+  })
+  .extend(pageExtrasInput);
 export type IdeaInput = z.infer<typeof ideaInput>;

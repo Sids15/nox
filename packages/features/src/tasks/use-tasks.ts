@@ -86,6 +86,7 @@ export function useCreateTask() {
         last_completed_on: null,
         origin_task_id: null,
         ...input,
+        space_id: input.space_id ?? null,
       };
       qc.setQueryData<Task[]>(taskKeys.all, [...previous, optimistic]);
       return { previous };

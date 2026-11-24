@@ -38,6 +38,9 @@ export function useCreateIdea() {
         deleted: false,
         is_archived: false,
         ...input,
+        space_id: input.space_id ?? null,
+        properties: input.properties ?? [],
+        stage: input.stage ?? null,
       };
       qc.setQueryData<Idea[]>(ideaKeys.all, [optimistic, ...previous]);
       return { previous };

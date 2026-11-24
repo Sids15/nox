@@ -28,6 +28,7 @@ export function useCreateResource() {
         deleted: false,
         is_archived: false,
         ...input,
+        space_id: input.space_id ?? null,
       };
       qc.setQueryData<Resource[]>(resourceKeys.all, [optimistic, ...previous]);
       return { previous };

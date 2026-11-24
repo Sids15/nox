@@ -56,3 +56,30 @@ export { resourceKeys, tagKeys } from "./resources/resource-keys";
 export { useRealtimeSync } from "./sync/use-realtime-sync";
 export { registerMutationDefaults } from "./sync/mutation-registry";
 export { useSyncStatus } from "./sync/use-sync-status";
+export {
+  spaceKeys,
+  templateKeys,
+  useSpaces,
+  useCreateSpace,
+  useUpdateSpace,
+  useDeleteSpace,
+  useTemplates,
+  useCreateTemplate,
+  useDeleteTemplate,
+} from "./spaces/use-spaces";
+export {
+  backlinks,
+  matchTargets,
+  openLinkQuery,
+  outgoingRefs,
+  parseRef,
+  refBlock,
+  refKindLabel,
+  refKinds,
+  refUrl,
+  withoutLinkQuery,
+  type LinkTarget,
+  type LinkingPage,
+  type Ref,
+  type RefKind,
+} from "./links/refs";

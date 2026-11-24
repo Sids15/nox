@@ -16,6 +16,7 @@ declare
   folder_a uuid := gen_random_uuid();
   task_a uuid := gen_random_uuid();
   note_a uuid := gen_random_uuid();
+  space_a uuid := gen_random_uuid();
   missing text;
 begin
   -- ── Setup: two accounts (the sign-up trigger creates their public.users rows) ─────────────────
@@ -25,6 +26,7 @@ begin
   insert into public.folders (id, user_id, name) values (folder_a, a, 'A folder');
   insert into public.tasks (id, user_id, title) values (task_a, a, 'A task');
   insert into public.notes (id, user_id, title) values (note_a, a, 'A private note');
+  insert into public.spaces (id, user_id, name) values (space_a, a, 'A space');
 
   -- ── 1. Every table in public has Row Level Security on ─────────────────────────────────────────
   select string_agg(c.relname, ', ') into missing
@@ -108,6 +110,16 @@ begin
     insert into public.tasks (user_id, title, origin_task_id) values (b, 'mine', task_a);
     report := report || text 'FAIL  B hangs a task off A''s task → allowed';
   exception when others then report := report || format('PASS  B hangs a task off A''s task → refused (%s)', sqlerrm); end;
+
+  begin
+    insert into public.notes (user_id, title, space_id) values (b, 'mine', space_a);
+    report := report || text 'FAIL  B files a note in A''s space → allowed';
+  exception when others then report := report || format('PASS  B files a note in A''s space → refused (%s)', sqlerrm); end;
+
+  begin
+    select count(*) into n from public.spaces where id = space_a;
+    report := report || format('%s  B reads A''s space → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  exception when others then report := report || ('FAIL  B reads A''s space — error: ' || sqlerrm); end;
 
   begin
     select count(*) into n from public.rate_limits where key = a::text;

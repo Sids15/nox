@@ -31,6 +31,9 @@ export function useCreateNote() {
         is_pinned: false,
         is_archived: false,
         ...input,
+        space_id: input.space_id ?? null,
+        properties: input.properties ?? [],
+        stage: input.stage ?? null,
       };
       qc.setQueryData<Note[]>(noteKeys.all, [optimistic, ...previous]);
       return { previous };

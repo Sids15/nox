@@ -3,6 +3,8 @@ import {
   IdeaRepository,
   NoteRepository,
   ResourceRepository,
+  SpaceRepository,
+  TemplateRepository,
   TagRepository,
   TaskRepository,
   type IdeaStatus,
@@ -13,8 +15,10 @@ import type {
   IdeaInput,
   NoteInput,
   ResourceInput,
+  SpaceInput,
   TagInput,
   TaskInput,
+  TemplateInput,
 } from "@nox/types";
 import type { MutationKey, QueryClient } from "@tanstack/react-query";
 
@@ -66,4 +70,11 @@ export function registerMutationDefaults(qc: QueryClient): void {
   def<{ input: TagInput; id: string }>(["tag", "create"], ({ input, id }) => TagRepository.create(input, id));
   def<{ id: string; patch: Partial<TagInput> }>(["tag", "update"], ({ id, patch }) => TagRepository.update(id, patch));
   def<string>(["tag", "delete"], (id) => TagRepository.softDelete(id));
+
+  // Spaces and templates
+  def<{ input: SpaceInput; id: string }>(["space", "create"], ({ input, id }) => SpaceRepository.create(input, id));
+  def<{ id: string; patch: Partial<SpaceInput> }>(["space", "update"], ({ id, patch }) => SpaceRepository.update(id, patch));
+  def<string>(["space", "delete"], (id) => SpaceRepository.softDelete(id));
+  def<{ input: TemplateInput; id: string }>(["template", "create"], ({ input, id }) => TemplateRepository.create(input, id));
+  def<string>(["template", "delete"], (id) => TemplateRepository.softDelete(id));
 }

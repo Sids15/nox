@@ -205,6 +205,7 @@ export const TaskRepository = {
         repeat_config: null,
         origin_task_id: template.id,
         sort_order: template.sort_order,
+        ...(template.space_id ? { space_id: template.space_id } : {}),
       })
       .select()
       .single();

@@ -15,6 +15,8 @@ export const resource = syncedRow.extend({
   body: z.string().max(20_000).nullable().default(null),
   tag_ids: z.array(z.string().uuid()).default([]),
   is_archived: z.boolean().default(false),
+  /** The space it belongs to (migration 0012), or null. */
+  space_id: z.string().uuid().nullable().default(null),
 });
 export type Resource = z.infer<typeof resource>;
 
@@ -27,7 +29,7 @@ export const resourceInput = resource.pick({
   duration: true,
   body: true,
   tag_ids: true,
-});
+}).extend({ space_id: z.string().uuid().nullable().optional() });
 export type ResourceInput = z.infer<typeof resourceInput>;
 
 export const tag = syncedRow.extend({

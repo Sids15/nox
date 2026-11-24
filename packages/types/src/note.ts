@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { contentBlock } from "./block";
 import { syncedRow } from "./common";
+import { pageExtras, pageExtrasInput } from "./space";
 
 export const noteTypes = ["text", "voice", "sketch", "mixed"] as const;
 
@@ -16,17 +17,20 @@ export const note = syncedRow.extend({
   tags: z.array(z.string().min(1).max(40)).default([]),
   is_pinned: z.boolean().default(false),
   is_archived: z.boolean().default(false),
+  ...pageExtras,
 });
 export type Note = z.infer<typeof note>;
 
 /** Fields a user may set when creating/editing a note. */
-export const noteInput = note.pick({
-  title: true,
-  type: true,
-  content: true,
-  folder_id: true,
-  tags: true,
-});
+export const noteInput = note
+  .pick({
+    title: true,
+    type: true,
+    content: true,
+    folder_id: true,
+    tags: true,
+  })
+  .extend(pageExtrasInput);
 export type NoteInput = z.infer<typeof noteInput>;
 
 export const folder = syncedRow.extend({

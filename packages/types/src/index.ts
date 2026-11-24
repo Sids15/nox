@@ -6,3 +6,4 @@ export * from "./task";
 export * from "./resource";
 export * from "./auth";
 export * from "./ai";
+export * from "./space";

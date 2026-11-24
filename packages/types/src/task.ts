@@ -34,6 +34,8 @@ export const task = syncedRow.extend({
   streak_count: z.number().int().nonnegative().default(0),
   longest_streak: z.number().int().nonnegative().default(0),
   last_completed_on: z.string().date().nullable().default(null),
+  /** The space it belongs to (migration 0012), or null. */
+  space_id: z.string().uuid().nullable().default(null),
 });
 export type Task = z.infer<typeof task>;
 
@@ -47,5 +49,5 @@ export const taskInput = task.pick({
   priority: true,
   repeat: true,
   repeat_config: true,
-});
+}).extend({ space_id: z.string().uuid().nullable().optional() });
 export type TaskInput = z.infer<typeof taskInput>;
