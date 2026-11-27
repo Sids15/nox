@@ -1,10 +1,11 @@
 import { useCreateIdea, useCreateNote, useThemeColors } from "@nox/features";
 import type { Property, Space } from "@nox/types";
 import { router } from "expo-router";
-import { FileText, Lightbulb, Plus } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { FilePlus, Plus } from "lucide-react-native";
+import { useRef, useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
-import { MenuDivider, MenuLabel, MenuRow, pressScale } from "../menu";
+import { MenuDivider, MenuLabel, pressScale } from "../menu";
+import { KindIcon } from "./kind-icon";
 import { Popover } from "../popover";
 import { type Page } from "./pages";
 import { useAllTemplates } from "./use-templates";
@@ -17,8 +18,34 @@ export interface SpacePage extends Page {
   tags: string[];
 }
 
-/** "+ New": a blank note or idea, or one from a template, filed in this space (and stage). */
-export function NewInSpace({ space, stage, variant = "button" }: { space: Space; stage: string | null; variant?: "button" | "plus" | "link" | "row" }) {
+/** What a template's page starts with, in a few words: its first headings. */
+function preview(t: TemplateLike): string {
+  const heads = t.content.flatMap((b) => (b.type === "heading" && b.text ? [b.text] : []));
+  return heads.length ? heads.slice(0, 3).join(" · ") + (heads.length > 3 ? " …" : "") : t.kind === "idea" ? "An idea" : "A note";
+}
+
+/** One choice in the menu: an icon, a name, and a line saying what you get. */
+function Choice({ icon, name, about, onPress }: { icon: ReactNode; name: string; about: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="menuitem" accessibilityLabel={`${name}. ${about}`} className="hover:bg-chip flex-row items-start gap-2.5 rounded-[8px] px-2.5 py-2">
+      <View className="pt-[2px]">{icon}</View>
+      <View className="min-w-0 flex-1">
+        <Text numberOfLines={1} className="text-ink text-[14px] font-medium">
+          {name}
+        </Text>
+        <Text numberOfLines={1} className="text-ink-3 mt-[1px] text-[12px]">
+          {about}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+/**
+ * "New page": opens a new note or idea in this space (and stage), empty or from a template — each
+ * choice says what the page starts with.
+ */
+export function NewInSpace({ space, stage, variant = "button" }: { space: Space; stage: string | null; variant?: "button" | "plus" | "page" }) {
   const c = useThemeColors();
   const [open, setOpen] = useState(false);
   const ref = useRef<View>(null);
@@ -48,38 +75,36 @@ export function NewInSpace({ space, stage, variant = "button" }: { space: Space;
       router.push(`/note/${id}`);
     }
   };
+  const icon = (kind: "note" | "idea") => <KindIcon kind={kind} color={c.ink2} size={15} />;
 
   return (
     <>
       <View ref={ref} collapsable={false}>
         {variant === "plus" ? (
-          <Pressable onPress={() => setOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Add a page to ${stage ?? "this space"}`} className="hover:bg-chip h-6 w-6 items-center justify-center rounded-[6px]">
+          <Pressable onPress={() => setOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`New page in ${stage ?? "this space"}`} className="hover:bg-chip h-6 w-6 items-center justify-center rounded-[6px]">
             <Plus size={14} color={c.ink3} strokeWidth={2.2} />
           </Pressable>
-        ) : variant === "row" ? (
-          <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={`New page in ${stage ?? "this space"}`} className="hover:bg-chip flex-row items-center gap-1.5 rounded-[8px] px-2 py-1.5">
-            <Plus size={14} color={c.ink3} strokeWidth={2} />
-            <Text className="text-ink-3 text-[13px]">New</Text>
-          </Pressable>
-        ) : variant === "link" ? (
-          <Pressable onPress={() => setOpen(true)} accessibilityRole="button" className="hover:bg-chip -ml-1.5 rounded-[8px] px-1.5 py-1">
-            <Text className="text-accent text-[14px] font-semibold">Add a page</Text>
+        ) : variant === "page" ? (
+          <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="New page, empty or from a template" className="hover:bg-chip h-[28px] flex-row items-center gap-1.5 rounded-[8px] px-2">
+            <FilePlus size={13} color={c.ink3} strokeWidth={2} />
+            <Text className="text-ink-3 text-[13px] font-medium">New page</Text>
           </Pressable>
         ) : (
-          <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="New in this space" style={pressScale} className="bg-accent hover:opacity-90 h-[32px] flex-row items-center gap-1.5 rounded-[10px] px-3">
+          <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="New page in this space" style={pressScale} className="bg-accent hover:opacity-90 h-[32px] flex-row items-center gap-1.5 rounded-[10px] px-3">
             <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
-            <Text className="text-on-accent text-[13px] font-semibold">New</Text>
+            <Text className="text-on-accent text-[13px] font-semibold">New page</Text>
           </Pressable>
         )}
       </View>
-      <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={240} accessibilityLabel="New in this space">
+      <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={290} accessibilityLabel="New page">
         <View className="p-1.5">
-          <MenuRow label="Blank note" icon={<FileText size={15} color={c.ink2} strokeWidth={2} />} onPress={() => blank("note")} />
-          <MenuRow label="Blank idea" icon={<Lightbulb size={15} color={c.ink2} strokeWidth={2} />} onPress={() => blank("idea")} />
+          <Text className="text-ink-3 px-2.5 pb-1 pt-1 text-[12px]">Opens a new page in {space.name}{stage ? ` · ${stage}` : ""}</Text>
+          <Choice icon={icon("note")} name="Empty note" about="A blank page to write in" onPress={() => blank("note")} />
+          <Choice icon={icon("idea")} name="Empty idea" about="Something to think through later" onPress={() => blank("idea")} />
           <MenuDivider />
-          <MenuLabel>From a template</MenuLabel>
+          <MenuLabel>Start from a template</MenuLabel>
           {templates.map((t) => (
-            <MenuRow key={t.id} label={t.name} hint={t.kind === "idea" ? "Idea" : "Note"} onPress={() => fromT(t)} />
+            <Choice key={t.id} icon={icon(t.kind === "idea" ? "idea" : "note")} name={t.name} about={preview(t)} onPress={() => fromT(t)} />
           ))}
         </View>
       </Popover>

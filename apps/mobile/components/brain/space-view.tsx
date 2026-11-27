@@ -293,7 +293,7 @@ export function SpaceView({ space }: { space: Space }) {
                 value={draft}
                 onChangeText={setDraft}
                 onSubmitEditing={() => void add()}
-                placeholder={effective === "note" ? "Note title…" : "Add a task, or paste a link…"}
+                placeholder={effective === "note" ? "Name a note, then press Add" : effective === "link" ? "Press Add to save this link" : "Add a task (e.g. film intro friday), or paste a link"}
                 placeholderTextColor={c.ink3}
                 returnKeyType="done"
                 maxLength={isLink ? 4000 : 200}
@@ -302,7 +302,7 @@ export function SpaceView({ space }: { space: Space }) {
                 className="text-ink text-[16px]"
                 style={{ paddingVertical: 4 }}
               />
-              <View className="mt-1.5 flex-row items-center gap-1">
+              <View className="mt-1.5 flex-row flex-wrap items-center gap-1">
                 {KINDS.map(({ key, label, Icon }) => {
                   const on = effective === key;
                   return (
@@ -321,8 +321,8 @@ export function SpaceView({ space }: { space: Space }) {
                   );
                 })}
                 <View className="flex-1" />
-                {/* Blank pages and templates (PRD, video idea…), one tap away. */}
-                <NewInSpace space={space} stage={null} variant="plus" />
+                {/* A full page: empty, or from a template (PRD, video idea…). */}
+                <NewInSpace space={space} stage={null} variant="page" />
                 <Pressable onPress={() => void add()} disabled={!draft.trim()} accessibilityRole="button" style={pressScale} className="bg-accent h-[28px] rounded-[8px] px-3 justify-center" {...({ title: "Add (Enter)" } as object)}>
                   <Text className="text-on-accent text-[13px] font-semibold" style={{ opacity: draft.trim() ? 1 : 0.6 }}>
                     Add
