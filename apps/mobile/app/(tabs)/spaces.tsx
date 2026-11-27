@@ -1,16 +1,14 @@
-import { usePrefs, useSpaces, useThemeColors } from "@nox/features";
+import { useSpaces, useThemeColors } from "@nox/features";
 import type { Space } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { CircleHelp, Plus } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react-native";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NewSpaceDialog } from "../../components/brain/new-space-dialog";
 import { usePages } from "../../components/brain/pages";
 import { SpaceMark } from "../../components/brain/space-mark";
-import { SPACE_PRESETS, type SpacePreset } from "../../components/brain/space-presets";
-import { SpacesIntro } from "../../components/brain/spaces-intro";
 import { pressScale, TABULAR } from "../../components/menu";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { ListSkeleton } from "../../components/skeleton";
@@ -27,8 +25,7 @@ interface SpaceStats {
 
 /**
  * Spaces: one per area of work or life (a YouTube channel, a project, your PRDs). Each holds its own
- * notes, ideas, tasks and resources and has its own pipeline board. The first visit walks through
- * how they work; "?" brings that back.
+ * tasks, notes and links; a board is optional.
  */
 export default function SpacesScreen() {
   const c = useThemeColors();
@@ -36,19 +33,7 @@ export default function SpacesScreen() {
   const isDesktop = useIsDesktop();
   const { data: spaces = [], isLoading } = useSpaces();
   const pages = usePages();
-  const introSeen = usePrefs((s) => s.spacesIntroSeen);
-  const setIntroSeen = usePrefs((s) => s.setSpacesIntroSeen);
-  const [intro, setIntro] = useState(false);
-  const [creating, setCreating] = useState<{ preset?: SpacePreset } | null>(null);
-
-  // First visit: the walkthrough, once per device.
-  useEffect(() => {
-    if (!introSeen && !isLoading) setIntro(true);
-  }, [introSeen, isLoading]);
-  const closeIntro = () => {
-    setIntro(false);
-    if (!introSeen) setIntroSeen(true);
-  };
+  const [creating, setCreating] = useState(false);
 
   const stats = useMemo(() => {
     const m = new Map<string, SpaceStats>();
@@ -132,22 +117,18 @@ export default function SpacesScreen() {
       <View className="flex-1 pr-3">
         <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Spaces</Text>
         <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[14px] font-medium">
-          {spaces.length ? plural(spaces.length, "space") : "Your second brain, by area"}
+          {spaces.length ? plural(spaces.length, "space") : "One place per project"}
         </Text>
       </View>
       <View className="flex-row items-center gap-1.5 pt-1">
-        <Pressable onPress={() => setIntro(true)} accessibilityRole="button" accessibilityLabel="How Spaces work" style={pressScale} className="hover:bg-chip h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-2">
-          <CircleHelp size={17} color={c.ink2} strokeWidth={2} />
-          {isDesktop ? <Text className="text-ink-2 text-[13px] font-medium">How it works</Text> : null}
-        </Pressable>
         {isDesktop ? (
-          <Pressable onPress={() => setCreating({})} accessibilityRole="button" style={pressScale} className="bg-accent hover:opacity-90 h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-3.5">
+          <Pressable onPress={() => setCreating(true)} accessibilityRole="button" style={pressScale} className="bg-accent hover:opacity-90 h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-3.5">
             <Plus size={15} color={c.onAccent} strokeWidth={2.4} />
             <Text className="text-on-accent text-[14px] font-semibold">New space</Text>
           </Pressable>
         ) : (
           <>
-            <Pressable onPress={() => setCreating({})} accessibilityRole="button" accessibilityLabel="New space" style={pressScale} className="bg-accent h-[34px] w-[34px] items-center justify-center rounded-[10px]">
+            <Pressable onPress={() => setCreating(true)} accessibilityRole="button" accessibilityLabel="New space" style={pressScale} className="bg-accent h-[34px] w-[34px] items-center justify-center rounded-[10px]">
               <Plus size={17} color={c.onAccent} strokeWidth={2.4} />
             </Pressable>
             <ProfileAvatar />
@@ -167,29 +148,17 @@ export default function SpacesScreen() {
             <ListSkeleton />
           </View>
         ) : spaces.length === 0 ? (
-          /* Empty: start from a kind in one tap, instead of a blank form. */
-          <View className="px-screen mt-6">
-            <Text className="text-ink text-[16px] font-semibold">Start with a space</Text>
-            <Text className="text-ink-3 mb-3 mt-1 text-[14px] leading-[20px]">Pick what it's for. You can rename it and change its stages any time.</Text>
-            <View className="gap-2.5" style={isDesktop ? { flexDirection: "row", flexWrap: "wrap" } : undefined}>
-              {SPACE_PRESETS.map((p) => (
-                // Equal columns: four across on a wide screen, wrapping two by two when narrower.
-                <View key={p.key} style={isDesktop ? { flexGrow: 1, flexBasis: 0, minWidth: 210 } : undefined}>
-                <Pressable
-                  onPress={() => setCreating({ preset: p })}
-                  accessibilityRole="button"
-                  style={pressScale}
-                  className="border-line bg-surface hover:border-accent/[0.4] rounded-card h-full border p-4"
-                >
-                  <SpaceMark space={{ icon: p.icon }} size={34} />
-                  <Text className="text-ink mt-2 text-[15px] font-semibold">{p.label}</Text>
-                  <Text numberOfLines={2} className="text-ink-3 mt-0.5 text-[13px] leading-[18px]">
-                    {p.stages.length ? p.stages.join(" → ") : p.hint}
-                  </Text>
-                </Pressable>
-                </View>
-              ))}
-            </View>
+          /* Empty: one sentence and one button. */
+          <View className="px-screen mt-10 items-center">
+            <SpaceMark space={{ icon: "layers" }} size={52} />
+            <Text className="text-ink mt-4 text-center text-[17px] font-semibold">Keep each project in one place</Text>
+            <Text className="text-ink-3 mt-1.5 max-w-[420px] text-center text-[14px] leading-[20px]">
+              A space holds the tasks, notes and links for one thing — a YouTube channel, a launch, a class. Add to it straight from its page.
+            </Text>
+            <Pressable onPress={() => setCreating(true)} accessibilityRole="button" style={pressScale} className="bg-accent hover:opacity-90 mt-5 h-[40px] flex-row items-center gap-1.5 rounded-[11px] px-4">
+              <Plus size={16} color={c.onAccent} strokeWidth={2.4} />
+              <Text className="text-on-accent text-[14px] font-semibold">New space</Text>
+            </Pressable>
           </View>
         ) : (
           <View className="px-screen mt-5 gap-3" style={isDesktop ? { flexDirection: "row", flexWrap: "wrap" } : undefined}>
@@ -201,8 +170,7 @@ export default function SpacesScreen() {
           </View>
         )}
       </ScrollView>
-      <NewSpaceDialog visible={!!creating} initialPreset={creating?.preset} onClose={() => setCreating(null)} />
-      <SpacesIntro visible={intro} onClose={closeIntro} onCreate={spaces.length === 0 ? () => setCreating({}) : undefined} />
+      <NewSpaceDialog visible={creating} onClose={() => setCreating(false)} />
     </SafeAreaView>
   );
 }

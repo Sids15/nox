@@ -29,7 +29,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { StepBoard } from "../components/brain/spaces-intro";
+import { StepInside } from "../components/brain/spaces-intro";
 import { WidgetArt } from "../components/widget/widget-intro";
 import { canOpenDesktopWidget, toggleDesktopWidget } from "../lib/desktop-widget";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -310,15 +310,15 @@ function Onboarding() {
 
     /* 4 — spaces */
     <View key="spaces">
-      <Title>A second brain, by area</Title>
+      <Title>One place per project</Title>
       <Lead>
-        Make a space for each YouTube channel, project or set of PRDs. Its notes, ideas, tasks and links live together, on a board
-        that moves work through your stages. Type [[ in any page to link it to another.
+        Make a space for a YouTube channel, a launch or a class. Add its tasks, notes and links right on its page, and
+        everything for it stays together.
       </Lead>
-      <View className="mt-7 gap-3">
-        <StepBoard />
+      <View className="mt-7">
+        <StepInside />
       </View>
-      <Text className="text-ink-3 mt-3 text-[13px] leading-[19px]">Find it in the Spaces tab. It walks you through the rest the first time.</Text>
+      <Text className="text-ink-3 mt-3 text-[13px] leading-[19px]">Find it in the Spaces tab.</Text>
     </View>,
 
     /* 5 — widget */
