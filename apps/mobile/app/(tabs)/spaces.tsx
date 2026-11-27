@@ -173,12 +173,13 @@ export default function SpacesScreen() {
             <Text className="text-ink-3 mb-3 mt-1 text-[14px] leading-[20px]">Pick what it's for. You can rename it and change its stages any time.</Text>
             <View className="gap-2.5" style={isDesktop ? { flexDirection: "row", flexWrap: "wrap" } : undefined}>
               {SPACE_PRESETS.map((p) => (
+                // Equal columns: four across on a wide screen, wrapping two by two when narrower.
+                <View key={p.key} style={isDesktop ? { flexGrow: 1, flexBasis: 0, minWidth: 210 } : undefined}>
                 <Pressable
-                  key={p.key}
                   onPress={() => setCreating({ preset: p })}
                   accessibilityRole="button"
-                  style={(st) => [pressScale(st), isDesktop ? { width: 260 } : null]}
-                  className="border-line bg-surface hover:border-accent/[0.4] rounded-card border p-4"
+                  style={pressScale}
+                  className="border-line bg-surface hover:border-accent/[0.4] rounded-card h-full border p-4"
                 >
                   <SpaceMark space={{ icon: p.icon }} size={34} />
                   <Text className="text-ink mt-2 text-[15px] font-semibold">{p.label}</Text>
@@ -186,6 +187,7 @@ export default function SpacesScreen() {
                     {p.stages.length ? p.stages.join(" → ") : p.hint}
                   </Text>
                 </Pressable>
+                </View>
               ))}
             </View>
           </View>
