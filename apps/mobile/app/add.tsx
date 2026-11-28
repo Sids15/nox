@@ -36,7 +36,7 @@ export default function AddScreen() {
   const close = () => goBack("/tasks");
   const save = () => {
     if (!draft.trim()) return;
-    void quickAdd(draft, effective, { spaceId: spaceId && spaces.some((s) => s.id === spaceId) ? spaceId : null });
+    void quickAdd(draft, effective, { spaceId: spaceId && spaces.some((s) => s.id === spaceId) ? spaceId : null, inbox: true });
     close();
   };
 

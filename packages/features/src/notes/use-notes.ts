@@ -3,6 +3,7 @@ import { newId } from "@nox/db";
 import type { Note, NoteInput } from "@nox/types";
 import { useMutation, useQuery, useQueryClient, type MutationKey, type QueryClient } from "@tanstack/react-query";
 import { noteKeys } from "./note-keys";
+import { withInboxExit } from "../inbox/inbox";
 
 function snapshot(qc: QueryClient): Note[] {
   return qc.getQueryData<Note[]>(noteKeys.all) ?? [];
@@ -34,6 +35,7 @@ export function useCreateNote() {
         space_id: input.space_id ?? null,
         properties: input.properties ?? [],
         stage: input.stage ?? null,
+        inbox: input.inbox ?? false,
       };
       qc.setQueryData<Note[]>(noteKeys.all, [optimistic, ...previous]);
       return { previous };
@@ -81,7 +83,15 @@ function useNotePatch<V>(mutationKey: MutationKey, patchFor: (v: V) => Partial<N
 
 /** Patch a note's editable fields (title/content/tags/folder) — the editor's debounced auto-save. */
 export function useUpdateNote() {
-  return useNotePatch<{ id: string; patch: Partial<NoteInput> }>(["note", "update"], ({ patch }) => patch);
+  const qc = useQueryClient();
+  const m = useNotePatch<{ id: string; patch: Partial<NoteInput> }>(["note", "update"], ({ patch }) => patch);
+  // Given a home, an Inbox item leaves the Inbox.
+  const fix = (v: { id: string; patch: Partial<NoteInput> }) => withInboxExit(qc.getQueryData<Note[]>(noteKeys.all)?.find((x) => x.id === v.id), v, ["space_id", "folder_id"]);
+  return {
+    ...m,
+    mutate: (v: { id: string; patch: Partial<NoteInput> }, o?: Parameters<typeof m.mutate>[1]) => m.mutate(fix(v), o),
+    mutateAsync: (v: { id: string; patch: Partial<NoteInput> }, o?: Parameters<typeof m.mutateAsync>[1]) => m.mutateAsync(fix(v), o),
+  };
 }
 
 export function useSetNotePinned() {

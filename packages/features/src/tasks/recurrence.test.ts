@@ -26,6 +26,7 @@ const base: Task = {
   longest_streak: 0,
   last_completed_on: null,
   space_id: null,
+  inbox: false,
 };
 const mk = (o: Partial<Task>): Task => ({ ...base, ...o });
 

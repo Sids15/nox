@@ -14,6 +14,9 @@ import { carryoverTaskIds } from "./carryover";
 import { groupTasks, type GroupedTasks } from "./group-tasks";
 import { shiftReminders, templatesNeedingOccurrence } from "./recurrence";
 import { taskKeys } from "./task-keys";
+import { withInboxExit } from "../inbox/inbox";
+
+const TASK_HOME = ["due_date", "space_id"] as const;
 
 /** Put one task back to how it was in `previous` (or remove it if it wasn't there). */
 function restoreOne(qc: QueryClient, previous: Task[], id: string) {
@@ -87,6 +90,7 @@ export function useCreateTask() {
         origin_task_id: null,
         ...input,
         space_id: input.space_id ?? null,
+        inbox: input.inbox ?? false,
       };
       qc.setQueryData<Task[]>(taskKeys.all, [...previous, optimistic]);
       return { previous };
@@ -138,7 +142,7 @@ export function useToggleTask() {
 /** Patch a task's editable fields (used by the detail editor). */
 export function useUpdateTask() {
   const qc = useQueryClient();
-  return useMutation<Task, Error, { id: string; patch: Partial<TaskInput> }, { previous: Task[] }>({
+  const m = useMutation<Task, Error, { id: string; patch: Partial<TaskInput> }, { previous: Task[] }>({
     mutationKey: ["task", "update"],
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey: taskKeys.all });
@@ -156,6 +160,13 @@ export function useUpdateTask() {
     },
     onSettled: () => qc.invalidateQueries({ queryKey: taskKeys.all }),
   });
+  // Given a day or a space, an Inbox task leaves the Inbox.
+  const fix = (v: { id: string; patch: Partial<TaskInput> }) => withInboxExit(snapshot(qc).find((t) => t.id === v.id), v, TASK_HOME);
+  return {
+    ...m,
+    mutate: (v: { id: string; patch: Partial<TaskInput> }, o?: Parameters<typeof m.mutate>[1]) => m.mutate(fix(v), o),
+    mutateAsync: (v: { id: string; patch: Partial<TaskInput> }, o?: Parameters<typeof m.mutateAsync>[1]) => m.mutateAsync(fix(v), o),
+  };
 }
 
 /** Soft-delete a task, removing it from the cache immediately. */

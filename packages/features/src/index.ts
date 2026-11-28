@@ -18,6 +18,7 @@ export { carryoverTaskIds } from "./tasks/carryover";
 export { autoSchedule, checkPlan, findFreeSlot, minutesToTime, tasksOnDay, timeToMinutes, type PlacedTask, type PlannedTask, type SlotOptions } from "./tasks/day-plan";
 export { parseQuickAdd, type QuickAddField, type QuickAddResult } from "./tasks/parse-quick-add";
 export { taskKeys } from "./tasks/task-keys";
+export { belongsInInbox, inboxItems, withInboxExit, type InboxItem, type InboxSource } from "./inbox/inbox";
 export { DEFAULT_CALENDAR, usePrefs, type CalendarPrefs, type HeadingFont, type NotifKey } from "./prefs/prefs-store";
 export { useThemeColors, useThemeVars } from "./prefs/use-theme-colors";
 export {

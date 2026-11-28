@@ -21,6 +21,7 @@ const task = (id: string, p: Partial<Task>): Task => ({
   longest_streak: 0,
   last_completed_on: null,
   space_id: null,
+  inbox: false,
   ...p,
 });
 const note = (id: string, p: Partial<Note>): Note => ({
@@ -34,6 +35,7 @@ const note = (id: string, p: Partial<Note>): Note => ({
   is_pinned: false,
   is_archived: false,
   space_id: null,
+  inbox: false,
   properties: [],
   stage: null,
   ...p,

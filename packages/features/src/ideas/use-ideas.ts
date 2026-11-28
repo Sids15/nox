@@ -3,6 +3,7 @@ import { newId } from "@nox/db";
 import type { Idea, IdeaInput } from "@nox/types";
 import { useMutation, useQuery, useQueryClient, type MutationKey, type QueryClient } from "@tanstack/react-query";
 import { ideaKeys } from "./idea-keys";
+import { withInboxExit } from "../inbox/inbox";
 
 function snapshot(qc: QueryClient): Idea[] {
   return qc.getQueryData<Idea[]>(ideaKeys.all) ?? [];
@@ -41,6 +42,7 @@ export function useCreateIdea() {
         space_id: input.space_id ?? null,
         properties: input.properties ?? [],
         stage: input.stage ?? null,
+        inbox: input.inbox ?? false,
       };
       qc.setQueryData<Idea[]>(ideaKeys.all, [optimistic, ...previous]);
       return { previous };
@@ -89,7 +91,15 @@ function useIdeaPatch<V>(mutationKey: MutationKey, patchFor: (v: V) => Partial<I
 
 /** Patch an idea's editable fields (title/description/priority/status/tags). */
 export function useUpdateIdea() {
-  return useIdeaPatch<{ id: string; patch: Partial<IdeaInput> }>(["idea", "update"], ({ patch }) => patch);
+  const qc = useQueryClient();
+  const m = useIdeaPatch<{ id: string; patch: Partial<IdeaInput> }>(["idea", "update"], ({ patch }) => patch);
+  // Given a home, an Inbox item leaves the Inbox.
+  const fix = (v: { id: string; patch: Partial<IdeaInput> }) => withInboxExit(qc.getQueryData<Idea[]>(ideaKeys.all)?.find((x) => x.id === v.id), v, ["space_id"]);
+  return {
+    ...m,
+    mutate: (v: { id: string; patch: Partial<IdeaInput> }, o?: Parameters<typeof m.mutate>[1]) => m.mutate(fix(v), o),
+    mutateAsync: (v: { id: string; patch: Partial<IdeaInput> }, o?: Parameters<typeof m.mutateAsync>[1]) => m.mutateAsync(fix(v), o),
+  };
 }
 
 /** Advance an idea along the status pipeline (or drop it). */

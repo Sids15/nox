@@ -1,8 +1,8 @@
-import { useIdeas, useNotes, usePrefs, useResources, useSpaces, useTasks, useThemeColors } from "@nox/features";
+import { inboxItems, useIdeas, useNotes, usePrefs, useResources, useSpaces, useTasks, useThemeColors } from "@nox/features";
 import { LinearGradient } from "expo-linear-gradient";
 import { useIsFocused } from "@react-navigation/native";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, FileText, Layers, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, FileText, Inbox, Layers, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
@@ -117,6 +117,11 @@ export function Sidebar() {
     { label: "Spaces", icon: Layers, path: "/spaces", count: spaces.length },
   ];
 
+  // Plan: the pages around your tasks (Inbox first: what still needs sorting).
+  const tools: NavItem[] = [
+    { label: "Inbox", icon: Inbox, path: "/inbox", count: inboxItems({ tasks, notes, ideas, resources }).length },
+  ];
+
   const { name, firstName, initials } = useIdentity();
   const today = toDateKey(now);
   const nowHHMM = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -151,6 +156,24 @@ export function Sidebar() {
                 className={`h-11 w-11 items-center justify-center rounded-[11px] ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
               >
                 <item.icon size={19} color={active ? c.accent : c.ink3} strokeWidth={active ? 2.1 : 1.9} />
+              </Pressable>
+            );
+          })}
+          <View className="bg-line my-2 h-px w-8" />
+          {tools.map((item) => {
+            const active = pathname === item.path;
+            return (
+              <Pressable
+                key={item.path}
+                onPress={() => router.navigate(item.path as never)}
+                accessibilityRole="link"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`${item.label}, ${item.count}`}
+                {...({ title: item.label } as object)}
+                className={`h-11 w-11 items-center justify-center rounded-[11px] ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
+              >
+                <item.icon size={19} color={active ? c.accent : c.ink3} strokeWidth={active ? 2.1 : 1.9} />
+                {item.count > 0 ? <View style={{ position: "absolute", top: 8, right: 8, width: 7, height: 7, borderRadius: 4, backgroundColor: c.accent }} /> : null}
               </Pressable>
             );
           })}
@@ -233,6 +256,31 @@ export function Sidebar() {
               accessibilityState={{ selected: active }}
               accessibilityLabel={`${item.label}, ${item.count}`}
               {...({ title: `${item.label} (${MODULE_CHORD.split(" ")[0]} ${i + 1})` } as object)}
+              className={`h-[36px] flex-row items-center gap-3 rounded-[9px] px-2.5 ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
+            >
+              <item.icon size={16} color={active ? c.accent : c.ink3} strokeWidth={active ? 2.1 : 1.9} />
+              <Text className={`flex-1 text-[14px] ${active ? "text-ink font-semibold" : "text-ink-2 font-medium"}`}>{item.label}</Text>
+              {item.count > 0 && (
+                <Text style={TABULAR} className={`text-[12px] ${active ? "text-accent font-semibold" : "text-ink-3"}`}>
+                  {item.count}
+                </Text>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Plan: Inbox (and the pages around your tasks) */}
+      <View className="border-line mt-4 gap-0.5 border-t pt-3">
+        {tools.map((item) => {
+          const active = pathname === item.path;
+          return (
+            <Pressable
+              key={item.path}
+              onPress={() => router.navigate(item.path as never)}
+              accessibilityRole="link"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${item.label}, ${item.count}`}
               className={`h-[36px] flex-row items-center gap-3 rounded-[9px] px-2.5 ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
             >
               <item.icon size={16} color={active ? c.accent : c.ink3} strokeWidth={active ? 2.1 : 1.9} />

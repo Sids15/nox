@@ -35,6 +35,8 @@ export const pageExtras = {
   properties: properties.default([]),
   /** The page's place in its space's pipeline (one of `space.stages`), or null. */
   stage: z.string().max(60).nullable().default(null),
+  /** Captured but not sorted yet: shown in the Inbox until given a day, a space or kept (migration 0015). */
+  inbox: z.boolean().default(false),
 };
 
 /** The same fields on create/edit input: optional, so a database without 0012 never sees them. */
@@ -42,6 +44,7 @@ export const pageExtrasInput = {
   space_id: z.string().uuid().nullable().optional(),
   properties: z.array(property).max(40).optional(),
   stage: z.string().max(60).nullable().optional(),
+  inbox: z.boolean().optional(),
 };
 
 /** An area of work or life: its own notes, ideas, tasks and resources, and its own pipeline. */

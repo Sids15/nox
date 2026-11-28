@@ -36,6 +36,8 @@ export const task = syncedRow.extend({
   last_completed_on: z.string().date().nullable().default(null),
   /** The space it belongs to (migration 0012), or null. */
   space_id: z.string().uuid().nullable().default(null),
+  /** Captured but not sorted yet: shown in the Inbox until given a day, a space or kept (migration 0015). */
+  inbox: z.boolean().default(false),
 });
 export type Task = z.infer<typeof task>;
 
@@ -49,5 +51,5 @@ export const taskInput = task.pick({
   priority: true,
   repeat: true,
   repeat_config: true,
-}).extend({ space_id: z.string().uuid().nullable().optional() });
+}).extend({ space_id: z.string().uuid().nullable().optional(), inbox: z.boolean().optional() });
 export type TaskInput = z.infer<typeof taskInput>;

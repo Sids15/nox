@@ -17,6 +17,8 @@ export const resource = syncedRow.extend({
   is_archived: z.boolean().default(false),
   /** The space it belongs to (migration 0012), or null. */
   space_id: z.string().uuid().nullable().default(null),
+  /** Captured but not sorted yet: shown in the Inbox until given a day, a space or kept (migration 0015). */
+  inbox: z.boolean().default(false),
 });
 export type Resource = z.infer<typeof resource>;
 
@@ -29,7 +31,7 @@ export const resourceInput = resource.pick({
   duration: true,
   body: true,
   tag_ids: true,
-}).extend({ space_id: z.string().uuid().nullable().optional() });
+}).extend({ space_id: z.string().uuid().nullable().optional(), inbox: z.boolean().optional() });
 export type ResourceInput = z.infer<typeof resourceInput>;
 
 export const tag = syncedRow.extend({
