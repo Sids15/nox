@@ -1,0 +1,17 @@
+-- Run Nox's server reminders every hour (at :00). Paste into the Supabase SQL editor once, after
+-- deploying the `push` function and setting its PUSH_CRON_SECRET. Replace the two placeholders.
+-- Needs the pg_cron and pg_net extensions (Database → Extensions).
+
+select cron.schedule(
+  'nox-push-hourly',
+  '0 * * * *',
+  $$
+  select net.http_post(
+    url     := 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/push',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-push-secret', 'YOUR-PUSH-CRON-SECRET'),
+    body    := '{}'::jsonb
+  );
+  $$
+);
+
+-- To stop it:  select cron.unschedule('nox-push-hourly');

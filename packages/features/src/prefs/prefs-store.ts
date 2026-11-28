@@ -69,6 +69,9 @@ interface PrefsState {
   /** Spaces shown as a month calendar (overrides list/board while on). */
   spaceCalendars: Record<string, boolean>;
   setSpaceCalendar: (id: string, on: boolean) => void;
+  /** Server reminders (push) are on for this device. */
+  serverPush: boolean;
+  setServerPush: (on: boolean) => void;
   /** The day the weekly Review was last finished (YYYY-MM-DD), or null. */
   lastReviewed: string | null;
   setLastReviewed: (day: string) => void;
@@ -118,6 +121,8 @@ export const usePrefs = create<PrefsState>()(
       sidebarCollapsed: null,
       spaceCalendars: {},
       setSpaceCalendar: (id, on) => set((s) => ({ spaceCalendars: { ...s.spaceCalendars, [id]: on } })),
+      serverPush: false,
+      setServerPush: (on) => set({ serverPush: on }),
       lastReviewed: null,
       setLastReviewed: (day) => set({ lastReviewed: day }),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
@@ -171,6 +176,7 @@ export const usePrefs = create<PrefsState>()(
         sidebarCollapsed: s.sidebarCollapsed,
         spaceCalendars: s.spaceCalendars,
         lastReviewed: s.lastReviewed,
+        serverPush: s.serverPush,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first

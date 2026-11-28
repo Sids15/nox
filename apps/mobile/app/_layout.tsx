@@ -38,6 +38,7 @@ import { useAiAccountSync } from "../lib/use-ai";
 import { isWidgetWindow, useOpenFromWidget } from "../lib/desktop-widget";
 import { clearAndroidWidget, useAndroidShare, useAndroidWidgetSync } from "../lib/android-widget";
 import { useFocusAlert } from "../lib/use-focus-alert";
+import { usePushSync } from "../lib/use-push-sync";
 import { DesktopWidget } from "../components/widget/desktop-widget";
 
 /** This window is the desktop widget (a second Tauri window), not the app. Fixed for its lifetime. */
@@ -104,6 +105,7 @@ function RootNavigator() {
   const status = useSessionStore((s) => s.status);
   useAndroidShare(status === "authenticated");
   useFocusAlert(status === "authenticated");
+  usePushSync(status === "authenticated");
   const prefsHydrated = usePrefs((s) => s.hydrated);
   const c = useThemeColors();
 

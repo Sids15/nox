@@ -1,5 +1,7 @@
 import { WIDGET_SECTION_LABEL, useAuth, usePrefs, useSpaces, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
-import { AiRepository } from "@nox/api";
+import { AiRepository, PushRepository } from "@nox/api";
+import type { PushPrefs } from "@nox/types";
+import { disablePush, enablePush, pushAvailable, pushUnavailableReason } from "../lib/push";
 import { setNoxAi } from "../lib/use-ai";
 import { accents, type AccentName, type ThemeName } from "@nox/ui";
 import Constants from "expo-constants";
@@ -185,6 +187,74 @@ function AiAllowance({ used }: { used: number | null }) {
   );
 }
 
+/**
+ * Server reminders (push): they arrive even when Nox is closed. Counts only — no task names leave the
+ * server. "On this device" registers the phone or browser; the kinds and the morning hour are per account.
+ */
+function ServerPushSettings() {
+  const on = usePrefs((s) => s.serverPush);
+  const setOn = usePrefs((s) => s.setServerPush);
+  const [prefs, setPrefs] = useState<PushPrefs | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (on) PushRepository.prefs().then(setPrefs).catch(() => setPrefs(null));
+  }, [on]);
+
+  const toggle = async (v: boolean) => {
+    setBusy(true);
+    setError(null);
+    if (v) {
+      const err = await enablePush();
+      if (err) setError(err);
+      else setOn(true);
+    } else {
+      await disablePush();
+      setOn(false);
+    }
+    setBusy(false);
+  };
+  const change = (patch: Partial<PushPrefs>) => {
+    if (!prefs) return;
+    const next = { ...prefs, ...patch };
+    setPrefs(next);
+    PushRepository.setPrefs(next).catch(() => setError("Couldn't save that. Check your connection."));
+  };
+
+  return (
+    <>
+      <Row
+        title="Reminders when Nox is closed"
+        detail={
+          error ??
+          (pushAvailable
+            ? "Sent by Nox's server to this device: a morning count of today's tasks, an overdue nudge at 5 PM, and a heads-up when a space's deadline is 2 days away. Only counts are sent — never task names."
+            : pushUnavailableReason)
+        }
+      >
+        <Toggle label="Reminders when Nox is closed" value={on} onChange={(v) => (busy || !pushAvailable ? undefined : void toggle(v))} />
+      </Row>
+      {on && prefs ? (
+        <>
+          <Row title="Morning count" detail={`${hourLabel(prefs.hour)} · today's tasks and anything overdue`}>
+            <View className="flex-row items-center gap-2">
+              <Stepper label="morning hour" value={hourLabel(prefs.hour)} onDec={() => change({ hour: Math.max(5, prefs.hour - 1) })} onInc={() => change({ hour: Math.min(12, prefs.hour + 1) })} />
+              <Toggle label="Morning count" value={prefs.morning} onChange={(v) => change({ morning: v })} />
+            </View>
+          </Row>
+          <Row title="Overdue nudge" detail="5 PM · when tasks are past their day">
+            <Toggle label="Overdue nudge" value={prefs.overdue} onChange={(v) => change({ overdue: v })} />
+          </Row>
+          <Row title="Space deadlines" detail="9 AM · when a space is due within 2 days">
+            <Toggle label="Space deadlines" value={prefs.deadlines} onChange={(v) => change({ deadlines: v })} />
+          </Row>
+        </>
+      ) : null}
+    </>
+  );
+}
+
 function Group({ children }: { children: ReactNode }) {
   return <View className="border-line bg-surface overflow-hidden rounded-[14px] border">{children}</View>;
 }
@@ -364,6 +434,11 @@ export default function SettingsScreen() {
     setError(null);
     setSigningOut(true);
     try {
+      // Stop server reminders on this device first, so the next person here doesn't get them.
+      if (usePrefs.getState().serverPush) {
+        await disablePush();
+        usePrefs.getState().setServerPush(false);
+      }
       await signOut();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign out failed");
@@ -595,6 +670,7 @@ export default function SettingsScreen() {
           <Row title="Task reminders" detail="At the reminder times you set on each task">
             <Toggle label="Task reminders" value={taskReminders} onChange={(v) => notif("taskReminders", v)} />
           </Row>
+          <ServerPushSettings />
           <Row title="Send a test notification" detail="Check that reminders can reach this device" onPress={sendTest} last>
             <BellRing size={17} color={c.accent} strokeWidth={2} />
           </Row>

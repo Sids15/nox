@@ -21,6 +21,9 @@ const LAST_HANDLED_KEY = "nox:notif:lastHandledId";
  * keeps the two daily nudges in sync with their toggles, and deep-links to a task when its reminder
  * is tapped. Mount once, inside the authed tree (it reads the tasks query).
  */
+/** Pages a server reminder may open. */
+const SERVER_PAGES = new Set(["/tasks", "/review", "/spaces", "/inbox"]);
+
 export function useNotifications() {
   const router = useRouter();
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
@@ -35,7 +38,13 @@ export function useNotifications() {
     configureNotifications();
     const openFromResponse = (response: Notifications.NotificationResponse | null) => {
       const taskId = response && taskIdFromResponse(response);
-      if (taskId) router.push(`/task/${taskId}`);
+      if (taskId) {
+        router.push(`/task/${taskId}`);
+        return;
+      }
+      // A server reminder carries the page to open ("/tasks", "/review", "/spaces") — only those.
+      const url = response?.notification.request.content.data?.url;
+      if (typeof url === "string" && SERVER_PAGES.has(url)) router.push(url as never);
     };
     const sub = Notifications.addNotificationResponseReceivedListener(openFromResponse);
     void Notifications.getLastNotificationResponseAsync().then(async (response) => {
