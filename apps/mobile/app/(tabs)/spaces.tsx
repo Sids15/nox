@@ -8,6 +8,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NewSpaceDialog } from "../../components/brain/new-space-dialog";
 import { usePages } from "../../components/brain/pages";
+import { deadlineLabel, SpaceProgress } from "../../components/brain/space-goal";
 import { SpaceMark } from "../../components/brain/space-mark";
 import { pressScale, TABULAR } from "../../components/menu";
 import { ProfileAvatar } from "../../components/profile-avatar";
@@ -18,6 +19,8 @@ import { useIsDesktop } from "../../lib/use-responsive";
 interface SpaceStats {
   pages: number;
   tasks: number;
+  /** Tasks done, ever (for the progress bar). */
+  done: number;
   /** The next thing to do: the open task due soonest (undated ones after), or null. */
   next: { title: string; due: string | null } | null;
   /** The last 7 days and the next 7: done, added, due soon, overdue. */
@@ -46,7 +49,7 @@ export default function SpacesScreen() {
 
   const stats = useMemo(() => {
     const m = new Map<string, SpaceStats>();
-    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } });
+    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, done: 0, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } });
     for (const n of [...pages.notes.filter((x) => !x.is_archived), ...pages.ideas.filter((x) => !x.is_archived && x.status !== "dropped")]) {
       const e = n.space_id ? m.get(n.space_id) : undefined;
       if (!e) continue;
@@ -58,6 +61,7 @@ export default function SpacesScreen() {
       if (!e || t.deleted || (t.repeat !== "none" && t.origin_task_id === null)) continue;
       if (t.created_at >= weekAgo) e.week.added++;
       if (t.status === "complete") {
+        e.done++;
         if (t.updated_at >= weekAgo) e.week.done++;
         continue;
       }
@@ -77,7 +81,7 @@ export default function SpacesScreen() {
   const totals = review.reduce((a, { w }) => ({ done: a.done + w.done, added: a.added + w.added, overdue: a.overdue + w.overdue }), { done: 0, added: 0, overdue: 0 });
 
   const card = (s: Space) => {
-    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } };
+    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, done: 0, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } };
     return (
       <Pressable
         key={s.id}
@@ -99,6 +103,29 @@ export default function SpacesScreen() {
               </Text>
             </View>
           </View>
+
+          {s.description || s.due_date ? (
+            <View className="mt-3 flex-row items-center gap-1.5">
+              {s.description ? (
+                <Text numberOfLines={1} className="text-ink-2 flex-shrink text-[13px]">
+                  {s.description}
+                </Text>
+              ) : null}
+              {s.due_date ? (() => {
+                const d = deadlineLabel(s.due_date, today);
+                return (
+                  <Text style={TABULAR} numberOfLines={1} className={`text-[12px] font-medium ${d.late ? "text-high" : "text-ink-3"}`}>
+                    {s.description ? "· " : ""}{d.text}
+                  </Text>
+                );
+              })() : null}
+            </View>
+          ) : null}
+          {st.done + st.tasks > 0 ? (
+            <View className="mt-3">
+              <SpaceProgress done={st.done} total={st.done + st.tasks} compact />
+            </View>
+          ) : null}
 
           {/* What's next here, so the Spaces page reads like a dashboard. */}
           <View className="border-line mt-4 border-t pt-3">

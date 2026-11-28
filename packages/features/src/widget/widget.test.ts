@@ -88,7 +88,7 @@ describe("widget snapshot", () => {
   });
 
   test("space pipeline counts pages per stage; pinned notes listed", () => {
-    const space: Space = { ...base, id: "s1", name: "Tech", icon: "🎬", color: "", description: null, stages: ["Idea", "Script"], position: 0, archived: false };
+    const space: Space = { ...base, id: "s1", name: "Tech", icon: "🎬", color: "", description: null, stages: ["Idea", "Script"], position: 0, archived: false, due_date: null };
     const notes = [note("n1", { space_id: "s1", stage: "Idea" }), note("n2", { space_id: "s1", stage: "Idea" }), note("n3", { is_pinned: true })];
     const config = { ...DEFAULT_WIDGET, sections: [{ key: "space" as const, on: true }, { key: "pinned" as const, on: true }] };
     const s = buildWidgetSnapshot({ tasks: [], notes, ideas: [], spaces: [space], config }, "2026-11-25", "12:00", "x");

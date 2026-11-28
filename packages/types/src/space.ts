@@ -56,11 +56,14 @@ export const space = syncedRow.extend({
   position: z.number().int().default(0),
   /** Finished: kept, but listed apart on the Spaces page (migration 0013). */
   archived: z.boolean().default(false),
+  /** When the space's work should be finished, `YYYY-MM-DD` (migration 0014). Its goal is `description`. */
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().default(null),
 });
 export type Space = z.infer<typeof space>;
 
-export const spaceInput = space.pick({ name: true, icon: true, color: true, description: true, stages: true, position: true, archived: true }).partial({
+export const spaceInput = space.pick({ name: true, icon: true, color: true, description: true, stages: true, position: true, archived: true, due_date: true }).partial({
   archived: true,
+  due_date: true,
   icon: true,
   color: true,
   description: true,

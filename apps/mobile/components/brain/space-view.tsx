@@ -44,6 +44,7 @@ import { SpaceCalendar } from "./space-calendar";
 import { useAiEnabled } from "../../lib/use-ai";
 import { looksLikeUrl, useQuickAdd, type QuickKind } from "./use-quick-add";
 import { NewTaskDialog } from "../tasks/new-task-dialog";
+import { SpaceGoal } from "./space-goal";
 
 type Kind = QuickKind;
 type Filter = "all" | "tasks" | "ideas" | "notes" | "links";
@@ -370,6 +371,18 @@ export function SpaceView({ space }: { space: Space }) {
               </Pressable>
             </View>
           </View>
+        </View>
+
+        {/* What it's for, by when, and how far along. */}
+        <View
+          className="px-screen mt-1"
+          style={{ maxWidth: calendarOn ? 1100 : 820, width: "100%", alignSelf: "center" }}
+        >
+          <SpaceGoal
+            space={space}
+            done={items.filter((i) => i.kind === "task" && i.done).length}
+            total={items.filter((i) => i.kind === "task").length}
+          />
         </View>
 
         {calendarOn ? (

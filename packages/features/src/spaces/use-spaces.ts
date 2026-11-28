@@ -36,6 +36,7 @@ export function useCreateSpace() {
         position: previous.length,
         ...input,
         archived: input.archived ?? false,
+        due_date: input.due_date ?? null,
       };
       qc.setQueryData<Space[]>(spaceKeys.all, [...previous, optimistic]);
       return { previous };
