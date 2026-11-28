@@ -164,7 +164,7 @@ function TitleField({
  *   saved name. "Keep as text" turns recognition off for this task.
  * - Properties live in the shared PropertyBar (the same one the task editor uses); a value picked by
  *   hand always beats one read from the text.
- * - Nothing is written until Add. "Create more" keeps the composer open with the same settings.
+ * - Nothing is written until Add.
  */
 export function TaskComposer({
   initialDate,
@@ -193,8 +193,6 @@ export function TaskComposer({
   const [raw, setRaw] = useState(initialTitle);
   const [description, setDescription] = useState("");
   const [parsing, setParsing] = useState(true);
-  const [createMore, setCreateMore] = useState(false);
-  const [added, setAdded] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Values picked by hand. `undefined` = untouched, so the recognised/default value applies.
@@ -269,12 +267,6 @@ export function TaskComposer({
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    if (!added) return;
-    const t = setTimeout(() => setAdded(null), 3500);
-    return () => clearTimeout(t);
-  }, [added]);
-
   const fillWithAi = async () => {
     const sentence = raw.trim();
     if (!sentence || ai.busy) return;
@@ -344,19 +336,7 @@ export function TaskComposer({
     };
     createTask.create(input);
 
-    if (!createMore) {
-      onClose();
-      return;
-    }
-    // Create more: keep the settings, clear the words, go again.
-    setAsked(false);
-    setAiUndo(null);
-    ai.reset();
-    setAdded(title);
-    setRaw("");
-    setDescription("");
-    setParsing(true);
-    setTimeout(() => titleRef.current?.focus(), 0);
+    onClose();
   };
 
   // Esc closes and Cmd/Ctrl+Enter adds, from anywhere in the dialog. Capture phase: a focused text
@@ -559,31 +539,6 @@ export function TaskComposer({
 
       {/* Footer band */}
       <View className="mt-2 flex-row items-center gap-3 px-4 pb-3.5 pt-2">
-        <Pressable
-          onPress={() => setCreateMore((v) => !v)}
-          accessibilityRole="switch"
-          accessibilityState={{ checked: createMore }}
-          accessibilityLabel="Create more"
-          className="flex-row items-center gap-2"
-          hitSlop={6}
-        >
-          <View
-            style={{
-              width: 28,
-              height: 16,
-              borderRadius: 99,
-              padding: 2,
-              alignItems: createMore ? "flex-end" : "flex-start",
-              backgroundColor: createMore ? c.accent : c.chip,
-              borderWidth: createMore ? 0 : 1,
-              borderColor: c.line,
-            }}
-          >
-            <View style={{ width: 12, height: 12, borderRadius: 99, backgroundColor: createMore ? "#fff" : c.ink3 }} />
-          </View>
-          <Text className="text-ink-2 text-[13px] font-medium">Create more</Text>
-        </Pressable>
-
         {dictation.supported && (
           <Pressable
             onPress={dictation.listening ? dictation.stop : dictation.start}
@@ -603,11 +558,6 @@ export function TaskComposer({
         )}
 
         <View className="flex-1">
-          {added ? (
-            <Text numberOfLines={1} className="text-success text-[12px] font-semibold">
-              Added “{added}”
-            </Text>
-          ) : null}
         </View>
 
         {compact ? (
