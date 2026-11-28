@@ -172,7 +172,7 @@ export function SpaceCalendar({ space }: { space: Space }) {
           <Text className="text-on-accent text-[13px] font-semibold">Add</Text>
         </Pressable>
       </View>
-      <Popover anchorRef={timeRef} open={timeOpen} onClose={() => setTimeOpen(false)} width={isDesktop ? 300 : 360} accessibilityLabel="Time">
+      <Popover anchorRef={timeRef} open={timeOpen} onClose={() => setTimeOpen(false)} width={isDesktop ? 470 : 360} accessibilityLabel="Time">
         <View className="p-2.5">
           <TimePicker
             value={time}
