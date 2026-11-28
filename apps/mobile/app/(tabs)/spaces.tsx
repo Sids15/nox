@@ -1,6 +1,6 @@
 import { useSpaces, useThemeColors } from "@nox/features";
 import type { Space } from "@nox/types";
-import { addDays, capitalize, relativeDayLabel, relativeFromNow, todayKey } from "@nox/utils";
+import { addDays, capitalize, relativeDayLabel, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, Circle, Plus } from "lucide-react-native";
 import { useMemo, useState } from "react";
@@ -18,7 +18,6 @@ import { useIsDesktop } from "../../lib/use-responsive";
 interface SpaceStats {
   pages: number;
   tasks: number;
-  lastActive: string | null;
   /** The next thing to do: the open task due soonest (undated ones after), or null. */
   next: { title: string; due: string | null } | null;
   /** The last 7 days and the next 7: done, added, due soon, overdue. */
@@ -47,16 +46,12 @@ export default function SpacesScreen() {
 
   const stats = useMemo(() => {
     const m = new Map<string, SpaceStats>();
-    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } });
-    const touch = (e: SpaceStats, at: string) => {
-      if (!e.lastActive || at > e.lastActive) e.lastActive = at;
-    };
+    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } });
     for (const n of [...pages.notes.filter((x) => !x.is_archived), ...pages.ideas.filter((x) => !x.is_archived && x.status !== "dropped")]) {
       const e = n.space_id ? m.get(n.space_id) : undefined;
       if (!e) continue;
       e.pages++;
       if (n.created_at >= weekAgo) e.week.added++;
-      touch(e, n.updated_at);
     }
     for (const t of pages.tasks) {
       const e = t.space_id ? m.get(t.space_id) : undefined;
@@ -69,7 +64,6 @@ export default function SpacesScreen() {
       if (t.due_date && t.due_date < today) e.week.overdue++;
       else if (t.due_date && t.due_date <= inAWeek) e.week.dueSoon++;
       e.tasks++;
-      touch(e, t.updated_at);
       const due = t.due_date ?? null;
       const n = e.next;
       if (!n || (due && (!n.due || due < n.due))) e.next = { title: t.title, due };
@@ -83,7 +77,7 @@ export default function SpacesScreen() {
   const totals = review.reduce((a, { w }) => ({ done: a.done + w.done, added: a.added + w.added, overdue: a.overdue + w.overdue }), { done: 0, added: 0, overdue: 0 });
 
   const card = (s: Space) => {
-    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } };
+    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } };
     return (
       <Pressable
         key={s.id}
@@ -121,7 +115,7 @@ export default function SpacesScreen() {
                 ) : null}
               </View>
             ) : (
-              <Text className="text-ink-3 text-[12px]">{st.lastActive ? `Nothing to do · active ${relativeFromNow(st.lastActive)}` : "Nothing in it yet"}</Text>
+              <Text className="text-ink-3 text-[12px]">{st.pages + st.tasks > 0 ? "Nothing to do" : "Nothing in it yet"}</Text>
             )}
           </View>
         </View>
