@@ -148,6 +148,42 @@ function Row({ title, detail, children, last, onPress }: { title: string; detail
   );
 }
 
+/** Today's AI requests against the daily allowance, as a bar, and when it resets (the server's UTC midnight). */
+function AiAllowance({ used }: { used: number | null }) {
+  const c = useThemeColors();
+  const limit = AiRepository.dailyLimit;
+  if (used === null) {
+    return <Row title="Today" detail="Each account gets a daily allowance of AI requests (a few a minute). It resets every day." last />;
+  }
+  const n = Math.min(used, limit);
+  const left = limit - n;
+  const now = new Date();
+  const reset = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const hours = Math.max(1, Math.ceil((reset - now.getTime()) / 3_600_000));
+  const color = left === 0 ? c.high : left <= limit * 0.2 ? c.medium : c.accent;
+  return (
+    <View className="px-4 py-3">
+      <View className="flex-row items-baseline">
+        <Text className="text-ink flex-1 text-[15px] font-medium">Today</Text>
+        <Text style={TABULAR} className="text-ink-2 text-[13px] font-semibold">
+          {n} / {limit}
+        </Text>
+      </View>
+      <View
+        className="bg-chip mt-2 h-[6px] overflow-hidden rounded-full"
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: limit, now: n }}
+        accessibilityLabel="AI requests used today"
+      >
+        <View style={{ width: `${(n / limit) * 100}%`, height: "100%", backgroundColor: color, borderRadius: 99 }} />
+      </View>
+      <Text className="text-ink-3 mt-1.5 text-[13px] leading-[17px]">
+        {left === 0 ? "None left today" : `${left} left today`} · resets in {hours}h · a few a minute at most
+      </Text>
+    </View>
+  );
+}
+
 function Group({ children }: { children: ReactNode }) {
   return <View className="border-line bg-surface overflow-hidden rounded-[14px] border">{children}</View>;
 }
@@ -525,15 +561,7 @@ export default function SettingsScreen() {
             title="What gets sent"
             detail="Plan day sends task titles, times and priorities. Note and idea help sends that one note or idea. Ask Nox sends the few items that match your question. Your account details never are."
           />
-          <Row
-            title="Today"
-            detail={
-              aiUsed === null
-                ? "Each account may make a few AI requests a minute and a daily allowance; it resets every day."
-                : `${aiUsed} AI request${aiUsed === 1 ? "" : "s"} used today. A few a minute are allowed, and the daily allowance resets every day.`
-            }
-            last
-          />
+          <AiAllowance used={aiUsed} />
         </Group>,
       )}
 

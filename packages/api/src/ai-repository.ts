@@ -119,6 +119,9 @@ export const AiRepository = {
     return run("brief", { kind, today, weekday: weekdayOf(today), data }, aiBrief);
   },
 
+  /** Requests each account may make a day: the server's AI_DAILY_LIMIT default (supabase/functions/ai). */
+  dailyLimit: 40,
+
   /** Requests used today, for the Settings line. Null when unknown (offline, or migration 0010 missing). */
   async usedToday(): Promise<number | null> {
     // The server counts by its own (UTC) date.
