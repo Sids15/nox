@@ -21,7 +21,7 @@ export function useQuickAdd() {
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
 
-  return async (raw: string, kind: QuickKind, where: { spaceId: string | null; stage?: string | null; date?: string | null }): Promise<void> => {
+  return async (raw: string, kind: QuickKind, where: { spaceId: string | null; stage?: string | null; date?: string | null; time?: string | null }): Promise<void> => {
     const text = raw.trim();
     if (!text) return;
     const space_id = where.spaceId;
@@ -44,7 +44,7 @@ export function useQuickAdd() {
         title: (p.title || text).slice(0, 200),
         notes: null,
         due_date: p.date ?? where.date ?? null,
-        due_time: p.time ?? (p.tonight ? "20:00" : null),
+        due_time: p.time ?? where.time ?? (p.tonight ? "20:00" : null),
         ...(p.duration ? { duration_minutes: p.duration } : {}),
         reminder_times: [],
         priority: p.priority ?? "medium",
