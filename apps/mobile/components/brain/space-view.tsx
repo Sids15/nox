@@ -1,4 +1,10 @@
 import {
+  duplicateSpace,
+  useCreateIdea,
+  useCreateNote,
+  useCreateResource,
+  useCreateSpace,
+  useCreateTask,
   useDeleteSpace,
   usePrefs,
   useThemeColors,
@@ -27,6 +33,7 @@ import {
   SquareCheckBig,
   Trash2,
   Archive,
+  Copy,
   CalendarDays,
   Sparkles,
   Search,
@@ -36,6 +43,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { confirmDelete, plural } from "../../lib/confirm";
 import { goBack } from "../../lib/go-back";
+import { Alert } from "../../lib/alert";
+import { router } from "expo-router";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { MenuDivider, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
@@ -93,6 +102,34 @@ export function SpaceView({ space }: { space: Space }) {
   const del = useDeleteSpace();
   const toggle = useToggleTask();
   const quickAdd = useQuickAdd();
+  const createSpace = useCreateSpace();
+  const createTask = useCreateTask();
+  const createNote = useCreateNote();
+  const createIdea = useCreateIdea();
+  const createResource = useCreateResource();
+  const [copying, setCopying] = useState(false);
+
+  /** Copy this space as a fresh start: saved first, then its tasks (cleared), notes, ideas and links. */
+  const duplicate = async () => {
+    if (copying) return;
+    setCopying(true);
+    try {
+      const plan = duplicateSpace(space, pages);
+      const id = await createSpace.createAsync(plan.space);
+      for (const t of plan.tasks) createTask.create({ ...t, space_id: id });
+      for (const n of plan.notes) createNote.create({ ...n, space_id: id });
+      for (const i of plan.ideas) createIdea.create({ ...i, space_id: id });
+      for (const r of plan.resources) createResource.create({ ...r, space_id: id });
+      router.replace(`/space/${id}`);
+      if (plan.mediaLeftOut > 0) {
+        Alert.alert("Space copied", `${plan.mediaLeftOut} picture${plan.mediaLeftOut === 1 ? "" : "s"} or recording${plan.mediaLeftOut === 1 ? "" : "s"} stayed in the original — copies keep the text.`);
+      }
+    } catch {
+      Alert.alert("Couldn't copy the space", "Check your connection and try again.");
+    } finally {
+      setCopying(false);
+    }
+  };
   const calendarOn = usePrefs((s) => !!s.spaceCalendars[space.id]);
   const setCalendar = usePrefs((s) => s.setSpaceCalendar);
 
@@ -660,7 +697,7 @@ export function SpaceView({ space }: { space: Space }) {
         anchorRef={menuRef}
         open={menu}
         onClose={() => setMenu(false)}
-        width={240}
+        width={280}
         accessibilityLabel="Space options"
       >
         <View className="p-1.5">
@@ -670,6 +707,15 @@ export function SpaceView({ space }: { space: Space }) {
             onPress={() => {
               setMenu(false);
               setTimeout(() => nameRef.current?.focus(), 50);
+            }}
+          />
+          <MenuRow
+            label="Duplicate as a fresh start"
+            hint="Dates cleared"
+            icon={<Copy size={15} color={c.ink2} strokeWidth={2} />}
+            onPress={() => {
+              setMenu(false);
+              void duplicate();
             }}
           />
           <MenuRow
