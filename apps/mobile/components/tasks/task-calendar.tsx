@@ -14,6 +14,7 @@ import {
   type CalendarPrefs,
   type PlacedTask,
   type PlannedTask,
+  useSpaces,
 } from "@nox/features";
 import type { Task } from "@nox/types";
 import { addDays, dayOfMonth, dayOfWeek, formatTime12, monthShort, weekdayShort } from "@nox/utils";
@@ -27,6 +28,7 @@ import { MenuDivider, MenuLabel, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { anchorOf, durationLabel, rebaseReminders } from "./task-properties";
 import { withAlpha } from "../../lib/color";
+import { SpaceMark } from "../brain/space-mark";
 
 /** Minutes a task covers when it has no duration set. */
 const BLOCK = 30;
@@ -120,6 +122,22 @@ export function TaskCalendar({
   onOpenTask: (t: Task) => void;
   onCreateAt: (date: string, time: string | null) => void;
 }) {
+  const { data: spaces = [] } = useSpaces();
+  /** The space a task belongs to, shown on its block: "from this space". */
+  const spaceTag = (task: { space_id?: string | null }, withName: boolean) => {
+    const sp = task.space_id ? spaces.find((x) => x.id === task.space_id) : undefined;
+    if (!sp) return null;
+    return (
+      <View className="flex-shrink-0 flex-row items-center gap-1" accessibilityLabel={`From ${sp.name}`}>
+        <SpaceMark space={sp} size={14} />
+        {withName ? (
+          <Text numberOfLines={1} className="text-ink-3 max-w-[140px] text-[11px] font-medium">
+            {sp.name}
+          </Text>
+        ) : null}
+      </View>
+    );
+  };
   const c = useThemeColors();
   const isDesktop = useIsDesktop();
   const prefs = usePrefs((s) => s.calendar);
@@ -333,6 +351,7 @@ export function TaskCalendar({
           {p.task.title}
         </Text>
         {p.task.repeat !== "none" && <Repeat size={10} color={c.ink3} strokeWidth={2} />}
+        {spaceTag(p.task, false)}
       </View>
     );
   };
@@ -786,7 +805,9 @@ export function TaskCalendar({
                               {formatTime12(p.task.due_time)} – {formatTime12(minutesToTime(start + minutes))}
                             </Text>
                           )}
+                          {tall && p.task.space_id ? <View className="mt-1 flex-row">{spaceTag(p.task, lanes === 1)}</View> : null}
                         </View>
+                        {!tall ? spaceTag(p.task, isDesktop && lanes === 1) : null}
                         {!tall && isDesktop && lanes === 1 && (
                           <Text style={TABULAR} className="text-ink-3 text-[11px]">
                             {resize?.id === p.task.id ? durationLabel(minutes) : formatTime12(p.task.due_time)}
