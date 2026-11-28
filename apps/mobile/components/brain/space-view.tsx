@@ -1,5 +1,6 @@
 import {
   parseQuickAdd,
+  useCreateIdea,
   useCreateNote,
   useCreateResource,
   useCreateTask,
@@ -18,6 +19,7 @@ import {
   Circle,
   CircleCheck,
   FileText,
+  Lightbulb,
   Kanban,
   Link2,
   List,
@@ -38,10 +40,10 @@ import { KindIcon } from "./kind-icon";
 import { openRef, usePages } from "./pages";
 import { SpaceBoard } from "./space-board";
 import { SpaceIconPicker, SpaceMark } from "./space-mark";
-import { NewInSpace, type SpacePage } from "./space-parts";
+import { type SpacePage } from "./space-parts";
 import { StageEditor } from "./stage-editor";
 
-type Kind = "task" | "note" | "link";
+type Kind = "task" | "idea" | "note" | "link";
 type Filter = "all" | "notes" | "tasks" | "links";
 const looksLikeUrl = (s: string) => /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(s.trim());
 const DEFAULT_STAGES = ["To do", "In progress", "Done"];
@@ -70,6 +72,7 @@ export function SpaceView({ space }: { space: Space }) {
   const toggle = useToggleTask();
   const createTask = useCreateTask();
   const createNote = useCreateNote();
+  const createIdea = useCreateIdea();
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
   const boardOn = usePrefs((s) => !!s.spaceBoards[space.id]) && space.stages.length > 0;
@@ -148,6 +151,8 @@ export function SpaceView({ space }: { space: Space }) {
       const id = createResource.create({ type: thumb ? "video" : "link", url, title: null, domain: domainFrom(url), thumbnail_url: thumb, duration: null, body: null, tag_ids: [], space_id: space.id });
       const meta = await fetchUrlMeta(url);
       if (meta?.title || (meta?.image && !thumb)) updateResource.mutate({ id, patch: { title: meta.title ?? null, ...(meta.image && !thumb ? { thumbnail_url: meta.image } : {}) } });
+    } else if (effective === "idea") {
+      createIdea.create({ title: raw.slice(0, 200), description: null, content: [], priority: "medium", status: "raw", tags: [], space_id: space.id, stage: boardOn ? (space.stages[0] ?? null) : null });
     } else if (effective === "note") {
       createNote.create({ title: raw.slice(0, 200), type: "text", content: [{ type: "paragraph", text: "" }], folder_id: null, tags: [], space_id: space.id, stage: boardOn ? (space.stages[0] ?? null) : null });
     } else {
@@ -208,8 +213,10 @@ export function SpaceView({ space }: { space: Space }) {
 
   const KINDS: { key: Kind; label: string; Icon: typeof FileText }[] = [
     { key: "task", label: "Task", Icon: SquareCheckBig },
+    { key: "idea", label: "Idea", Icon: Lightbulb },
     { key: "note", label: "Note", Icon: FileText },
-    { key: "link", label: "Link", Icon: Link2 },
+    // A link is picked for you when one is pasted.
+    ...(isLink ? [{ key: "link" as Kind, label: "Link", Icon: Link2 }] : []),
   ];
   const FILTERS: { key: Filter; label: string; n: number }[] = [
     { key: "all", label: "All", n: counts.all },
@@ -279,9 +286,8 @@ export function SpaceView({ space }: { space: Space }) {
 
         {boardOn ? (
           <View className="mt-2">
-            <View className="px-screen mb-3 flex-row items-center justify-between">
-              <Text className="text-ink-3 text-[13px]">Notes and ideas by stage. Tasks and links are in the list.</Text>
-              <NewInSpace space={space} stage={space.stages[0] ?? null} />
+            <View className="px-screen mb-3">
+              <Text className="text-ink-3 text-[13px]">Notes and ideas by stage — drag to move, + to add. Tasks and links are in the list.</Text>
             </View>
             <SpaceBoard space={space} pages={boardPages} />
           </View>
@@ -293,7 +299,7 @@ export function SpaceView({ space }: { space: Space }) {
                 value={draft}
                 onChangeText={setDraft}
                 onSubmitEditing={() => void add()}
-                placeholder={effective === "note" ? "Name a note, then press Add" : effective === "link" ? "Press Add to save this link" : "Add a task (e.g. film intro friday), or paste a link"}
+                placeholder={effective === "note" ? "Name a note…" : effective === "idea" ? "Name an idea…" : effective === "link" ? "" : "Add a task (e.g. film intro friday), or paste a link"}
                 placeholderTextColor={c.ink3}
                 returnKeyType="done"
                 maxLength={isLink ? 4000 : 200}
@@ -321,8 +327,6 @@ export function SpaceView({ space }: { space: Space }) {
                   );
                 })}
                 <View className="flex-1" />
-                {/* A full page: empty, or from a template (PRD, video idea…). */}
-                <NewInSpace space={space} stage={null} variant="page" />
                 <Pressable onPress={() => void add()} disabled={!draft.trim()} accessibilityRole="button" style={pressScale} className="bg-accent h-[28px] rounded-[8px] px-3 justify-center" {...({ title: "Add (Enter)" } as object)}>
                   <Text className="text-on-accent text-[13px] font-semibold" style={{ opacity: draft.trim() ? 1 : 0.6 }}>
                     Add

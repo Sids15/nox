@@ -154,7 +154,7 @@ export function SpaceBoard({ space, pages }: { space: Space; pages: SpacePage[] 
           <Text style={TABULAR} className="text-ink-3 flex-1 text-[13px]">
             {items.length}
           </Text>
-          {key !== NO_STAGE ? <NewInSpace space={space} stage={label} variant="plus" /> : null}
+          {key !== NO_STAGE ? <NewInSpace space={space} stage={label}/> : null}
         </View>
         <View className="gap-1.5">
           {items.map((p) => card(p, index))}
