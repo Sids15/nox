@@ -4,6 +4,7 @@ import { setNoxAi } from "../lib/use-ai";
 import { accents, type AccentName, type ThemeName } from "@nox/ui";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import { BookmarkletLink, bookmarkletAvailable } from "../components/bookmarklet-link";
 import type { LucideIcon } from "lucide-react-native";
 import {
   ArrowDown,
@@ -506,6 +507,16 @@ export default function SettingsScreen() {
         <Group>
           <Row title="Import tasks" detail="From Todoist, TickTick, Notion, or any list (Apple Reminders, Markdown)." onPress={() => router.push("/import")}>
             <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
+          </Row>
+          <Row
+            title="Save from your browser"
+            detail={
+              bookmarkletAvailable
+                ? "Drag “Save to Nox” to your bookmarks bar. Click it on any page to save the link (and any text you selected) to Nox. In Safari, copy it and paste it as a bookmark's address."
+                : "On your computer, open Nox in a browser and find this in Settings to get a “Save to Nox” bookmark."
+            }
+          >
+            <BookmarkletLink />
           </Row>
           <Row title="Ask when and how long" detail="When you add a task with a day but no time, Nox suggests the next free slot and asks how long it takes. Press Enter to skip.">
             <Toggle label="Ask when and how long" value={calendar.askWhenAdding} onChange={(v) => cal({ askWhenAdding: v })} />

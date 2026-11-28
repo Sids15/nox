@@ -2,7 +2,7 @@ import { useSpaces, useThemeColors } from "@nox/features";
 import { useLocalSearchParams } from "expo-router";
 import { FileText, Lightbulb, Link2, SquareCheckBig, X } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SpaceMark } from "../components/brain/space-mark";
 import { firstUrl, looksLikeUrl, useQuickAdd, type QuickKind } from "../components/brain/use-quick-add";
@@ -33,7 +33,14 @@ export default function AddScreen() {
 
   const isLink = looksLikeUrl(draft);
   const effective: QuickKind = isLink ? "link" : kind === "link" ? "task" : kind;
-  const close = () => goBack("/tasks");
+  const close = () => {
+    // Opened by the "Save to Nox" bookmarklet in its own little window: close it.
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.name === "nox-add") {
+      window.close();
+      return;
+    }
+    goBack("/tasks");
+  };
   const save = () => {
     if (!draft.trim()) return;
     void quickAdd(draft, effective, { spaceId: spaceId && spaces.some((s) => s.id === spaceId) ? spaceId : null, inbox: true });
