@@ -13,7 +13,7 @@ export const pushAvailable =
 export const pushUnavailableReason = isTauri()
   ? "The desktop app uses its own reminders; server reminders are for phones and browsers."
   : !vapid
-    ? "Server reminders aren't set up for the web yet (they need a VAPID key)."
+    ? "This copy of Nox was built without the push key. Add EXPO_PUBLIC_VAPID_PUBLIC_KEY (Vercel, or apps/mobile/.env) and rebuild — on Vercel, redeploy."
     : "This browser can't receive push notifications.";
 
 const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";

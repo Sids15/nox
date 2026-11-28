@@ -414,7 +414,19 @@ function ServerPushSettings() {
             : pushUnavailableReason)
         }
       >
-        <Toggle label="Reminders when Nox is closed" value={on} onChange={(v) => (busy || !pushAvailable ? undefined : void toggle(v))} />
+        <Toggle
+          label="Reminders when Nox is closed"
+          value={on}
+          onChange={(v) => {
+            if (busy) return;
+            // Say why, instead of a switch that silently does nothing.
+            if (!pushAvailable) {
+              Alert.alert("Not available here", pushUnavailableReason);
+              return;
+            }
+            void toggle(v);
+          }}
+        />
       </Row>
       {on && prefs ? (
         <>
