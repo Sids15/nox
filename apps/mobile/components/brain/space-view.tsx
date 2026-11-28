@@ -19,7 +19,6 @@ import {
   CircleCheck,
   FileText,
   Lightbulb,
-  Kanban,
   Link2,
   List,
   MoreHorizontal,
@@ -39,18 +38,14 @@ import { MenuDivider, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { KindIcon } from "./kind-icon";
 import { openRef, usePages } from "./pages";
-import { SpaceBoard } from "./space-board";
 import { SpaceIconPicker, SpaceMark } from "./space-mark";
-import { type SpacePage } from "./space-parts";
 import { SpaceAsk } from "./space-ask";
 import { SpaceCalendar } from "./space-calendar";
 import { useAiEnabled } from "../../lib/use-ai";
-import { StageEditor } from "./stage-editor";
 import { looksLikeUrl, useQuickAdd, type QuickKind } from "./use-quick-add";
 
 type Kind = QuickKind;
 type Filter = "all" | "tasks" | "ideas" | "notes" | "links";
-const DEFAULT_STAGES = ["To do", "In progress", "Done"];
 
 /** One row of the space's list: a task, a page (note or idea), or a saved link. */
 interface Item {
@@ -65,7 +60,7 @@ interface Item {
 
 /**
  * A space: one Add box and one list of everything in it. Type a task, a note title or paste a link;
- * filter by kind; tap to open. A board is optional (⋯ → Show as a board) for anything with stages.
+ * filter by kind; tap to open. Or see its tasks on a calendar.
  */
 export function SpaceView({ space }: { space: Space }) {
   const c = useThemeColors();
@@ -76,16 +71,7 @@ export function SpaceView({ space }: { space: Space }) {
   const toggle = useToggleTask();
   const quickAdd = useQuickAdd();
   const calendarOn = usePrefs((s) => !!s.spaceCalendars[space.id]);
-  const boardOn =
-    usePrefs((s) => !!s.spaceBoards[space.id]) &&
-    space.stages.length > 0 &&
-    !calendarOn;
-  const setBoardPref = usePrefs((s) => s.setSpaceBoard);
   const setCalendar = usePrefs((s) => s.setSpaceCalendar);
-  const setBoard = (id: string, on: boolean) => {
-    setCalendar(id, false);
-    setBoardPref(id, on);
-  };
 
   const [name, setName] = useState(space.name);
   const [draft, setDraft] = useState("");
@@ -96,7 +82,6 @@ export function SpaceView({ space }: { space: Space }) {
   const [asking, setAsking] = useState(false);
   const aiOn = useAiEnabled();
   const [iconOpen, setIconOpen] = useState(false);
-  const [stagesOpen, setStagesOpen] = useState(false);
   const menuRef = useRef<View>(null);
   const iconRef = useRef<View>(null);
   const nameRef = useRef<TextInput>(null);
@@ -136,7 +121,7 @@ export function SpaceView({ space }: { space: Space }) {
         kind: "note",
         id: n.id,
         title: p?.title ?? "Untitled note",
-        meta: n.stage,
+        meta: null,
         updated_at: n.updated_at,
         done: false,
       });
@@ -149,7 +134,7 @@ export function SpaceView({ space }: { space: Space }) {
         kind: "idea",
         id: i.id,
         title: i.title || "Untitled idea",
-        meta: i.stage,
+        meta: null,
         updated_at: i.updated_at,
         done: false,
       });
@@ -182,39 +167,11 @@ export function SpaceView({ space }: { space: Space }) {
   const open = shown.filter((i) => !i.done);
   const done = shown.filter((i) => i.done);
 
-  const boardPages = useMemo<SpacePage[]>(
-    () =>
-      [
-        ...pages.notes
-          .filter((n) => n.space_id === space.id && !n.is_archived)
-          .map((n) => ({
-            ...pages.find({ kind: "note", id: n.id })!,
-            stage: n.stage,
-            properties: n.properties,
-            tags: n.tags,
-          })),
-        ...pages.ideas
-          .filter(
-            (i) =>
-              i.space_id === space.id &&
-              !i.is_archived &&
-              i.status !== "dropped",
-          )
-          .map((i) => ({
-            ...pages.find({ kind: "idea", id: i.id })!,
-            stage: i.stage,
-            properties: i.properties,
-            tags: i.tags,
-          })),
-      ].sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
-    [pages, space.id],
-  );
-
   const add = async () => {
     const raw = draft.trim();
     if (!raw) return;
     setDraft("");
-    await quickAdd(raw, effective, { spaceId: space.id, stage: boardOn && (effective === "note" || effective === "idea") ? (space.stages[0] ?? null) : null });
+    await quickAdd(raw, effective, { spaceId: space.id });
   };
 
   const commitName = () => {
@@ -263,11 +220,7 @@ export function SpaceView({ space }: { space: Space }) {
       >
         {i.title}
       </Text>
-      {i.meta && (i.kind === "note" || i.kind === "idea") ? (
-        <View className="bg-accent/[0.1] rounded-[6px] px-1.5 py-0.5">
-          <Text className="text-accent text-[12px] font-medium">{i.meta}</Text>
-        </View>
-      ) : i.meta ? (
+      {i.meta ? (
         <Text
           numberOfLines={1}
           className="text-ink-3 max-w-[140px] text-[12px]"
@@ -308,12 +261,12 @@ export function SpaceView({ space }: { space: Space }) {
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[0]}
       >
-        {/* Pinned: back · icon + name · board/list · menu */}
+        {/* Pinned: back · icon + name · list/calendar · menu */}
         <View className="bg-bg pb-2">
           <View
             className="px-screen flex-row items-center gap-3 pt-2"
             style={{
-              maxWidth: boardOn ? undefined : calendarOn ? 1100 : 820,
+              maxWidth: calendarOn ? 1100 : 820,
               width: "100%",
               alignSelf: "center",
             }}
@@ -355,21 +308,11 @@ export function SpaceView({ space }: { space: Space }) {
             >
               {[
                 {
-                  on: !boardOn && !calendarOn,
+                  on: !calendarOn,
                   label: "List",
                   Icon: List,
-                  pick: () => setBoard(space.id, false),
+                  pick: () => setCalendar(space.id, false),
                 },
-                ...(space.stages.length > 0
-                  ? [
-                      {
-                        on: boardOn,
-                        label: "Board",
-                        Icon: Kanban,
-                        pick: () => setBoard(space.id, true),
-                      },
-                    ]
-                  : []),
                 {
                   on: calendarOn,
                   label: "Calendar",
@@ -432,16 +375,6 @@ export function SpaceView({ space }: { space: Space }) {
             style={{ maxWidth: 1100, width: "100%", alignSelf: "center" }}
           >
             <SpaceCalendar space={space} />
-          </View>
-        ) : boardOn ? (
-          <View className="mt-2">
-            <View className="px-screen mb-3">
-              <Text className="text-ink-3 text-[13px]">
-                Notes and ideas by stage — drag to move, + to add. Tasks and
-                links are in the list.
-              </Text>
-            </View>
-            <SpaceBoard space={space} pages={boardPages} />
           </View>
         ) : (
           <View
@@ -555,8 +488,8 @@ export function SpaceView({ space }: { space: Space }) {
             <View className="mt-2">
               {items.length === 0 ? (
                 <Text className="text-ink-3 py-8 text-center text-[14px] leading-[20px]">
-                  Nothing here yet. Add a task above, paste a link, or tap + for
-                  a note or a template.
+                  Nothing here yet. Add a task, an idea or a note above, or paste
+                  a link.
                 </Text>
               ) : open.length === 0 && done.length === 0 ? (
                 <Text className="text-ink-3 py-8 text-center text-[14px]">
@@ -598,30 +531,6 @@ export function SpaceView({ space }: { space: Space }) {
         accessibilityLabel="Space options"
       >
         <View className="p-1.5">
-          {space.stages.length === 0 ? (
-            <MenuRow
-              label="Show as a board"
-              hint="Stages"
-              icon={<Kanban size={15} color={c.ink2} strokeWidth={2} />}
-              onPress={() => {
-                setMenu(false);
-                updateSpace.mutate({
-                  id: space.id,
-                  patch: { stages: DEFAULT_STAGES },
-                });
-                setBoard(space.id, true);
-              }}
-            />
-          ) : (
-            <MenuRow
-              label="Edit board stages"
-              icon={<Kanban size={15} color={c.ink2} strokeWidth={2} />}
-              onPress={() => {
-                setMenu(false);
-                setStagesOpen(true);
-              }}
-            />
-          )}
           <MenuRow
             label="Rename"
             icon={<Pencil size={15} color={c.ink2} strokeWidth={2} />}
@@ -678,11 +587,6 @@ export function SpaceView({ space }: { space: Space }) {
           />
         </View>
       </Popover>
-      <StageEditor
-        space={space}
-        visible={stagesOpen}
-        onClose={() => setStagesOpen(false)}
-      />
       <SpaceAsk
         space={space}
         visible={asking}

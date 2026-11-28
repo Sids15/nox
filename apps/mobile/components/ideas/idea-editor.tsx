@@ -162,7 +162,6 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
 
           <MetaSummary
             spaceId={idea.space_id}
-            stage={idea.stage}
             tags={idea.tags}
             properties={idea.properties}
             onOpen={() => setDetails(true)}
@@ -207,7 +206,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
                     onPriority={(priority) => patch({ priority })}
                     onTags={(tags) => patch({ tags })}
                   />
-                  <PageFields spaceId={idea.space_id} stage={idea.stage} properties={idea.properties} onPatch={(p) => patch(p)} labelWidth={92} />
+                  <PageFields spaceId={idea.space_id} properties={idea.properties} onPatch={(p) => patch(p)} labelWidth={92} />
                 </View>
               ) : null
             }

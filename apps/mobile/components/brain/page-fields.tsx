@@ -3,7 +3,6 @@ import { propertyTypes, type Property, type PropertyType } from "@nox/types";
 import {
   Calendar,
   ChevronDown,
-  CircleDot,
   Hash,
   Layers,
   Link2,
@@ -24,7 +23,6 @@ import { SpaceMark } from "./space-mark";
 
 export interface PageFieldsPatch {
   space_id?: string | null;
-  stage?: string | null;
   properties?: Property[];
 }
 
@@ -76,19 +74,17 @@ function Anchor({ anchor, onPress, open, label, children }: { anchor: React.RefO
 }
 
 /**
- * Space, stage and custom fields for a note or idea — the "properties" block under the title, like
- * Obsidian's. Space and stage drive the space's board; custom fields (publish date, owner, status,
+ * Space and custom fields for a note or idea — the "properties" block under the title, like
+ * Obsidian's. Custom fields (publish date, owner, status,
  * links…) are free-form and travel with the page.
  */
 export function PageFields({
   spaceId,
-  stage,
   properties,
   onPatch,
   labelWidth = 72,
 }: {
   spaceId: string | null;
-  stage: string | null;
   properties: Property[];
   onPatch: (patch: PageFieldsPatch) => void;
   labelWidth?: number;
@@ -96,9 +92,8 @@ export function PageFields({
   const c = useThemeColors();
   const { data: spaces = [] } = useSpaces();
   const space = spaces.find((s) => s.id === spaceId);
-  const [open, setOpen] = useState<"space" | "stage" | "add" | null>(null);
+  const [open, setOpen] = useState<"space" | "add" | null>(null);
   const spaceRef = useRef<View>(null);
-  const stageRef = useRef<View>(null);
   const addRef = useRef<View>(null);
   const label = (t: string) => <Text className="text-ink-3 text-[14px]">{t}</Text>;
 
@@ -116,14 +111,6 @@ export function PageFields({
           <Text className={`text-[14px] ${space ? "text-ink font-medium" : "text-ink-3"}`}>{space?.name ?? "No space"}</Text>
         </Anchor>
       </Row>
-      {space && space.stages.length > 0 ? (
-        <Row label={label("Stage")} labelWidth={labelWidth}>
-          <Anchor anchor={stageRef} onPress={() => setOpen("stage")} open={open === "stage"} label={`Stage: ${stage ?? "None"}`}>
-            <CircleDot size={14} color={stage ? c.accent : c.ink3} strokeWidth={2} />
-            <Text className={`text-[14px] ${stage ? "text-ink font-medium" : "text-ink-3"}`}>{stage ?? "Not started"}</Text>
-          </Anchor>
-        </Row>
-      ) : null}
 
       {properties.map((p) => (
         <FieldRow
@@ -154,7 +141,7 @@ export function PageFields({
             icon={<Layers size={15} color={c.ink2} strokeWidth={2} />}
             onPress={() => {
               setOpen(null);
-              if (spaceId) onPatch({ space_id: null, stage: null });
+              if (spaceId) onPatch({ space_id: null });
             }}
           />
           {spaces.filter((s) => !s.archived || s.id === spaceId).map((s) => (
@@ -165,27 +152,11 @@ export function PageFields({
               icon={<SpaceMark space={s} size={18} />}
               onPress={() => {
                 setOpen(null);
-                // A page entering a space with a pipeline starts at its first stage.
-                if (s.id !== spaceId) onPatch({ space_id: s.id, stage: s.stages[0] ?? null });
+                if (s.id !== spaceId) onPatch({ space_id: s.id });
               }}
             />
           ))}
           {spaces.length === 0 ? <Text className="text-ink-3 px-2.5 py-2 text-[13px]">No spaces yet — make one in Spaces.</Text> : null}
-        </View>
-      </Popover>
-      <Popover anchorRef={stageRef} open={open === "stage"} onClose={() => setOpen(null)} width={220} accessibilityLabel="Stage">
-        <View className="p-1.5">
-          {(space?.stages ?? []).map((st) => (
-            <MenuRow
-              key={st}
-              label={st}
-              selected={st === stage}
-              onPress={() => {
-                setOpen(null);
-                onPatch({ stage: st });
-              }}
-            />
-          ))}
         </View>
       </Popover>
       <Popover anchorRef={addRef} open={open === "add"} onClose={() => setOpen(null)} width={200} accessibilityLabel="Add a field">

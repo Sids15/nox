@@ -186,7 +186,6 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
           <MetaSummary
             folderName={folderName}
             spaceId={note.space_id}
-            stage={note.stage}
             tags={note.tags}
             properties={note.properties}
             onOpen={() => setDetails(true)}
@@ -242,7 +241,6 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
                   </View>
                   <PageFields
                     spaceId={note.space_id}
-                    stage={note.stage}
                     properties={note.properties}
                     onPatch={(p) => updateNote.mutate({ id: note.id, patch: p })}
                   />

@@ -102,17 +102,9 @@ function Section({ section, compact, actions }: { section: WidgetSection; compac
     case "space":
       return (
         <View>
-          <Heading right={`${section.pages} pages`}>{section.name}</Heading>
+          <Heading>{section.name}</Heading>
           <Pressable onPress={() => actions.onOpen(`/space/${section.spaceId}`)} className="hover:bg-chip flex-row flex-wrap gap-1.5 rounded-[8px] px-1 py-1">
-            {section.stages.length === 0 ? <Text className="text-ink-3 text-[13px]">Open space</Text> : null}
-            {section.stages.map((st) => (
-              <View key={st.name} className="bg-chip flex-row items-center gap-1 rounded-[6px] px-1.5 py-0.5">
-                <Text className="text-ink-2 text-[12px]">{st.name}</Text>
-                <Text style={TABULAR} className={`text-[12px] font-semibold ${st.count ? "text-ink" : "text-ink-3"}`}>
-                  {st.count}
-                </Text>
-              </View>
-            ))}
+            <Text className="text-ink-3 text-[13px]">Open space · {section.pages} pages</Text>
           </Pressable>
           {/* Add straight into this space: opens "Add to Nox" with the space picked. */}
           <Pressable onPress={() => actions.onOpen(`/add?space=${section.spaceId}`)} accessibilityRole="button" className={`hover:bg-chip flex-row items-center gap-2 rounded-[8px] px-1 ${rowPad}`}>

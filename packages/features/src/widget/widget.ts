@@ -73,7 +73,7 @@ export type WidgetSection =
   | { kind: "today"; total: number; done: number; items: WidgetTaskRow[]; more: number }
   | { kind: "next"; items: WidgetTaskRow[] }
   | { kind: "capture" }
-  | { kind: "space"; spaceId: string; name: string; icon: string; stages: { name: string; count: number }[]; pages: number }
+  | { kind: "space"; spaceId: string; name: string; icon: string; pages: number }
   | { kind: "pinned"; items: { id: string; title: string }[] };
 
 /** Everything a widget draws, as plain JSON (the Android widget gets exactly this). */
@@ -144,7 +144,6 @@ export function buildWidgetSnapshot(
         name: space.name,
         icon: space.icon,
         pages: pages.length,
-        stages: space.stages.map((name) => ({ name, count: pages.filter((p) => p.stage === name).length })),
       });
     } else if (s.key === "pinned") {
       sections.push({

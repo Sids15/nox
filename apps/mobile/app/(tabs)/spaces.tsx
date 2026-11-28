@@ -18,8 +18,6 @@ import { useIsDesktop } from "../../lib/use-responsive";
 interface SpaceStats {
   pages: number;
   tasks: number;
-  /** Pages in each stage, in pipeline order. */
-  perStage: number[];
   lastActive: string | null;
   /** The next thing to do: the open task due soonest (undated ones after), or null. */
   next: { title: string; due: string | null } | null;
@@ -49,7 +47,7 @@ export default function SpacesScreen() {
 
   const stats = useMemo(() => {
     const m = new Map<string, SpaceStats>();
-    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, perStage: s.stages.map(() => 0), lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } });
+    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } });
     const touch = (e: SpaceStats, at: string) => {
       if (!e.lastActive || at > e.lastActive) e.lastActive = at;
     };
@@ -59,9 +57,6 @@ export default function SpacesScreen() {
       e.pages++;
       if (n.created_at >= weekAgo) e.week.added++;
       touch(e, n.updated_at);
-      const space = spaces.find((s) => s.id === n.space_id)!;
-      const i = n.stage ? space.stages.indexOf(n.stage) : -1;
-      if (i >= 0) e.perStage[i]!++;
     }
     for (const t of pages.tasks) {
       const e = t.space_id ? m.get(t.space_id) : undefined;
@@ -88,8 +83,7 @@ export default function SpacesScreen() {
   const totals = review.reduce((a, { w }) => ({ done: a.done + w.done, added: a.added + w.added, overdue: a.overdue + w.overdue }), { done: 0, added: 0, overdue: 0 });
 
   const card = (s: Space) => {
-    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, perStage: [], lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } };
-    const total = st.perStage.reduce((a, b) => a + b, 0);
+    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } };
     return (
       <Pressable
         key={s.id}
@@ -111,26 +105,6 @@ export default function SpacesScreen() {
               </Text>
             </View>
           </View>
-
-          {s.stages.length > 0 ? (
-            <View className="mt-4">
-              {/* Where the space's work sits: one segment per stage, sized by how much is in it. */}
-              <View className="bg-chip h-[6px] flex-row overflow-hidden rounded-full">
-                {total > 0
-                  ? st.perStage.map((n, i) =>
-                      n > 0 ? <View key={i} style={{ flex: n, backgroundColor: c.accent, opacity: 0.35 + (0.65 * (i + 1)) / s.stages.length }} /> : null,
-                    )
-                  : null}
-              </View>
-              <View className="mt-2 flex-row flex-wrap gap-x-3 gap-y-1">
-                {s.stages.slice(0, 6).map((name, i) => (
-                  <Text key={name} style={TABULAR} className="text-ink-3 text-[12px]">
-                    {name} <Text className="text-ink-2 font-semibold">{st.perStage[i] ?? 0}</Text>
-                  </Text>
-                ))}
-              </View>
-            </View>
-          ) : null}
 
           {/* What's next here, so the Spaces page reads like a dashboard. */}
           <View className="border-line mt-4 border-t pt-3">

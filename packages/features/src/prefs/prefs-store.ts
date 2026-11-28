@@ -66,8 +66,6 @@ interface PrefsState {
   sidebarCollapsed: boolean | null;
   setSidebarCollapsed: (v: boolean | null) => void;
   /** Spaces shown as a board instead of a list, by space id. */
-  spaceBoards: Record<string, boolean>;
-  setSpaceBoard: (id: string, on: boolean) => void;
   /** Spaces shown as a month calendar (overrides list/board while on). */
   spaceCalendars: Record<string, boolean>;
   setSpaceCalendar: (id: string, on: boolean) => void;
@@ -115,8 +113,6 @@ export const usePrefs = create<PrefsState>()(
           return { panes };
         }),
       sidebarCollapsed: null,
-      spaceBoards: {},
-      setSpaceBoard: (id, on) => set((s) => ({ spaceBoards: { ...s.spaceBoards, [id]: on } })),
       spaceCalendars: {},
       setSpaceCalendar: (id, on) => set((s) => ({ spaceCalendars: { ...s.spaceCalendars, [id]: on } })),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
@@ -168,7 +164,6 @@ export const usePrefs = create<PrefsState>()(
         widget: s.widget,
         panes: s.panes,
         sidebarCollapsed: s.sidebarCollapsed,
-        spaceBoards: s.spaceBoards,
         spaceCalendars: s.spaceCalendars,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and

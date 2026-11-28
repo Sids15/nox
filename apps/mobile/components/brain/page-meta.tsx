@@ -1,6 +1,6 @@
 import { useDeleteTemplate, useSpaces, useThemeColors } from "@nox/features";
 import type { Property } from "@nox/types";
-import { ChevronDown, CircleDot, Folder, LayoutTemplate, ListFilter, X } from "lucide-react-native";
+import { ChevronDown, Folder, LayoutTemplate, ListFilter, X } from "lucide-react-native";
 import { useRef, useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { confirmDelete } from "../../lib/confirm";
@@ -32,13 +32,12 @@ const fieldText = (p: Property): string | null => {
 };
 
 /**
- * What's set on a page, as one wrapping line of chips: folder, space, stage, tags and filled-in
+ * What's set on a page, as one wrapping line of chips: folder, space, tags and filled-in
  * fields. Nothing set → nothing shown, so a fresh page is just its title and the writing.
  */
 export function MetaSummary({
   folderName,
   spaceId,
-  stage,
   tags,
   properties,
   leading,
@@ -46,7 +45,6 @@ export function MetaSummary({
 }: {
   folderName?: string;
   spaceId: string | null;
-  stage: string | null;
   tags: string[];
   properties: Property[];
   /** Chips that come first (an idea's status and priority). */
@@ -66,12 +64,6 @@ export function MetaSummary({
         <MetaChip onPress={onOpen} label={`Space: ${space.name}`}>
           <SpaceMark space={space} size={16} />
           <Text className="text-ink-2 text-[12px] font-medium">{space.name}</Text>
-        </MetaChip>
-      ) : null}
-      {space && stage ? (
-        <MetaChip onPress={onOpen} label={`Stage: ${stage}`}>
-          <CircleDot size={12} color={c.accent} strokeWidth={2.2} />
-          <Text className="text-ink-2 text-[12px] font-medium">{stage}</Text>
         </MetaChip>
       ) : null}
       {folderName ? (
