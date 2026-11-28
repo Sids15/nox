@@ -46,7 +46,7 @@ export function useOpenFromWidget(): void {
     let stop: (() => void) | undefined;
     void listen<string>(OPEN_EVENT, (e) => {
       const path = typeof e.payload === "string" ? e.payload : "";
-      if (/^\/(task|note|idea|space)\/[0-9a-f-]{36}$/i.test(path) || /^\/\(tabs\)(\/[a-z]+)?$/.test(path)) router.push(path as never);
+      if (/^\/(task|note|idea|space)\/[0-9a-f-]{36}$/i.test(path) || /^\/\(tabs\)(\/[a-z]+)?$/.test(path) || /^\/add(\?space=[0-9a-f-]{36})?$/i.test(path)) router.push(path as never);
     }).then((fn) => (stop = fn));
     return () => stop?.();
   }, []);

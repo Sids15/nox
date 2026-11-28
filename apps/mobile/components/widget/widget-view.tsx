@@ -104,7 +104,7 @@ function Section({ section, compact, actions }: { section: WidgetSection; compac
         <View>
           <Heading right={`${section.pages} pages`}>{section.name}</Heading>
           <Pressable onPress={() => actions.onOpen(`/space/${section.spaceId}`)} className="hover:bg-chip flex-row flex-wrap gap-1.5 rounded-[8px] px-1 py-1">
-            {section.stages.length === 0 ? <Text className="text-ink-3 text-[13px]">No stages in this space.</Text> : null}
+            {section.stages.length === 0 ? <Text className="text-ink-3 text-[13px]">Open space</Text> : null}
             {section.stages.map((st) => (
               <View key={st.name} className="bg-chip flex-row items-center gap-1 rounded-[6px] px-1.5 py-0.5">
                 <Text className="text-ink-2 text-[12px]">{st.name}</Text>
@@ -113,6 +113,13 @@ function Section({ section, compact, actions }: { section: WidgetSection; compac
                 </Text>
               </View>
             ))}
+          </Pressable>
+          {/* Add straight into this space: opens "Add to Nox" with the space picked. */}
+          <Pressable onPress={() => actions.onOpen(`/add?space=${section.spaceId}`)} accessibilityRole="button" className={`hover:bg-chip flex-row items-center gap-2 rounded-[8px] px-1 ${rowPad}`}>
+            <Plus size={13} color={c.accent} strokeWidth={2.2} />
+            <Text numberOfLines={1} className="text-ink-2 flex-1 text-[13px]">
+              Add to {section.name}
+            </Text>
           </Pressable>
         </View>
       );

@@ -36,7 +36,7 @@ import { useHeadingFont } from "../lib/heading-font";
 import { useWebViewport } from "../lib/web-viewport";
 import { useAiAccountSync } from "../lib/use-ai";
 import { isWidgetWindow, useOpenFromWidget } from "../lib/desktop-widget";
-import { clearAndroidWidget, useAndroidWidgetSync } from "../lib/android-widget";
+import { clearAndroidWidget, useAndroidShare, useAndroidWidgetSync } from "../lib/android-widget";
 import { DesktopWidget } from "../components/widget/desktop-widget";
 
 /** This window is the desktop widget (a second Tauri window), not the app. Fixed for its lifetime. */
@@ -101,6 +101,7 @@ function RootNavigator() {
   useAiAccountSync();
   useOpenFromWidget();
   const status = useSessionStore((s) => s.status);
+  useAndroidShare(status === "authenticated");
   const prefsHydrated = usePrefs((s) => s.hydrated);
   const c = useThemeColors();
 
@@ -155,6 +156,7 @@ function RootNavigator() {
           <Stack.Screen name="note/[id]" />
           <Stack.Screen name="folder/[id]" />
           <Stack.Screen name="space/[id]" />
+          <Stack.Screen name="add" options={{ presentation: "modal" }} />
         </Stack>
       </SyncChrome>
       {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}

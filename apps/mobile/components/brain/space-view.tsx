@@ -1,20 +1,13 @@
 import {
-  parseQuickAdd,
-  useCreateIdea,
-  useCreateNote,
-  useCreateResource,
-  useCreateTask,
   useDeleteSpace,
   usePrefs,
   useThemeColors,
   useToggleTask,
-  useUpdateResource,
   useUpdateSpace,
 } from "@nox/features";
 import type { Space } from "@nox/types";
 import {
   capitalize,
-  domainFrom,
   relativeDayLabel,
   relativeFromNow,
   todayKey,
@@ -41,7 +34,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { confirmDelete, plural } from "../../lib/confirm";
 import { goBack } from "../../lib/go-back";
-import { fetchUrlMeta, videoThumbnail } from "../../lib/url-meta";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { MenuDivider, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
@@ -54,11 +46,10 @@ import { SpaceAsk } from "./space-ask";
 import { SpaceCalendar } from "./space-calendar";
 import { useAiEnabled } from "../../lib/use-ai";
 import { StageEditor } from "./stage-editor";
+import { looksLikeUrl, useQuickAdd, type QuickKind } from "./use-quick-add";
 
-type Kind = "task" | "idea" | "note" | "link";
+type Kind = QuickKind;
 type Filter = "all" | "notes" | "tasks" | "links";
-const looksLikeUrl = (s: string) =>
-  /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(s.trim());
 const DEFAULT_STAGES = ["To do", "In progress", "Done"];
 
 /** One row of the space's list: a task, a page (note or idea), or a saved link. */
@@ -83,11 +74,7 @@ export function SpaceView({ space }: { space: Space }) {
   const updateSpace = useUpdateSpace();
   const del = useDeleteSpace();
   const toggle = useToggleTask();
-  const createTask = useCreateTask();
-  const createNote = useCreateNote();
-  const createIdea = useCreateIdea();
-  const createResource = useCreateResource();
-  const updateResource = useUpdateResource();
+  const quickAdd = useQuickAdd();
   const calendarOn = usePrefs((s) => !!s.spaceCalendars[space.id]);
   const boardOn =
     usePrefs((s) => !!s.spaceBoards[space.id]) &&
@@ -232,66 +219,7 @@ export function SpaceView({ space }: { space: Space }) {
     const raw = draft.trim();
     if (!raw) return;
     setDraft("");
-    if (effective === "link") {
-      const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-      const thumb = videoThumbnail(url) ?? null;
-      const id = createResource.create({
-        type: thumb ? "video" : "link",
-        url,
-        title: null,
-        domain: domainFrom(url),
-        thumbnail_url: thumb,
-        duration: null,
-        body: null,
-        tag_ids: [],
-        space_id: space.id,
-      });
-      const meta = await fetchUrlMeta(url);
-      if (meta?.title || (meta?.image && !thumb))
-        updateResource.mutate({
-          id,
-          patch: {
-            title: meta.title ?? null,
-            ...(meta.image && !thumb ? { thumbnail_url: meta.image } : {}),
-          },
-        });
-    } else if (effective === "idea") {
-      createIdea.create({
-        title: raw.slice(0, 200),
-        description: null,
-        content: [],
-        priority: "medium",
-        status: "raw",
-        tags: [],
-        space_id: space.id,
-        stage: boardOn ? (space.stages[0] ?? null) : null,
-      });
-    } else if (effective === "note") {
-      createNote.create({
-        title: raw.slice(0, 200),
-        type: "text",
-        content: [{ type: "paragraph", text: "" }],
-        folder_id: null,
-        tags: [],
-        space_id: space.id,
-        stage: boardOn ? (space.stages[0] ?? null) : null,
-      });
-    } else {
-      // Tasks understand the same plain words as everywhere else: "film intro friday 3pm".
-      const p = parseQuickAdd(raw, today);
-      createTask.create({
-        title: (p.title || raw).slice(0, 200),
-        notes: null,
-        due_date: p.date ?? null,
-        due_time: p.time ?? null,
-        ...(p.duration ? { duration_minutes: p.duration } : {}),
-        reminder_times: [],
-        priority: p.priority ?? "medium",
-        repeat: "none",
-        repeat_config: null,
-        space_id: space.id,
-      });
-    }
+    await quickAdd(raw, effective, { spaceId: space.id, stage: boardOn && (effective === "note" || effective === "idea") ? (space.stages[0] ?? null) : null });
   };
 
   const commitName = () => {
