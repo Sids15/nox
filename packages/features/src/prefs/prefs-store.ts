@@ -68,6 +68,9 @@ interface PrefsState {
   /** Spaces shown as a board instead of a list, by space id. */
   spaceBoards: Record<string, boolean>;
   setSpaceBoard: (id: string, on: boolean) => void;
+  /** Spaces shown as a month calendar (overrides list/board while on). */
+  spaceCalendars: Record<string, boolean>;
+  setSpaceCalendar: (id: string, on: boolean) => void;
   /** True once the persisted prefs have loaded — used to avoid a theme flash at startup. */
   hydrated: boolean;
   setTheme: (theme: ThemeName) => void;
@@ -114,6 +117,8 @@ export const usePrefs = create<PrefsState>()(
       sidebarCollapsed: null,
       spaceBoards: {},
       setSpaceBoard: (id, on) => set((s) => ({ spaceBoards: { ...s.spaceBoards, [id]: on } })),
+      spaceCalendars: {},
+      setSpaceCalendar: (id, on) => set((s) => ({ spaceCalendars: { ...s.spaceCalendars, [id]: on } })),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       widget: DEFAULT_WIDGET,
       setWidget: (patch) => set((s) => ({ widget: normalizeWidgetConfig({ ...s.widget, ...patch }) })),
@@ -164,6 +169,7 @@ export const usePrefs = create<PrefsState>()(
         panes: s.panes,
         sidebarCollapsed: s.sidebarCollapsed,
         spaceBoards: s.spaceBoards,
+        spaceCalendars: s.spaceCalendars,
       }),
       // Zustand calls this as (hydratedState, error). On a storage failure `state` is undefined, and
       // the old `state?.setHydrated()` left `hydrated` false forever — the root layout gates first
