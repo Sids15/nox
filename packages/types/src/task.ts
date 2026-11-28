@@ -36,6 +36,8 @@ export const task = syncedRow.extend({
   last_completed_on: z.string().date().nullable().default(null),
   /** The space it belongs to (migration 0012), or null. */
   space_id: z.string().uuid().nullable().default(null),
+  /** When it was finished (set by the database, migration 0017); null while open or on older databases. */
+  completed_at: z.string().datetime({ offset: true }).nullable().optional(),
   /** Captured but not sorted yet: shown in the Inbox until given a day, a space or kept (migration 0015). */
   inbox: z.boolean().default(false),
 });

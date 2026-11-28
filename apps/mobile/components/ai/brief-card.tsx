@@ -2,6 +2,7 @@ import { AiRepository } from "@nox/api";
 import { useTasks } from "@nox/features";
 import type { Task } from "@nox/types";
 import { addDays } from "@nox/utils";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { useAiCall, useAiEnabled } from "../../lib/use-ai";
@@ -20,7 +21,7 @@ const brief = (t: Task) => ({
 });
 
 /** What a brief is written from: small, and only titles, days and priorities — no notes. */
-function dataFor(kind: Kind, tasks: Task[], today: string) {
+export function dataFor(kind: Kind, tasks: Task[], today: string) {
   const live = tasks.filter((t) => !t.deleted && !(t.repeat !== "none" && t.origin_task_id === null));
   const open = live.filter((t) => t.status !== "complete");
   if (kind === "daily") {
@@ -94,7 +95,7 @@ export function BriefCard({ today }: { today: string }) {
   return (
     <View className="mt-3 flex-row flex-wrap items-center gap-2">
       <AiButton label="Brief me" onPress={() => void run("daily")} busy={running === "daily"} disabled={running === "weekly"} />
-      <AiButton label="Weekly review" onPress={() => void run("weekly")} busy={running === "weekly"} disabled={running === "daily"} />
+      <AiButton label="Weekly review" onPress={() => router.push("/review")} disabled={running === "daily"} />
       {call.error ? <Text className="text-high flex-1 text-[13px]">{call.error}</Text> : null}
     </View>
   );

@@ -2,8 +2,8 @@ import { inboxItems, useIdeas, useNotes, usePrefs, useResources, useSpaces, useT
 import { LinearGradient } from "expo-linear-gradient";
 import { useIsFocused } from "@react-navigation/native";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, FileText, Inbox, Layers, Timer, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
-import { formatTime12, toDateKey } from "@nox/utils";
+import { Bookmark, CalendarCheck, FileText, Inbox, Layers, Timer, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { addDays, formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Image, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
@@ -15,7 +15,7 @@ import { CommandPalette } from "./command-palette";
 import { NewSpaceDialog } from "./brain/new-space-dialog";
 import { SpaceMark } from "./brain/space-mark";
 
-type NavItem = { label: string; icon: LucideIcon; path: string; count: number };
+type NavItem = { label: string; icon: LucideIcon; path: string; count: number; dot?: boolean };
 
 const IS_MAC_WEB =
   Platform.OS === "web" && typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
@@ -73,6 +73,7 @@ export function Sidebar() {
   const { width: winWidth } = useWindowDimensions();
   const collapsedPref = usePrefs((s) => s.sidebarCollapsed);
   const setCollapsed = usePrefs((s) => s.setSidebarCollapsed);
+  const lastReviewed = usePrefs((s) => s.lastReviewed);
   const collapsed = collapsedPref ?? winWidth < 1100;
 
   const collapsedRef = useRef(collapsed);
@@ -121,6 +122,8 @@ export function Sidebar() {
   const tools: NavItem[] = [
     { label: "Inbox", icon: Inbox, path: "/inbox", count: inboxItems({ tasks, notes, ideas, resources }).length },
     { label: "Focus", icon: Timer, path: "/focus", count: 0 },
+    // A dot once a week has passed since the last review.
+    { label: "Review", icon: CalendarCheck, path: "/review", count: 0, dot: !lastReviewed || lastReviewed <= addDays(toDateKey(now), -7) },
   ];
 
   const { name, firstName, initials } = useIdentity();
@@ -174,7 +177,7 @@ export function Sidebar() {
                 className={`h-11 w-11 items-center justify-center rounded-[11px] ${active ? "bg-accent/[0.1]" : "hover:bg-chip"}`}
               >
                 <item.icon size={19} color={active ? c.accent : c.ink3} strokeWidth={active ? 2.1 : 1.9} />
-                {item.count > 0 ? <View style={{ position: "absolute", top: 8, right: 8, width: 7, height: 7, borderRadius: 4, backgroundColor: c.accent }} /> : null}
+                {item.count > 0 || item.dot ? <View style={{ position: "absolute", top: 8, right: 8, width: 7, height: 7, borderRadius: 4, backgroundColor: c.accent }} /> : null}
               </Pressable>
             );
           })}
@@ -291,6 +294,7 @@ export function Sidebar() {
                   {item.count}
                 </Text>
               )}
+              {item.dot && item.count === 0 ? <View accessibilityLabel="Due" style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.accent }} /> : null}
             </Pressable>
           );
         })}

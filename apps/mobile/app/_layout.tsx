@@ -161,6 +161,7 @@ function RootNavigator() {
           <Stack.Screen name="add" options={{ presentation: "modal" }} />
           <Stack.Screen name="inbox" />
           <Stack.Screen name="focus" />
+          <Stack.Screen name="review" />
         </Stack>
       </SyncChrome>
       {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}

@@ -2,7 +2,7 @@ import { useFolders, useIdeas, useNotes, useResources, useTasks, useThemeColors,
 import { capitalize, formatTime12, relativeDayLabel, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { AiRepository } from "@nox/api";
-import { Bookmark, CornerDownLeft, FileText, Inbox, Lightbulb, Timer, Search, Settings2, Sparkles, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, CalendarCheck, CornerDownLeft, FileText, Inbox, Lightbulb, Timer, Search, Settings2, Sparkles, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -41,6 +41,7 @@ const PAGES: Hit[] = [
   { key: "go:resources", title: "Resources", detail: "Links, videos, pictures, snippets", type: "Go to", icon: Bookmark, route: "/(tabs)/resources" },
   { key: "go:inbox", title: "Inbox", detail: "What you captured, to sort", type: "Go to", icon: Inbox, route: "/inbox" },
   { key: "go:focus", title: "Focus", detail: "A timer on one task; the time is logged", type: "Go to", icon: Timer, route: "/focus" },
+  { key: "go:review", title: "Weekly review", detail: "Done, slipped, the week ahead", type: "Go to", icon: CalendarCheck, route: "/review" },
   { key: "go:settings", title: "Settings", detail: "Appearance, calendar, notifications", type: "Go to", icon: Settings2, route: "/settings" },
 ];
 
