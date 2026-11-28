@@ -1,0 +1,10 @@
+# Nox — Email to Nox worker. Deploy from this folder with:  npx wrangler deploy
+# Then set its secret:  npx wrangler secret put NOX_INBOUND_SECRET
+# and in Cloudflare: Email → Email Routing → Routing rules → Catch-all → "Send to a Worker" → nox-email.
+name = "nox-email"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+# Your project's function URL.
+NOX_INBOUND_URL = "https://YOUR-PROJECT-REF.supabase.co/functions/v1/inbound-email"

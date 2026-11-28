@@ -162,6 +162,24 @@ begin
             when others then report := report || format('PASS  B logs focus time on A''s task → refused (%s)', sqlerrm); end;
 
   begin
+    select count(*) into n from public.inbound_addresses where user_id = a;
+    report := report || format('%s  B reads A''s email-in address → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  exception when undefined_table then null;
+            when others then report := report || ('FAIL  B reads A''s email address — error: ' || sqlerrm); end;
+
+  begin
+    select count(*) into n from public.push_devices where user_id = a;
+    report := report || format('%s  B reads A''s push devices → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  exception when undefined_table then null;
+            when others then report := report || ('FAIL  B reads A''s push devices — error: ' || sqlerrm); end;
+
+  begin
+    select count(*) into n from public.push_log;
+    report := report || format('%s  B reads the push log → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  exception when undefined_table then null;
+            when others then report := report || text 'PASS  B reads the push log → refused'; end;
+
+  begin
     select count(*) into n from public.rate_limits where key = a::text;
     report := report || format('%s  B reads A''s usage counters → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
   exception when others then report := report || ('FAIL  B reads A''s counters — error: ' || sqlerrm); end;

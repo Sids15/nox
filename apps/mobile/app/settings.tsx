@@ -1,5 +1,5 @@
 import { WIDGET_SECTION_LABEL, useAuth, usePrefs, useSpaces, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
-import { AiRepository, PushRepository } from "@nox/api";
+import { AiRepository, InboundEmailRepository, PushRepository, type InboundAddress } from "@nox/api";
 import type { PushPrefs } from "@nox/types";
 import { disablePush, enablePush, pushAvailable, pushUnavailableReason } from "../lib/push";
 import { setNoxAi } from "../lib/use-ai";
@@ -28,7 +28,7 @@ import {
   UserRound,
 } from "lucide-react-native";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TABULAR, pressScale } from "../components/menu";
 import { useWidgetSnapshot } from "../components/widget/use-widget-snapshot";
@@ -184,6 +184,106 @@ function AiAllowance({ used }: { used: number | null }) {
         {left === 0 ? "None left today" : `${left} left today`} · resets in {hours}h · a few a minute at most
       </Text>
     </View>
+  );
+}
+
+/**
+ * Email to Nox: a private address; forward or send anything there and it lands in the Inbox.
+ * Off until the inbound domain is set up (EXPO_PUBLIC_INBOUND_EMAIL_DOMAIN).
+ */
+function EmailToNox() {
+  const c = useThemeColors();
+  const domain = (process.env.EXPO_PUBLIC_INBOUND_EMAIL_DOMAIN ?? "").trim().toLowerCase();
+  const [address, setAddress] = useState<InboundAddress | null | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!domain) return;
+    InboundEmailRepository.get()
+      .then(setAddress)
+      .catch(() => setError("Couldn't load your address. Check your connection."));
+  }, [domain]);
+
+  if (!domain) return null;
+  const email = address ? `${address.token}@${domain}` : null;
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+    } catch {
+      setError("That didn't work. Check your connection.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = async () => {
+    if (!email) return;
+    if (Platform.OS === "web" && navigator.clipboard) {
+      await navigator.clipboard.writeText(email);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } else await Share.share({ message: email });
+  };
+
+  if (address === undefined) {
+    return error ? <Row title="Email to Nox" detail={error} /> : null;
+  }
+  return (
+    <>
+      <Row
+        title="Email to Nox"
+        detail={
+          error ??
+          (email
+            ? `${email}\nForward or send anything here and it lands in your Inbox: the subject becomes a task, a lone link is saved as a link.`
+            : "Get a private address. Forward an email to it and it lands in your Inbox.")
+        }
+      >
+        {email ? (
+          <Pressable onPress={() => void copy()} accessibilityRole="button" className="bg-chip h-[30px] justify-center rounded-[8px] px-3">
+            <Text className="text-ink-2 text-[13px] font-semibold">{copied ? "Copied" : Platform.OS === "web" ? "Copy" : "Share"}</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => void run(async () => setAddress(await InboundEmailRepository.create()))}
+            disabled={busy}
+            accessibilityRole="button"
+            className="bg-accent h-[30px] justify-center rounded-[8px] px-3"
+          >
+            <Text className="text-on-accent text-[13px] font-semibold">Get my address</Text>
+          </Pressable>
+        )}
+      </Row>
+      {address ? (
+        <>
+          <Row title="Accept email from anyone" detail="Off: only email from your own address is taken. On: anyone who knows the address can add to your Inbox.">
+            <Toggle
+              label="Accept email from anyone"
+              value={address.any_sender}
+              onChange={(v) => void run(async () => {
+                await InboundEmailRepository.setAnySender(v);
+                setAddress({ ...address, any_sender: v });
+              })}
+            />
+          </Row>
+          <Row
+            title="Make a new address"
+            detail="The old one stops working straight away."
+            onPress={() =>
+              Alert.alert("Make a new address?", "Email sent to the old address will bounce.", [
+                { text: "Cancel", style: "cancel" },
+                { text: "New address", style: "destructive", onPress: () => void run(async () => setAddress(await InboundEmailRepository.renew())) },
+              ])
+            }
+          >
+            <RefreshCw size={16} color={c.ink3} strokeWidth={2} />
+          </Row>
+        </>
+      ) : null}
+    </>
   );
 }
 
@@ -593,6 +693,7 @@ export default function SettingsScreen() {
           >
             <BookmarkletLink />
           </Row>
+          <EmailToNox />
           <Row title="Ask when and how long" detail="When you add a task with a day but no time, Nox suggests the next free slot and asks how long it takes. Press Enter to skip.">
             <Toggle label="Ask when and how long" value={calendar.askWhenAdding} onChange={(v) => cal({ askWhenAdding: v })} />
           </Row>
