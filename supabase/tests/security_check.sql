@@ -17,6 +17,8 @@ declare
   task_a uuid := gen_random_uuid();
   note_a uuid := gen_random_uuid();
   space_a uuid := gen_random_uuid();
+  share_a uuid := gen_random_uuid();
+  token_a text;
   missing text;
 begin
   -- ── Setup: two accounts (the sign-up trigger creates their public.users rows) ─────────────────
@@ -27,6 +29,20 @@ begin
   insert into public.tasks (id, user_id, title) values (task_a, a, 'A task');
   insert into public.notes (id, user_id, title) values (note_a, a, 'A private note');
   insert into public.spaces (id, user_id, name) values (space_a, a, 'A space');
+  -- 0016 / 0018 (skipped if not applied yet): a focus session and a share link of A's.
+  begin
+    insert into public.focus_sessions (user_id, task_id, started_at, minutes) values (a, task_a, now(), 25);
+  exception when undefined_table then null; end;
+  begin
+    insert into public.shares (id, user_id, kind, target_id, token) values (share_a, a, 'note', note_a, repeat('0', 64))
+      returning token into token_a;
+    report := report || format('%s  a share token is made by the database, not the client',
+      case when token_a <> repeat('0', 64) and token_a ~ '^[0-9a-f]{64}$' then 'PASS' else 'FAIL' end);
+    begin
+      update public.shares set token = repeat('1', 64) where id = share_a;
+      report := report || text 'FAIL  a share token can be changed → allowed';
+    exception when others then report := report || text 'PASS  a share token can''t be changed → refused'; end;
+  exception when undefined_table then null; end;
 
   -- ── 1. Every table in public has Row Level Security on ─────────────────────────────────────────
   select string_agg(c.relname, ', ') into missing
@@ -122,6 +138,30 @@ begin
   exception when others then report := report || ('FAIL  B reads A''s space — error: ' || sqlerrm); end;
 
   begin
+    select count(*) into n from public.shares where user_id = a;
+    report := report || format('%s  B reads A''s share links → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  exception when undefined_table then null;
+            when others then report := report || ('FAIL  B reads A''s shares — error: ' || sqlerrm); end;
+
+  begin
+    insert into public.shares (user_id, kind, target_id) values (b, 'note', note_a);
+    report := report || text 'FAIL  B makes a share link to A''s note → allowed';
+  exception when undefined_table then null;
+            when others then report := report || format('PASS  B makes a share link to A''s note → refused (%s)', sqlerrm); end;
+
+  begin
+    select count(*) into n from public.focus_sessions where user_id = a;
+    report := report || format('%s  B reads A''s focus sessions → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  exception when undefined_table then null;
+            when others then report := report || ('FAIL  B reads A''s focus — error: ' || sqlerrm); end;
+
+  begin
+    insert into public.focus_sessions (user_id, task_id, started_at, minutes) values (b, task_a, now(), 25);
+    report := report || text 'FAIL  B logs focus time on A''s task → allowed';
+  exception when undefined_table then null;
+            when others then report := report || format('PASS  B logs focus time on A''s task → refused (%s)', sqlerrm); end;
+
+  begin
     select count(*) into n from public.rate_limits where key = a::text;
     report := report || format('%s  B reads A''s usage counters → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
   exception when others then report := report || ('FAIL  B reads A''s counters — error: ' || sqlerrm); end;
@@ -169,6 +209,11 @@ begin
       + (select count(*) from public.rate_limits) into n;
     report := report || format('%s  signed-out visitor reads notes/tasks/users/counters → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
   exception when others then report := report || text 'PASS  signed-out visitor reads data → refused'; end;
+  begin
+    select count(*) into n from public.shares;
+    report := report || format('%s  signed-out visitor lists share tokens → %s rows', case when n = 0 then 'PASS' else 'FAIL' end, n);
+  exception when undefined_table then null;
+            when others then report := report || text 'PASS  signed-out visitor lists share tokens → refused'; end;
   execute 'reset role';
 
   -- ── Report (and roll everything back) ──────────────────────────────────────────────────────────

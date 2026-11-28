@@ -8,10 +8,11 @@ import {
   useUpdateIdea,
 } from "@nox/features";
 import type { ContentBlock, IdeaInput } from "@nox/types";
-import { Archive, ArchiveRestore, ChevronLeft, CircleOff, LayoutTemplate, Trash2, Undo2 } from "lucide-react-native";
+import { Archive, ArchiveRestore, ChevronLeft, CircleOff, Globe, LayoutTemplate, Trash2, Undo2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
+import { ShareSheet } from "../share-sheet";
 import { BlockList } from "../blocks/block-list";
 import { BlockToolbar } from "../blocks/block-toolbar";
 import { useBlockEditor } from "../blocks/use-block-editor";
@@ -40,6 +41,7 @@ const UNTITLED = "Untitled idea";
  */
 export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const c = useThemeColors();
+  const [sharing, setSharing] = useState(false);
   const isDesktop = useIsDesktop();
 
   const { data: ideas = [] } = useIdeas();
@@ -127,6 +129,11 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
               },
             },
             {
+              label: "Share link…",
+              icon: <Globe size={15} color={c.ink2} strokeWidth={2} />,
+              onPress: () => setSharing(true),
+            },
+            {
               label: "Delete idea",
               danger: true,
               divided: true,
@@ -143,6 +150,7 @@ export function IdeaEditor({ id, onClose }: { id: string; onClose: () => void })
             },
           ]}
         />
+        <ShareSheet kind="idea" targetId={idea.id} title={title.trim() || idea.title} visible={sharing} onClose={() => setSharing(false)} />
 
         {/* Title */}
         <View className="px-screen mt-[22px]">

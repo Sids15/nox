@@ -1,9 +1,9 @@
 import { useThemeColors } from "@nox/features";
 import { createElement, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { bookmarkletBase, bookmarkletCode } from "../lib/bookmarklet";
+import { bookmarkletCode } from "../lib/bookmarklet";
+import { webBase } from "../lib/web-base";
 
-const base = () => bookmarkletBase(process.env.EXPO_PUBLIC_WEB_URL, /^https?:$/.test(window.location.protocol) ? window.location.origin : null);
 
 export const bookmarkletAvailable = true;
 
@@ -16,7 +16,7 @@ export function BookmarkletLink() {
   const c = useThemeColors();
   const ref = useRef<HTMLAnchorElement | null>(null);
   const [copied, setCopied] = useState(false);
-  const at = base();
+  const at = webBase();
   const code = at ? bookmarkletCode(at) : null;
 
   useEffect(() => {

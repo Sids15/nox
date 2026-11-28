@@ -34,6 +34,7 @@ import {
   Trash2,
   Archive,
   Copy,
+  Globe,
   CalendarDays,
   Sparkles,
   Search,
@@ -58,6 +59,7 @@ import { useAiEnabled } from "../../lib/use-ai";
 import { looksLikeUrl, useQuickAdd, type QuickKind } from "./use-quick-add";
 import { NewTaskDialog } from "../tasks/new-task-dialog";
 import { SpaceGoal } from "./space-goal";
+import { ShareSheet } from "../share-sheet";
 
 type Kind = QuickKind;
 type Filter = "all" | "tasks" | "ideas" | "notes" | "links";
@@ -108,6 +110,7 @@ export function SpaceView({ space }: { space: Space }) {
   const createIdea = useCreateIdea();
   const createResource = useCreateResource();
   const [copying, setCopying] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   /** Copy this space as a fresh start: saved first, then its tasks (cleared), notes, ideas and links. */
   const duplicate = async () => {
@@ -710,6 +713,14 @@ export function SpaceView({ space }: { space: Space }) {
             }}
           />
           <MenuRow
+            label="Share link…"
+            icon={<Globe size={15} color={c.ink2} strokeWidth={2} />}
+            onPress={() => {
+              setMenu(false);
+              setSharing(true);
+            }}
+          />
+          <MenuRow
             label="Duplicate as a fresh start"
             hint="Dates cleared"
             icon={<Copy size={15} color={c.ink2} strokeWidth={2} />}
@@ -773,6 +784,7 @@ export function SpaceView({ space }: { space: Space }) {
         spaceId={space.id}
         onClose={() => setComposing(null)}
       />
+      <ShareSheet kind="space" targetId={space.id} title={space.name} visible={sharing} onClose={() => setSharing(false)} />
       <SpaceAsk
         space={space}
         visible={asking}

@@ -117,7 +117,8 @@ function RootNavigator() {
   useEffect(() => {
     if (status === "unauthenticated") clearAndroidWidget();
     if (status !== "unauthenticated" || WIDGET_WINDOW) return;
-    if (area === undefined || area === "(auth)" || area === "auth-callback") return;
+    // Shared links (/s/…) are public: no sign-in needed to read one.
+    if (area === undefined || area === "(auth)" || area === "auth-callback" || area === "s") return;
     router.replace("/(auth)/login");
   }, [status, area, router]);
 
@@ -165,6 +166,7 @@ function RootNavigator() {
           <Stack.Screen name="insights" />
           <Stack.Screen name="import" />
           <Stack.Screen name="dump" />
+          <Stack.Screen name="s/[token]" />
         </Stack>
       </SyncChrome>
       {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}

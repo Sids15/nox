@@ -9,7 +9,7 @@ import {
 } from "@nox/features";
 import type { ContentBlock } from "@nox/types";
 import { relativeFromNow } from "@nox/utils";
-import { ChevronDown, ChevronLeft, Folder, FolderInput, Inbox, LayoutTemplate, Pin, PinOff, Trash2 } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, Folder, FolderInput, Globe, Inbox, LayoutTemplate, Pin, PinOff, Trash2 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { AutoGrowInput } from "../blocks/auto-grow-input";
@@ -25,6 +25,7 @@ import { DetailsToggle, MetaSummary, TemplateMenu } from "../brain/page-meta";
 import { fromTemplate, isBlankPage, toTemplate } from "../brain/templates";
 import { Alert } from "../../lib/alert";
 import { MenuLabel, MenuRow } from "../menu";
+import { ShareSheet } from "../share-sheet";
 import { Popover } from "../popover";
 import { TagEditor, useKnownTags } from "../tag-editor";
 import { confirmDelete } from "../../lib/confirm";
@@ -39,6 +40,7 @@ import { noteTitle } from "./note-utils";
  */
 export function NoteEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const c = useThemeColors();
+  const [sharing, setSharing] = useState(false);
   const isDesktop = useIsDesktop();
 
   const { data: notes = [] } = useNotes();
@@ -147,6 +149,11 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
               },
             },
             {
+              label: "Share link…",
+              icon: <Globe size={15} color={c.ink2} strokeWidth={2} />,
+              onPress: () => setSharing(true),
+            },
+            {
               label: "Delete note",
               danger: true,
               divided: true,
@@ -163,6 +170,7 @@ export function NoteEditor({ id, onClose }: { id: string; onClose: () => void })
             },
           ]}
         />
+        <ShareSheet kind="note" targetId={note.id} title={title.trim() || noteTitle(note)} visible={sharing} onClose={() => setSharing(false)} />
       </View>
 
       <ScrollView
