@@ -10,7 +10,7 @@ import {
 import type { Task } from "@nox/types";
 import { addDays, capitalize, dayOfWeek, relativeDayLabel, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { CalendarDays, ChevronDown, ChevronRight, List, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
+import { CalendarClock, CalendarDays, ChevronDown, ChevronRight, List, ListChecks, ListFilter, Plus, X } from "lucide-react-native";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { ResizablePane } from "../../components/resizable-pane";
@@ -22,6 +22,7 @@ import { MenuDivider, MenuLabel, MenuRow, pressScale, TABULAR } from "../../comp
 import { Popover } from "../../components/popover";
 import { ProfileAvatar } from "../../components/profile-avatar";
 import { PlanMenu } from "../../components/plan-menu";
+import { PlanWeekSheet } from "../../components/tasks/plan-week-sheet";
 import { ListSkeleton } from "../../components/skeleton";
 import { NewTaskDialog } from "../../components/tasks/new-task-dialog";
 import { TaskCalendar } from "../../components/tasks/task-calendar";
@@ -189,6 +190,7 @@ export default function TasksScreen() {
   const [focus, setFocus] = useState(today);
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [planning, setPlanning] = useState(false);
   const filterRef = useRef<View>(null);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   const [doneOpen, setDoneOpen] = useState(false);
@@ -301,7 +303,10 @@ export default function TasksScreen() {
     setComposing(true);
   };
   const newTaskDialog = (
-    <NewTaskDialog visible={composing} initialDate={focus} initialTime={composeTime} onClose={() => setComposing(false)} />
+    <>
+      <PlanWeekSheet visible={planning} onClose={() => setPlanning(false)} />
+      <NewTaskDialog visible={composing} initialDate={focus} initialTime={composeTime} onClose={() => setComposing(false)} />
+    </>
   );
 
   const title = focus === today ? "Today" : capitalize(relativeDayLabel(focus, today));
@@ -409,6 +414,18 @@ export default function TasksScreen() {
             </Pressable>
           </View>
           )}
+          {isDesktop ? (
+            <Pressable
+              onPress={() => setPlanning(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Plan my week: fit tasks into your free time"
+              style={pressScale}
+              className="hover:bg-chip h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-2.5"
+            >
+              <CalendarClock size={16} color={c.ink2} strokeWidth={2} />
+              {!tight && <Text className="text-ink-2 text-[13px] font-semibold">Plan week</Text>}
+            </Pressable>
+          ) : null}
           {isDesktop ? (
             <Pressable
               onPress={createAndOpen}

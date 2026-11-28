@@ -150,3 +150,82 @@ export function checkPlan(
   }
   return out.sort((a, b) => a.time.localeCompare(b.time));
 }
+
+export interface WeekPlanOptions {
+  /** Working hours, in minutes after midnight. */
+  dayStart: number;
+  dayEnd: number;
+  /** Minutes after midnight now: nothing is placed earlier today. */
+  nowMinute: number;
+  /** How many days from today to fill (default 7). */
+  days?: number;
+  /** Also place open tasks that have no day at all. */
+  includeUndated?: boolean;
+  /** Deleted occurrences of repeating tasks ("originId:YYYY-MM-DD"), as for tasksOnDay. */
+  skipped?: Set<string>;
+  /** Other busy time per day (calendar events), as [start, end] minutes. */
+  busy?: Record<string, [number, number][]>;
+}
+
+export interface WeekPlacement {
+  id: string;
+  day: string;
+  time: string;
+}
+
+const addDay = (day: string, n: number) => {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().slice(0, 10);
+};
+
+/**
+ * Plan the week: find a time for every open task that needs one — overdue ones, the week's tasks with
+ * a day but no time, and (if asked) tasks with no day — most urgent first (overdue, then priority, then
+ * the nearest day). Each goes into the earliest free gap from today, never after its own day, inside
+ * working hours and around what's already scheduled. What doesn't fit is returned as `unplaced`.
+ */
+export function planWeek(tasks: Task[], today: string, opts: WeekPlanOptions): { placed: WeekPlacement[]; unplaced: string[] } {
+  const span = Math.max(1, opts.days ?? 7);
+  const days = Array.from({ length: span }, (_, i) => addDay(today, i));
+  const last = days[days.length - 1]!;
+
+  const busy = new Map<string, [number, number][]>();
+  for (const d of days) busy.set(d, [...busyOf(tasksOnDay(tasks, d, today, opts.skipped)), ...(opts.busy?.[d] ?? [])]);
+
+  type Candidate = { task: Task; from: string; to: string; overdue: boolean };
+  const candidates: Candidate[] = [];
+  for (const t of tasks) {
+    if (t.deleted || t.status !== "pending" || isTemplate(t)) continue;
+    if (t.due_date !== null && t.due_date < today) candidates.push({ task: t, from: today, to: last, overdue: true });
+    else if (t.due_date !== null && t.due_date <= last && !t.due_time) candidates.push({ task: t, from: t.due_date, to: t.due_date, overdue: false });
+    else if (t.due_date === null && opts.includeUndated) candidates.push({ task: t, from: today, to: last, overdue: false });
+  }
+  candidates.sort(
+    (a, b) =>
+      Number(b.overdue) - Number(a.overdue) ||
+      PRIORITY_ORDER[a.task.priority] - PRIORITY_ORDER[b.task.priority] ||
+      (a.task.due_date ?? "9999").localeCompare(b.task.due_date ?? "9999") ||
+      a.task.sort_order - b.task.sort_order ||
+      a.task.created_at.localeCompare(b.task.created_at),
+  );
+
+  const placed: WeekPlacement[] = [];
+  const unplaced: string[] = [];
+  for (const c of candidates) {
+    let done = false;
+    for (const d of days) {
+      if (d < c.from || d > c.to) continue;
+      const list = busy.get(d)!;
+      const at = firstFree(list, length(c.task), { dayStart: opts.dayStart, dayEnd: opts.dayEnd, notBefore: d === today ? opts.nowMinute : 0 });
+      if (!at) continue;
+      const s = timeToMinutes(at);
+      list.push([s, s + length(c.task)]);
+      placed.push({ id: c.task.id, day: d, time: at });
+      done = true;
+      break;
+    }
+    if (!done) unplaced.push(c.task.id);
+  }
+  return { placed, unplaced };
+}

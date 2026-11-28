@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Task } from "@nox/types";
-import { autoSchedule, checkPlan, findFreeSlot, minutesToTime, tasksOnDay, timeToMinutes } from "./day-plan";
+import { autoSchedule, checkPlan, findFreeSlot, minutesToTime, planWeek, tasksOnDay, timeToMinutes } from "./day-plan";
 
 const MON = "2026-07-06"; // a Monday
 const TUE = "2026-07-07";
@@ -143,5 +143,71 @@ describe("checkPlan", () => {
         { id: "a", start: "16:00", minutes: 30 }, // "a" already placed
       ], opts),
     ).toEqual([{ id: "a", time: "14:00", minutes: 60 }]);
+  });
+});
+
+describe("planWeek", () => {
+  const hours = { dayStart: 9 * 60, dayEnd: 12 * 60, nowMinute: 10 * 60 };
+  const WED = "2026-07-08";
+
+  test("overdue tasks go into today's first free gap after now", () => {
+    const tasks = [mk({ id: "late", due_date: "2026-07-01" })];
+    expect(planWeek(tasks, MON, hours).placed).toEqual([{ id: "late", day: MON, time: "10:00" }]);
+  });
+
+  test("works around what's already scheduled", () => {
+    const tasks = [mk({ id: "meeting", due_time: "10:00", duration_minutes: 60 }), mk({ id: "late", due_date: "2026-07-01", duration_minutes: 30 })];
+    expect(planWeek(tasks, MON, hours).placed).toEqual([{ id: "late", day: MON, time: "11:00" }]);
+  });
+
+  test("a task with a day stays on that day, even when today has room", () => {
+    const tasks = [mk({ id: "wed", due_date: WED })];
+    expect(planWeek(tasks, MON, hours).placed).toEqual([{ id: "wed", day: WED, time: "09:00" }]);
+  });
+
+  test("when today is full, overdue work spills into the next days", () => {
+    const tasks = [
+      mk({ id: "a", due_date: "2026-07-01", duration_minutes: 120 }),
+      mk({ id: "b", due_date: "2026-07-01", duration_minutes: 120 }),
+    ];
+    expect(planWeek(tasks, MON, hours).placed).toEqual([
+      { id: "a", day: MON, time: "10:00" },
+      { id: "b", day: TUE, time: "09:00" },
+    ]);
+  });
+
+  test("most urgent first: overdue, then priority", () => {
+    const tasks = [
+      mk({ id: "low-late", due_date: "2026-07-01", priority: "low", duration_minutes: 60 }),
+      mk({ id: "high-today", due_date: MON, priority: "high", duration_minutes: 60 }),
+      mk({ id: "high-late", due_date: "2026-07-02", priority: "high", duration_minutes: 60 }),
+    ];
+    const { placed, unplaced } = planWeek(tasks, MON, hours);
+    expect(placed.map((p) => `${p.id}@${p.day} ${p.time}`)).toEqual([`high-late@${MON} 10:00`, `low-late@${MON} 11:00`]);
+    // Today's own task can't move to another day, and today is now full.
+    expect(unplaced).toEqual(["high-today"]);
+  });
+
+  test("tasks with no day are left alone unless asked for", () => {
+    const tasks = [mk({ id: "someday", due_date: null })];
+    expect(planWeek(tasks, MON, hours).placed).toEqual([]);
+    expect(planWeek(tasks, MON, { ...hours, includeUndated: true }).placed).toEqual([{ id: "someday", day: MON, time: "10:00" }]);
+  });
+
+  test("calendar events count as busy", () => {
+    const tasks = [mk({ id: "late", due_date: "2026-07-01" })];
+    const r = planWeek(tasks, MON, { ...hours, busy: { [MON]: [[10 * 60, 11 * 60 + 30]] } });
+    expect(r.placed).toEqual([{ id: "late", day: MON, time: "11:30" }]);
+  });
+
+  test("ignores timed, done, deleted and repeating-template tasks, and days past the window", () => {
+    const tasks = [
+      mk({ id: "timed", due_date: TUE, due_time: "09:00" }),
+      mk({ id: "done", due_date: "2026-07-01", status: "complete" }),
+      mk({ id: "gone", due_date: "2026-07-01", deleted: true }),
+      mk({ id: "tpl", due_date: "2026-07-01", repeat: "daily", origin_task_id: null }),
+      mk({ id: "far", due_date: "2026-08-01" }),
+    ];
+    expect(planWeek(tasks, MON, hours)).toEqual({ placed: [], unplaced: [] });
   });
 });

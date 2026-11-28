@@ -15,7 +15,7 @@ export {
 export { groupTasks, type GroupedTasks } from "./tasks/group-tasks";
 export { nextOccurrenceDate, occursOn, shiftReminders, templatesNeedingOccurrence } from "./tasks/recurrence";
 export { carryoverTaskIds } from "./tasks/carryover";
-export { autoSchedule, checkPlan, findFreeSlot, minutesToTime, tasksOnDay, timeToMinutes, type PlacedTask, type PlannedTask, type SlotOptions } from "./tasks/day-plan";
+export { autoSchedule, checkPlan, findFreeSlot, minutesToTime, planWeek, tasksOnDay, timeToMinutes, type PlacedTask, type PlannedTask, type SlotOptions, type WeekPlacement, type WeekPlanOptions } from "./tasks/day-plan";
 export { parseQuickAdd, type QuickAddField, type QuickAddResult } from "./tasks/parse-quick-add";
 export { taskKeys } from "./tasks/task-keys";
 export { belongsInInbox, inboxItems, withInboxExit, type InboxItem, type InboxSource } from "./inbox/inbox";
