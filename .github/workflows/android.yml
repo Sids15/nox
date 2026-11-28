@@ -62,6 +62,9 @@ jobs:
           NODE_ENV: production
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_WEB_URL: ${{ secrets.EXPO_PUBLIC_WEB_URL }}
+          EXPO_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.EXPO_PUBLIC_VAPID_PUBLIC_KEY }}
+          EXPO_PUBLIC_INBOUND_EMAIL_DOMAIN: ${{ secrets.EXPO_PUBLIC_INBOUND_EMAIL_DOMAIN }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
           # No Sentry auth token in CI: skip uploading source maps instead of failing the build.
           SENTRY_DISABLE_AUTO_UPLOAD: "true"
