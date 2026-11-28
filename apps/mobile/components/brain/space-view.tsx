@@ -27,6 +27,7 @@ import {
   Pencil,
   SquareCheckBig,
   Trash2,
+  Archive,
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -392,6 +393,14 @@ export function SpaceView({ space }: { space: Space }) {
             <MenuRow label="Edit board stages" icon={<Kanban size={15} color={c.ink2} strokeWidth={2} />} onPress={() => { setMenu(false); setStagesOpen(true); }} />
           )}
           <MenuRow label="Rename" icon={<Pencil size={15} color={c.ink2} strokeWidth={2} />} onPress={() => { setMenu(false); setTimeout(() => nameRef.current?.focus(), 50); }} />
+          <MenuRow
+            label={space.archived ? "Unarchive" : "Archive — it's finished"}
+            icon={<Archive size={15} color={c.ink2} strokeWidth={2} />}
+            onPress={() => {
+              setMenu(false);
+              updateSpace.mutate({ id: space.id, patch: { archived: !space.archived } });
+            }}
+          />
           <MenuDivider />
           <MenuRow
             label="Delete space"

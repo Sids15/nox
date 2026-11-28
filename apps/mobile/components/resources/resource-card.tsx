@@ -109,7 +109,7 @@ export function ResourceCard({
       {spacesView ? (
         <View className="p-1.5">
           <MenuRow label="No space" selected={!resource.space_id} icon={<Layers size={15} color={c.ink2} strokeWidth={2} />} onPress={run(() => resource.space_id && updateResource.mutate({ id: resource.id, patch: { space_id: null } }))} />
-          {spaces.map((s) => (
+          {spaces.filter((s) => !s.archived || s.id === resource.space_id).map((s) => (
             <MenuRow key={s.id} label={s.name} selected={resource.space_id === s.id} icon={<SpaceMark space={s} size={18} />} onPress={run(() => resource.space_id !== s.id && updateResource.mutate({ id: resource.id, patch: { space_id: s.id } }))} />
           ))}
         </View>

@@ -54,10 +54,13 @@ export const space = syncedRow.extend({
   /** Pipeline stages for the space's board, in order (e.g. Idea → Script → Film → Edit → Published). */
   stages: z.array(z.string().min(1).max(60)).max(20).default([]),
   position: z.number().int().default(0),
+  /** Finished: kept, but listed apart on the Spaces page (migration 0013). */
+  archived: z.boolean().default(false),
 });
 export type Space = z.infer<typeof space>;
 
-export const spaceInput = space.pick({ name: true, icon: true, color: true, description: true, stages: true, position: true }).partial({
+export const spaceInput = space.pick({ name: true, icon: true, color: true, description: true, stages: true, position: true, archived: true }).partial({
+  archived: true,
   icon: true,
   color: true,
   description: true,

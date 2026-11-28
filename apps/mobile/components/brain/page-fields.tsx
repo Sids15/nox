@@ -157,7 +157,7 @@ export function PageFields({
               if (spaceId) onPatch({ space_id: null, stage: null });
             }}
           />
-          {spaces.map((s) => (
+          {spaces.filter((s) => !s.archived || s.id === spaceId).map((s) => (
             <MenuRow
               key={s.id}
               label={s.name}

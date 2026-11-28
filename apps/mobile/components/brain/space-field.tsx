@@ -41,7 +41,7 @@ export function SpaceField({ spaceId, onChange }: { spaceId: string | null; onCh
               if (spaceId) onChange(null);
             }}
           />
-          {spaces.map((s) => (
+          {spaces.filter((s) => !s.archived || s.id === spaceId).map((s) => (
             <MenuRow
               key={s.id}
               label={s.name}

@@ -65,7 +65,8 @@ export function Sidebar() {
   const { data: notes = [] } = useNotes();
   const { data: tasks = [] } = useTasks();
   const { data: resources = [] } = useResources();
-  const { data: spaces = [] } = useSpaces();
+  const { data: allSpaces = [] } = useSpaces();
+  const spaces = allSpaces.filter((s) => !s.archived);
   const [newSpace, setNewSpace] = useState(false);
   // Collapsed to an icon rail: the user's choice, else automatically on narrower windows (an iPad
   // in landscape, a half-screen window) so the page gets the room.

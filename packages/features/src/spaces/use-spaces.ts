@@ -35,6 +35,7 @@ export function useCreateSpace() {
         stages: [],
         position: previous.length,
         ...input,
+        archived: input.archived ?? false,
       };
       qc.setQueryData<Space[]>(spaceKeys.all, [...previous, optimistic]);
       return { previous };

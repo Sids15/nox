@@ -2,7 +2,7 @@ import { useSpaces, useThemeColors } from "@nox/features";
 import type { Space } from "@nox/types";
 import { capitalize, relativeDayLabel, relativeFromNow, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { Circle, Plus } from "lucide-react-native";
+import { ChevronDown, ChevronRight, Circle, Plus } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -37,6 +37,9 @@ export default function SpacesScreen() {
   const pages = usePages();
   const [creating, setCreating] = useState(false);
   const today = todayKey();
+  const [showArchived, setShowArchived] = useState(false);
+  const active = spaces.filter((s) => !s.archived);
+  const archived = spaces.filter((s) => s.archived);
 
   const stats = useMemo(() => {
     const m = new Map<string, SpaceStats>();
@@ -138,7 +141,7 @@ export default function SpacesScreen() {
       <View className="flex-1 pr-3">
         <Text className="text-ink font-serif text-[30px] font-bold leading-[36px] tracking-[-0.01em]">Spaces</Text>
         <Text style={TABULAR} className="text-ink-3 mt-0.5 text-[14px] font-medium">
-          {spaces.length ? plural(spaces.length, "space") : "One place per project"}
+          {active.length ? plural(active.length, "space") : "One place per project"}
         </Text>
       </View>
       <View className="flex-row items-center gap-1.5 pt-1">
@@ -182,13 +185,34 @@ export default function SpacesScreen() {
             </Pressable>
           </View>
         ) : (
-          <View className="px-screen mt-5 gap-3" style={isDesktop ? { flexDirection: "row", flexWrap: "wrap" } : undefined}>
-            {spaces.map((s) => (
-              <View key={s.id} style={isDesktop ? { width: 320 } : undefined}>
-                {card(s)}
+          <>
+            <View className="px-screen mt-5 gap-3" style={isDesktop ? { flexDirection: "row", flexWrap: "wrap" } : undefined}>
+              {active.map((s) => (
+                <View key={s.id} style={isDesktop ? { width: 320 } : undefined}>
+                  {card(s)}
+                </View>
+              ))}
+            </View>
+            {archived.length > 0 ? (
+              <View className="px-screen mt-6">
+                <Pressable onPress={() => setShowArchived((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: showArchived }} className="flex-row items-center gap-1.5 self-start py-1">
+                  {showArchived ? <ChevronDown size={14} color={c.ink3} strokeWidth={2.2} /> : <ChevronRight size={14} color={c.ink3} strokeWidth={2.2} />}
+                  <Text style={TABULAR} className="text-ink-3 text-[13px] font-medium">
+                    Archived · {archived.length}
+                  </Text>
+                </Pressable>
+                {showArchived ? (
+                  <View className="mt-2 gap-3" style={[{ opacity: 0.75 }, isDesktop ? { flexDirection: "row", flexWrap: "wrap" } : null]}>
+                    {archived.map((s) => (
+                      <View key={s.id} style={isDesktop ? { width: 320 } : undefined}>
+                        {card(s)}
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
               </View>
-            ))}
-          </View>
+            ) : null}
+          </>
         )}
       </ScrollView>
       <NewSpaceDialog visible={creating} onClose={() => setCreating(false)} />
