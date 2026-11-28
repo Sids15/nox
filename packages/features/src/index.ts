@@ -118,3 +118,5 @@ export { doneDay, insights, lastSevenDays, spaceLabel, weekReview, type Insights
 export { IMPORT_LIMIT, detectFormat, parseCsv, parseDate, parseImport, type ImportFormat, type ImportResult, type ImportedTask } from "./import/parse";
 export { DUMP_LIMIT, brainDumpTasks, splitBrainDump, type DumpTask } from "./tasks/brain-dump";
 export { duplicateSpace, type SpaceCopy } from "./spaces/duplicate";
+export { gcalKeys, useGcalStatus, useGoogleEvents } from "./gcal/use-gcal";
+export { busyByDay, eventsByDay, type DayEvent } from "./gcal/busy";

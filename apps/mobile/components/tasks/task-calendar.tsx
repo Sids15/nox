@@ -2,6 +2,8 @@ import { AiRepository } from "@nox/api";
 import {
   autoSchedule,
   checkPlan,
+  eventsByDay,
+  useGoogleEvents,
   minutesToTime,
   tasksOnDay,
   timeToMinutes,
@@ -28,6 +30,7 @@ import { MenuDivider, MenuLabel, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
 import { anchorOf, durationLabel, rebaseReminders } from "./task-properties";
 import { withAlpha } from "../../lib/color";
+import { openExternal } from "../../lib/open-external";
 import { SpaceMark } from "../brain/space-mark";
 
 /** Minutes a task covers when it has no duration set. */
@@ -159,6 +162,9 @@ export function TaskCalendar({
     return prefs.showWeekends ? all : all.filter((d) => dayOfWeek(d) !== 0 && dayOfWeek(d) !== 6);
   }, [mode, focus, isDesktop, prefs.weekStartsOn, prefs.showWeekends]);
   const step = mode === "day" ? 1 : isDesktop ? 7 : 3;
+  // Your other Google Calendar events (if connected), as busy time under the tasks.
+  const googleEvents = useGoogleEvents(days[0]!, days[days.length - 1]!);
+  const eventsOnDay = useMemo(() => eventsByDay(googleEvents, days), [googleEvents, days]);
 
   const byDay = useMemo(() => {
     const m = new Map<string, PlannedTask[]>();
@@ -764,6 +770,27 @@ export function TaskCalendar({
                       <View className="bg-critical h-[1.5px] flex-1" />
                     </View>
                   )}
+
+                  {/* Google Calendar events: quiet, read-only, under the tasks. Tap to open in Google. */}
+                  {(eventsOnDay.get(d) ?? []).map((e) => {
+                    const top = Math.max(0, yOf(e.start));
+                    const bottom = Math.min(hours.length * ROW, yOf(e.end));
+                    if (bottom - top < 4) return null;
+                    return (
+                      <Pressable
+                        key={`g:${e.id}`}
+                        onPress={() => e.link && void openExternal(e.link)}
+                        accessibilityRole={e.link ? "link" : "text"}
+                        accessibilityLabel={`${e.title}, Google Calendar, ${formatTime12(minutesToTime(e.start))}`}
+                        className="bg-chip border-line absolute overflow-hidden rounded-[7px] border px-1.5"
+                        style={{ top: top + 1, height: Math.max(18, bottom - top - 3), left: 0, right: 0, opacity: 0.85, borderStyle: "dashed" }}
+                      >
+                        <Text numberOfLines={1} className="text-ink-3 text-[11px] font-medium">
+                          {e.title}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
 
                   {/* Tasks */}
                   {placed.map(({ p, start, lane, lanes }) => {

@@ -11,3 +11,4 @@ export { FocusRepository } from "./focus-repository";
 export { ShareRepository } from "./share-repository";
 export { PushRepository } from "./push-repository";
 export { InboundEmailRepository, type InboundAddress } from "./inbound-email-repository";
+export { GcalRepository } from "./gcal-repository";

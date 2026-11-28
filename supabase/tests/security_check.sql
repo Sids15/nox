@@ -52,6 +52,15 @@ begin
     case when missing is null then 'PASS' else 'FAIL' end,
     coalesce(' — missing on: ' || missing, ''));
 
+  -- ── 1b. Google Calendar tokens (0021) are never readable by the app ────────────────────────────
+  begin
+    report := report || format('%s  signed-in users can''t read Google refresh tokens',
+      case when not has_column_privilege('authenticated', 'public.gcal_accounts', 'refresh_token_enc', 'select')
+            and not has_table_privilege('authenticated', 'public.gcal_links', 'select')
+            and not has_table_privilege('authenticated', 'public.gcal_states', 'select')
+           then 'PASS' else 'FAIL' end);
+  exception when undefined_table or undefined_column then null; end;
+
   -- ── 2. Only the server can call the rate limiter; the old counter is closed ────────────────────
   report := report || format('%s  hit_rate_limit: not callable by signed-in users or anon, callable by service_role',
     case when not has_function_privilege('authenticated', 'public.hit_rate_limit(uuid,text,integer,integer,integer)', 'execute')

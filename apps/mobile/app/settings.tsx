@@ -1,5 +1,7 @@
-import { WIDGET_SECTION_LABEL, useAuth, usePrefs, useSpaces, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
-import { AiRepository, InboundEmailRepository, PushRepository, type InboundAddress } from "@nox/api";
+import { WIDGET_SECTION_LABEL, gcalKeys, useAuth, useGcalStatus, usePrefs, useSpaces, useThemeColors, type CalendarPrefs, type NotifKey } from "@nox/features";
+import { AiRepository, GcalRepository, InboundEmailRepository, PushRepository, type InboundAddress } from "@nox/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { connectGoogleCalendar } from "../lib/gcal-connect";
 import type { PushPrefs } from "@nox/types";
 import { disablePush, enablePush, pushAvailable, pushUnavailableReason } from "../lib/push";
 import { setNoxAi } from "../lib/use-ai";
@@ -184,6 +186,85 @@ function AiAllowance({ used }: { used: number | null }) {
         {left === 0 ? "None left today" : `${left} left today`} · resets in {hours}h · a few a minute at most
       </Text>
     </View>
+  );
+}
+
+/**
+ * Google Calendar, both ways: timed tasks go to Google; your other events show on the Tasks calendar
+ * as busy time; moving a task's event in Google moves the task. Hidden until the server is set up.
+ */
+function GoogleCalendarSettings() {
+  const c = useThemeColors();
+  const qc = useQueryClient();
+  const { data: status, refetch } = useGcalStatus();
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  // Back from Google in a browser tab: /settings?gcal=connected|error.
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const r = new URLSearchParams(window.location.search).get("gcal");
+    if (!r) return;
+    setNote(r === "connected" ? "Google Calendar is connected." : "Couldn't connect Google Calendar. Try again.");
+    window.history.replaceState(null, "", window.location.pathname);
+    void refetch();
+  }, [refetch]);
+
+  if (status === undefined) return null;
+  const connect = async () => {
+    setBusy(true);
+    setNote(null);
+    const r = await connectGoogleCalendar();
+    setBusy(false);
+    if (r === "connected") {
+      setNote("Google Calendar is connected.");
+      void qc.invalidateQueries({ queryKey: gcalKeys.status });
+    } else if (r === "error") setNote("Couldn't connect Google Calendar. Try again.");
+    else if (r === "pending") setNote("Finish in the browser, then come back here.");
+  };
+
+  if (!status) {
+    return (
+      <Row title="Google Calendar" detail={note ?? "Your events show on the Tasks calendar, and timed tasks go to Google. Changes go both ways."}>
+        <Pressable onPress={() => void connect()} disabled={busy} accessibilityRole="button" className="bg-accent h-[30px] justify-center rounded-[8px] px-3" style={{ opacity: busy ? 0.6 : 1 }}>
+          <Text className="text-on-accent text-[13px] font-semibold">Connect</Text>
+        </Pressable>
+      </Row>
+    );
+  }
+  return (
+    <>
+      <Row
+        title="Google Calendar"
+        detail={note ?? `Connected${status.email ? ` as ${status.email}` : ""}. Your events show on the Tasks calendar as busy time.`}
+        onPress={() =>
+          Alert.alert("Disconnect Google Calendar?", "Events Nox already made stay in Google; they just stop updating.", [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Disconnect",
+              style: "destructive",
+              onPress: () =>
+                void GcalRepository.disconnect()
+                  .then(() => qc.invalidateQueries({ queryKey: ["gcal"] }))
+                  .catch(() => setNote("Couldn't disconnect. Check your connection.")),
+            },
+          ])
+        }
+      >
+        <Text className="text-high text-[13px] font-semibold">Disconnect</Text>
+      </Row>
+      <Row title="Put timed tasks on Google Calendar" detail="Tasks with a time appear there, and moving one in Google moves it here.">
+        <Toggle
+          label="Put timed tasks on Google Calendar"
+          value={status.push_tasks}
+          onChange={(v) =>
+            void GcalRepository.setPushTasks(v)
+              .then(() => qc.invalidateQueries({ queryKey: gcalKeys.status }))
+              .catch(() => setNote("Couldn't save that."))
+          }
+        />
+      </Row>
+    </>
   );
 }
 
@@ -693,6 +774,7 @@ export default function SettingsScreen() {
           >
             <BookmarkletLink />
           </Row>
+          <GoogleCalendarSettings />
           <EmailToNox />
           <Row title="Ask when and how long" detail="When you add a task with a day but no time, Nox suggests the next free slot and asks how long it takes. Press Enter to skip.">
             <Toggle label="Ask when and how long" value={calendar.askWhenAdding} onChange={(v) => cal({ askWhenAdding: v })} />

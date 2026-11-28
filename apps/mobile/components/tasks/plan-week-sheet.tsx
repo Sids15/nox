@@ -1,6 +1,6 @@
-import { planWeek, usePrefs, useSkippedOccurrences, useTasks, useThemeColors, useThemeVars, useUpdateTask } from "@nox/features";
+import { busyByDay, planWeek, useGoogleEvents, usePrefs, useSkippedOccurrences, useTasks, useThemeColors, useThemeVars, useUpdateTask } from "@nox/features";
 import type { Task } from "@nox/types";
-import { capitalize, formatTime12, relativeDayLabel, todayKey } from "@nox/utils";
+import { addDays, capitalize, formatTime12, relativeDayLabel, todayKey } from "@nox/utils";
 import { CalendarClock, X } from "lucide-react-native";
 import { vars } from "nativewind";
 import { useMemo, useState } from "react";
@@ -28,6 +28,9 @@ export function PlanWeekSheet({ visible, onClose }: { visible: boolean; onClose:
   const update = useUpdateTask();
   const [undated, setUndated] = useState(false);
   const today = todayKey();
+  // Google Calendar events (if connected) count as busy.
+  const events = useGoogleEvents(today, addDays(today, 6));
+  const busy = useMemo(() => busyByDay(events, Array.from({ length: 7 }, (_, i) => addDays(today, i))), [events, today]);
 
   const plan = useMemo(
     () =>
@@ -37,10 +40,11 @@ export function PlanWeekSheet({ visible, onClose }: { visible: boolean; onClose:
             dayEnd: cal.endHour * 60,
             nowMinute: nowMinute(),
             includeUndated: undated,
+            busy,
             ...(skipped ? { skipped } : {}),
           })
         : { placed: [], unplaced: [] },
-    [visible, tasks, today, cal.startHour, cal.endHour, undated, skipped],
+    [visible, tasks, today, cal.startHour, cal.endHour, undated, skipped, busy],
   );
   const byId = useMemo(() => new Map(tasks.map((t) => [t.id, t] as const)), [tasks]);
   const groups = new Map<string, { task: Task; time: string }[]>();
@@ -75,7 +79,7 @@ export function PlanWeekSheet({ visible, onClose }: { visible: boolean; onClose:
             </Pressable>
           </View>
           <Text className="text-ink-3 mt-1 text-[13px] leading-[18px]">
-            Overdue tasks and this week's tasks without a time, fitted into your free time between {formatTime12(`${String(cal.startHour).padStart(2, "0")}:00`)} and{" "}
+            Overdue tasks and this week's tasks without a time, fitted around your other plans{events.length ? " and Google Calendar" : ""} between {formatTime12(`${String(cal.startHour).padStart(2, "0")}:00`)} and{" "}
             {formatTime12(`${String(cal.endHour % 24).padStart(2, "0")}:00`)}. Most urgent first.
           </Text>
           <View className="mt-3 flex-row items-center">
