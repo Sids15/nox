@@ -1,6 +1,6 @@
 import { useSpaces, useThemeColors } from "@nox/features";
 import type { Space } from "@nox/types";
-import { capitalize, relativeDayLabel, relativeFromNow, todayKey } from "@nox/utils";
+import { addDays, capitalize, relativeDayLabel, relativeFromNow, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
 import { ChevronDown, ChevronRight, Circle, Plus } from "lucide-react-native";
 import { useMemo, useState } from "react";
@@ -23,6 +23,8 @@ interface SpaceStats {
   lastActive: string | null;
   /** The next thing to do: the open task due soonest (undated ones after), or null. */
   next: { title: string; due: string | null } | null;
+  /** The last 7 days and the next 7: done, added, due soon, overdue. */
+  week: { done: number; added: number; dueSoon: number; overdue: number };
 }
 
 /**
@@ -37,13 +39,17 @@ export default function SpacesScreen() {
   const pages = usePages();
   const [creating, setCreating] = useState(false);
   const today = todayKey();
+  const inAWeek = addDays(today, 7);
+  // Midnight a week ago, as an ISO timestamp to compare with created_at / updated_at.
+  const weekAgo = useMemo(() => new Date(`${addDays(today, -7)}T00:00:00`).toISOString(), [today]);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const active = spaces.filter((s) => !s.archived);
   const archived = spaces.filter((s) => s.archived);
 
   const stats = useMemo(() => {
     const m = new Map<string, SpaceStats>();
-    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, perStage: s.stages.map(() => 0), lastActive: null, next: null });
+    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, perStage: s.stages.map(() => 0), lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } });
     const touch = (e: SpaceStats, at: string) => {
       if (!e.lastActive || at > e.lastActive) e.lastActive = at;
     };
@@ -51,6 +57,7 @@ export default function SpacesScreen() {
       const e = n.space_id ? m.get(n.space_id) : undefined;
       if (!e) continue;
       e.pages++;
+      if (n.created_at >= weekAgo) e.week.added++;
       touch(e, n.updated_at);
       const space = spaces.find((s) => s.id === n.space_id)!;
       const i = n.stage ? space.stages.indexOf(n.stage) : -1;
@@ -58,7 +65,14 @@ export default function SpacesScreen() {
     }
     for (const t of pages.tasks) {
       const e = t.space_id ? m.get(t.space_id) : undefined;
-      if (!e || t.status === "complete" || t.deleted || (t.repeat !== "none" && t.origin_task_id === null)) continue;
+      if (!e || t.deleted || (t.repeat !== "none" && t.origin_task_id === null)) continue;
+      if (t.created_at >= weekAgo) e.week.added++;
+      if (t.status === "complete") {
+        if (t.updated_at >= weekAgo) e.week.done++;
+        continue;
+      }
+      if (t.due_date && t.due_date < today) e.week.overdue++;
+      else if (t.due_date && t.due_date <= inAWeek) e.week.dueSoon++;
       e.tasks++;
       touch(e, t.updated_at);
       const due = t.due_date ?? null;
@@ -66,10 +80,15 @@ export default function SpacesScreen() {
       if (!n || (due && (!n.due || due < n.due))) e.next = { title: t.title, due };
     }
     return m;
-  }, [spaces, pages]);
+  }, [spaces, pages, today, weekAgo, inAWeek]);
+
+  const review = active
+    .map((s) => ({ s, w: stats.get(s.id)?.week ?? { done: 0, added: 0, dueSoon: 0, overdue: 0 } }))
+    .filter(({ w }) => w.done + w.added + w.dueSoon + w.overdue > 0);
+  const totals = review.reduce((a, { w }) => ({ done: a.done + w.done, added: a.added + w.added, overdue: a.overdue + w.overdue }), { done: 0, added: 0, overdue: 0 });
 
   const card = (s: Space) => {
-    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, perStage: [], lastActive: null, next: null };
+    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, perStage: [], lastActive: null, next: null, week: { done: 0, added: 0, dueSoon: 0, overdue: 0 } };
     const total = st.perStage.reduce((a, b) => a + b, 0);
     return (
       <Pressable
@@ -186,6 +205,36 @@ export default function SpacesScreen() {
           </View>
         ) : (
           <>
+            {review.length > 0 ? (
+              <View className="px-screen mt-4">
+                {/* The weekly review: what moved in each space, what's stuck, what's coming. */}
+                <Pressable onPress={() => setReviewOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: reviewOpen }} className="border-line bg-surface hover:border-ink-3 rounded-card border px-4 py-3">
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-ink flex-1 text-[14px] font-semibold">This week</Text>
+                    <Text style={TABULAR} className="text-ink-3 text-[13px]">
+                      {totals.done} done · {totals.added} added{totals.overdue ? ` · ${totals.overdue} overdue` : ""}
+                    </Text>
+                    {reviewOpen ? <ChevronDown size={14} color={c.ink3} strokeWidth={2.2} /> : <ChevronRight size={14} color={c.ink3} strokeWidth={2.2} />}
+                  </View>
+                  {reviewOpen ? (
+                    <View className="mt-2.5 gap-2">
+                      {review.map(({ s, w }) => (
+                        <Pressable key={s.id} onPress={() => router.push(`/space/${s.id}`)} accessibilityRole="link" className="flex-row items-center gap-2.5">
+                          <SpaceMark space={s} size={22} />
+                          <Text numberOfLines={1} className="text-ink-2 flex-1 text-[13px] font-medium">
+                            {s.name}
+                          </Text>
+                          <Text style={TABULAR} className="text-ink-3 text-[12px]">
+                            {[w.done && `${w.done} done`, w.added && `${w.added} added`, w.dueSoon && `${w.dueSoon} due soon`].filter(Boolean).join(" · ")}
+                            {w.overdue ? <Text className="text-high">{`${w.done || w.added || w.dueSoon ? " · " : ""}${w.overdue} overdue`}</Text> : null}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  ) : null}
+                </Pressable>
+              </View>
+            ) : null}
             <View className="px-screen mt-5 gap-3" style={isDesktop ? { flexDirection: "row", flexWrap: "wrap" } : undefined}>
               {active.map((s) => (
                 <View key={s.id} style={isDesktop ? { width: 320 } : undefined}>
