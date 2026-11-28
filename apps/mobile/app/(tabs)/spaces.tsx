@@ -1,8 +1,8 @@
 import { useSpaces, useThemeColors } from "@nox/features";
 import type { Space } from "@nox/types";
-import { relativeFromNow } from "@nox/utils";
+import { capitalize, relativeDayLabel, relativeFromNow, todayKey } from "@nox/utils";
 import { useRouter } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { Circle, Plus } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,6 +21,8 @@ interface SpaceStats {
   /** Pages in each stage, in pipeline order. */
   perStage: number[];
   lastActive: string | null;
+  /** The next thing to do: the open task due soonest (undated ones after), or null. */
+  next: { title: string; due: string | null } | null;
 }
 
 /**
@@ -34,10 +36,11 @@ export default function SpacesScreen() {
   const { data: spaces = [], isLoading } = useSpaces();
   const pages = usePages();
   const [creating, setCreating] = useState(false);
+  const today = todayKey();
 
   const stats = useMemo(() => {
     const m = new Map<string, SpaceStats>();
-    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, perStage: s.stages.map(() => 0), lastActive: null });
+    for (const s of spaces) m.set(s.id, { pages: 0, tasks: 0, perStage: s.stages.map(() => 0), lastActive: null, next: null });
     const touch = (e: SpaceStats, at: string) => {
       if (!e.lastActive || at > e.lastActive) e.lastActive = at;
     };
@@ -52,15 +55,18 @@ export default function SpacesScreen() {
     }
     for (const t of pages.tasks) {
       const e = t.space_id ? m.get(t.space_id) : undefined;
-      if (!e || t.status === "complete" || t.deleted) continue;
+      if (!e || t.status === "complete" || t.deleted || (t.repeat !== "none" && t.origin_task_id === null)) continue;
       e.tasks++;
       touch(e, t.updated_at);
+      const due = t.due_date ?? null;
+      const n = e.next;
+      if (!n || (due && (!n.due || due < n.due))) e.next = { title: t.title, due };
     }
     return m;
   }, [spaces, pages]);
 
   const card = (s: Space) => {
-    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, perStage: [], lastActive: null };
+    const st = stats.get(s.id) ?? { pages: 0, tasks: 0, perStage: [], lastActive: null, next: null };
     const total = st.perStage.reduce((a, b) => a + b, 0);
     return (
       <Pressable
@@ -102,11 +108,26 @@ export default function SpacesScreen() {
                 ))}
               </View>
             </View>
-          ) : (
-            <Text className="text-ink-3 mt-4 text-[12px]">No pipeline · notes, ideas, tasks and links</Text>
-          )}
+          ) : null}
 
-          <Text className="text-ink-3 mt-3 text-[12px]">{st.lastActive ? `Active ${relativeFromNow(st.lastActive)}` : "Nothing in it yet"}</Text>
+          {/* What's next here, so the Spaces page reads like a dashboard. */}
+          <View className="border-line mt-4 border-t pt-3">
+            {st.next ? (
+              <View className="flex-row items-center gap-2">
+                <Circle size={13} color={c.ink3} strokeWidth={2} />
+                <Text numberOfLines={1} className="text-ink-2 flex-1 text-[13px]">
+                  {st.next.title}
+                </Text>
+                {st.next.due ? (
+                  <Text style={TABULAR} className={`text-[12px] font-medium ${st.next.due < today ? "text-high" : "text-ink-3"}`}>
+                    {capitalize(relativeDayLabel(st.next.due, today))}
+                  </Text>
+                ) : null}
+              </View>
+            ) : (
+              <Text className="text-ink-3 text-[12px]">{st.lastActive ? `Nothing to do · active ${relativeFromNow(st.lastActive)}` : "Nothing in it yet"}</Text>
+            )}
+          </View>
         </View>
       </Pressable>
     );
