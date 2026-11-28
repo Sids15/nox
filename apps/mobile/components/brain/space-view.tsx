@@ -28,6 +28,7 @@ import {
   SquareCheckBig,
   Trash2,
   Archive,
+  Sparkles,
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -42,6 +43,8 @@ import { openRef, usePages } from "./pages";
 import { SpaceBoard } from "./space-board";
 import { SpaceIconPicker, SpaceMark } from "./space-mark";
 import { type SpacePage } from "./space-parts";
+import { SpaceAsk } from "./space-ask";
+import { useAiEnabled } from "../../lib/use-ai";
 import { StageEditor } from "./stage-editor";
 
 type Kind = "task" | "idea" | "note" | "link";
@@ -85,6 +88,8 @@ export function SpaceView({ space }: { space: Space }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [showDone, setShowDone] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const aiOn = useAiEnabled();
   const [iconOpen, setIconOpen] = useState(false);
   const [stagesOpen, setStagesOpen] = useState(false);
   const menuRef = useRef<View>(null);
@@ -277,6 +282,12 @@ export function SpaceView({ space }: { space: Space }) {
                 ))}
               </View>
             ) : null}
+            {aiOn ? (
+              <Pressable onPress={() => setAsking(true)} accessibilityRole="button" accessibilityLabel={`Ask Nox about ${space.name}`} style={pressScale} className="hover:bg-chip h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-2">
+                <Sparkles size={16} color={c.ink2} strokeWidth={2} />
+                {isDesktop ? <Text className="text-ink-2 text-[13px] font-semibold">Ask</Text> : null}
+              </Pressable>
+            ) : null}
             <View ref={menuRef} collapsable={false}>
               <Pressable onPress={() => setMenu(true)} accessibilityRole="button" accessibilityLabel="Space options" style={pressScale} className="hover:bg-chip h-[34px] w-[34px] items-center justify-center rounded-[10px]">
                 <MoreHorizontal size={19} color={c.ink2} strokeWidth={2} />
@@ -432,6 +443,7 @@ export function SpaceView({ space }: { space: Space }) {
         </View>
       </Popover>
       <StageEditor space={space} visible={stagesOpen} onClose={() => setStagesOpen(false)} />
+      <SpaceAsk space={space} visible={asking} onClose={() => setAsking(false)} />
     </View>
   );
 }

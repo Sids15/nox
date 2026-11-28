@@ -216,6 +216,7 @@ const ACTIONS: Record<string, Action> = {
     system:
       "You answer the user's question using only the items in `context` (their own notes, ideas, " +
       "resources and tasks). Be concise. If the context doesn't contain the answer, say so plainly. " +
+      "When asked for suggestions or new ideas, base them on the style and topics in `context`. " +
       "List the ids of the items you used in `sources`. " + RULES,
     schema: obj({ answer: str(), sources: arr(str()) }),
     prompt: (i) => data({ today: i.today, question: i.question, context: i.context }),
