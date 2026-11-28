@@ -2,7 +2,7 @@ import { inboxItems, useIdeas, useNotes, usePrefs, useResources, useSpaces, useT
 import { LinearGradient } from "expo-linear-gradient";
 import { useIsFocused } from "@react-navigation/native";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, CalendarCheck, ChartColumn, FileText, Inbox, Layers, Timer, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, CalendarCheck, ChartColumn, FileText, Inbox, Layers, Mic, Timer, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { addDays, formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
@@ -121,6 +121,7 @@ export function Sidebar() {
   // Plan: the pages around your tasks (Inbox first: what still needs sorting).
   const tools: NavItem[] = [
     { label: "Inbox", icon: Inbox, path: "/inbox", count: inboxItems({ tasks, notes, ideas, resources }).length },
+    { label: "Brain dump", icon: Mic, path: "/dump", count: 0 },
     { label: "Focus", icon: Timer, path: "/focus", count: 0 },
     // A dot once a week has passed since the last review.
     { label: "Review", icon: CalendarCheck, path: "/review", count: 0, dot: !lastReviewed || lastReviewed <= addDays(toDateKey(now), -7) },

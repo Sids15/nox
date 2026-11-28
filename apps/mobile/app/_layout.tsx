@@ -164,6 +164,7 @@ function RootNavigator() {
           <Stack.Screen name="review" />
           <Stack.Screen name="insights" />
           <Stack.Screen name="import" />
+          <Stack.Screen name="dump" />
         </Stack>
       </SyncChrome>
       {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}

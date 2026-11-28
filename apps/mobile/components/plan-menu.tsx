@@ -1,7 +1,7 @@
 import { inboxItems, usePrefs, useThemeColors } from "@nox/features";
 import { addDays, todayKey } from "@nox/utils";
 import { router } from "expo-router";
-import { CalendarCheck, CalendarClock, ChartColumn, Inbox, LayoutGrid, Timer } from "lucide-react-native";
+import { CalendarCheck, CalendarClock, ChartColumn, Inbox, LayoutGrid, Mic, Timer } from "lucide-react-native";
 import { useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { usePages } from "./brain/pages";
@@ -53,6 +53,7 @@ export function PlanMenu() {
       <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={230} accessibilityLabel="Plan">
         <View className="p-1.5">
           <MenuRow label="Inbox" hint={inbox ? String(inbox) : undefined} icon={<Inbox size={15} color={c.ink2} strokeWidth={2} />} onPress={() => go("/inbox")} />
+          <MenuRow label="Brain dump" icon={<Mic size={15} color={c.ink2} strokeWidth={2} />} onPress={() => go("/dump")} />
           <MenuRow
             label="Plan my week"
             icon={<CalendarClock size={15} color={c.ink2} strokeWidth={2} />}

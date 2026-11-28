@@ -116,3 +116,4 @@ export { useFocusStore } from "./focus/focus-store";
 export { focusKeys, useFocusSessions, useLogFocus } from "./focus/use-focus";
 export { doneDay, insights, lastSevenDays, spaceLabel, weekReview, type Insights, type WeekReview } from "./insights/stats";
 export { IMPORT_LIMIT, detectFormat, parseCsv, parseDate, parseImport, type ImportFormat, type ImportResult, type ImportedTask } from "./import/parse";
+export { DUMP_LIMIT, brainDumpTasks, splitBrainDump, type DumpTask } from "./tasks/brain-dump";
