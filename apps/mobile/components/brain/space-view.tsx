@@ -7,6 +7,7 @@ import {
 } from "@nox/features";
 import type { Space } from "@nox/types";
 import {
+  addDays,
   capitalize,
   relativeDayLabel,
   relativeFromNow,
@@ -28,14 +29,17 @@ import {
   Archive,
   CalendarDays,
   Sparkles,
+  Search,
+  X,
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { confirmDelete, plural } from "../../lib/confirm";
 import { goBack } from "../../lib/go-back";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { MenuDivider, MenuRow, pressScale, TABULAR } from "../menu";
 import { Popover } from "../popover";
+import { AutoGrowInput } from "../blocks/auto-grow-input";
 import { KindIcon } from "./kind-icon";
 import { openRef, usePages } from "./pages";
 import { SpaceIconPicker, SpaceMark } from "./space-mark";
@@ -49,6 +53,21 @@ import { SpaceGoal } from "./space-goal";
 type Kind = QuickKind;
 type Filter = "all" | "tasks" | "ideas" | "notes" | "links";
 
+/** One line of a pasted list, without its bullet, number or checkbox ("- ", "2. ", "[ ] "). */
+const cleanLine = (l: string) => l.replace(/^\s*(?:[-*•]|\d+[.)]|\[[ xX]?\])\s+/, "").trim();
+/** The lines of a pasted list (at most 50), or one line for ordinary typing. */
+const linesOf = (text: string) => text.split(/\r?\n/).map(cleanLine).filter(Boolean).slice(0, 50);
+
+const WHEN = ["Overdue", "Today", "This week", "Later", "No date"] as const;
+/** Which "when" group an open task is in. */
+function whenOf(due: string | null, today: string): (typeof WHEN)[number] {
+  if (!due) return "No date";
+  if (due < today) return "Overdue";
+  if (due === today) return "Today";
+  if (due <= addDays(today, 6)) return "This week";
+  return "Later";
+}
+
 /** One row of the space's list: a task, a page (note or idea), or a saved link. */
 interface Item {
   key: string;
@@ -58,6 +77,8 @@ interface Item {
   meta: string | null;
   updated_at: string;
   done: boolean;
+  /** A task's day, for grouping by when. */
+  due: string | null;
 }
 
 /**
@@ -80,6 +101,8 @@ export function SpaceView({ space }: { space: Space }) {
   const [kind, setKind] = useState<Kind>("task");
   const [filter, setFilter] = useState<Filter>("all");
   const [showDone, setShowDone] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
   const [menu, setMenu] = useState(false);
   const [asking, setAsking] = useState(false);
   // The full task composer (day, time, priority, repeat, reminders…), started from what's typed.
@@ -92,7 +115,9 @@ export function SpaceView({ space }: { space: Space }) {
 
   useEffect(() => setName(space.name), [space.id, space.name]);
   // A pasted link is a link, whatever was picked.
-  const isLink = looksLikeUrl(draft);
+  const lines = linesOf(draft);
+  const many = lines.length > 1;
+  const isLink = !many && looksLikeUrl(draft);
   const effective: Kind = isLink ? "link" : kind === "link" ? "task" : kind;
 
   const today = todayKey();
@@ -115,6 +140,7 @@ export function SpaceView({ space }: { space: Space }) {
           : null,
         updated_at: t.updated_at,
         done: t.status === "complete",
+        due: t.due_date,
       });
     }
     for (const n of pages.notes) {
@@ -128,6 +154,7 @@ export function SpaceView({ space }: { space: Space }) {
         meta: null,
         updated_at: n.updated_at,
         done: false,
+        due: null,
       });
     }
     for (const i of pages.ideas) {
@@ -141,6 +168,7 @@ export function SpaceView({ space }: { space: Space }) {
         meta: null,
         updated_at: i.updated_at,
         done: false,
+        due: null,
       });
     }
     for (const r of pages.resources) {
@@ -153,6 +181,7 @@ export function SpaceView({ space }: { space: Space }) {
         meta: r.domain,
         updated_at: r.updated_at,
         done: false,
+        due: null,
       });
     }
     return out.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
@@ -167,7 +196,12 @@ export function SpaceView({ space }: { space: Space }) {
     notes: items.filter((i) => i.kind === "note").length,
     links: items.filter((i) => i.kind === "resource").length,
   };
-  const shown = items.filter((i) => filter === "all" || i.kind === KIND_OF[filter]);
+  const q = query.trim().toLowerCase();
+  const shown = items.filter(
+    (i) =>
+      (filter === "all" || i.kind === KIND_OF[filter]) &&
+      (!q || i.title.toLowerCase().includes(q) || (i.meta ?? "").toLowerCase().includes(q)),
+  );
   const open = shown.filter((i) => !i.done);
   const done = shown.filter((i) => i.done);
 
@@ -175,7 +209,10 @@ export function SpaceView({ space }: { space: Space }) {
     const raw = draft.trim();
     if (!raw) return;
     setDraft("");
-    await quickAdd(raw, effective, { spaceId: space.id });
+    // A pasted list: one item per line (a line that's a web address is saved as a link).
+    for (const line of many ? lines : [raw]) {
+      await quickAdd(line, many && looksLikeUrl(line) ? "link" : effective, { spaceId: space.id });
+    }
   };
 
   const commitName = () => {
@@ -399,10 +436,21 @@ export function SpaceView({ space }: { space: Space }) {
           >
             {/* The one Add box: a task by default, a note if picked, a link when one is pasted. */}
             <View className="bg-surface border-line mt-3 rounded-[14px] border px-3 pb-2 pt-2.5">
-              <TextInput
+              <AutoGrowInput
                 value={draft}
                 onChangeText={setDraft}
-                onSubmitEditing={() => void add()}
+                // Enter adds (one handler per platform, so it never adds twice); pasted lines stay lines.
+                {...(Platform.OS === "web"
+                  ? {
+                      onKeyPress: (e: { nativeEvent: unknown; preventDefault?: () => void }) => {
+                        const ne = e.nativeEvent as { key: string; shiftKey?: boolean; isComposing?: boolean };
+                        if (ne.key === "Enter" && !ne.shiftKey && !ne.isComposing) {
+                          e.preventDefault?.();
+                          void add();
+                        }
+                      },
+                    }
+                  : { submitBehavior: "submit" as const, onSubmitEditing: () => void add() })}
                 placeholder={
                   effective === "note"
                     ? "Name a note…"
@@ -410,15 +458,15 @@ export function SpaceView({ space }: { space: Space }) {
                       ? "Name an idea…"
                       : effective === "link"
                         ? ""
-                        : "Add a task (e.g. film intro friday), or paste a link"
+                        : "Add a task (e.g. film intro friday), or paste a list or a link"
                 }
                 placeholderTextColor={c.ink3}
                 returnKeyType="done"
-                maxLength={isLink ? 4000 : 200}
+                maxLength={isLink || many ? 4000 : 200}
                 autoCapitalize={isLink ? "none" : "sentences"}
                 accessibilityLabel="Add to this space"
                 className="text-ink text-[16px]"
-                style={{ paddingVertical: 4 }}
+                style={{ paddingVertical: 4, maxHeight: 160 }}
               />
               <View className="mt-1.5 flex-row flex-wrap items-center gap-1">
                 {KINDS.map(({ key, label, Icon }) => {
@@ -447,7 +495,7 @@ export function SpaceView({ space }: { space: Space }) {
                   );
                 })}
                 <View className="flex-1" />
-                {effective === "task" ? (
+                {effective === "task" && !many ? (
                   <Pressable
                     onPress={() => {
                       setComposing(draft.trim());
@@ -473,19 +521,56 @@ export function SpaceView({ space }: { space: Space }) {
                     className="text-on-accent text-[13px] font-semibold"
                     style={{ opacity: draft.trim() ? 1 : 0.6 }}
                   >
-                    Add
+                    {many ? `Add ${lines.length}` : "Add"}
                   </Text>
                 </Pressable>
               </View>
             </View>
 
+            {items.length > 0 && searching ? (
+              <View className="bg-chip mt-4 h-[34px] flex-row items-center gap-2 rounded-pill px-3">
+                <Search size={14} color={c.ink3} strokeWidth={2.2} />
+                <TextInput
+                  autoFocus
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={`Search ${space.name}`}
+                  placeholderTextColor={c.ink3}
+                  returnKeyType="search"
+                  accessibilityLabel="Search this space"
+                  className="text-ink flex-1 text-[14px]"
+                  style={{ paddingVertical: 0, outlineWidth: 0 } as object}
+                />
+                <Pressable
+                  onPress={() => {
+                    setQuery("");
+                    setSearching(false);
+                  }}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close search"
+                >
+                  <X size={15} color={c.ink3} strokeWidth={2.2} />
+                </Pressable>
+              </View>
+            ) : null}
             {items.length > 0 ? (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                className="mt-4"
+                className={searching ? "mt-2" : "mt-4"}
                 contentContainerStyle={{ gap: 6 }}
               >
+                {!searching ? (
+                  <Pressable
+                    onPress={() => setSearching(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Search this space"
+                    className="bg-chip h-[30px] w-[30px] items-center justify-center rounded-pill hover:opacity-80"
+                  >
+                    <Search size={14} color={c.ink2} strokeWidth={2.2} />
+                  </Pressable>
+                ) : null}
                 {FILTERS.filter((f) => f.key === "all" || f.key === filter || items.some((i) => i.kind === KIND_OF[f.key as Exclude<Filter, "all">])).map(({ key, label, n }) => {
                   const on = filter === key;
                   return (
@@ -523,8 +608,26 @@ export function SpaceView({ space }: { space: Space }) {
                 </Text>
               ) : open.length === 0 && done.length === 0 ? (
                 <Text className="text-ink-3 py-8 text-center text-[14px]">
-                  Nothing of this kind yet.
+                  {q ? `Nothing matches “${query.trim()}”.` : "Nothing of this kind yet."}
                 </Text>
+              ) : filter === "tasks" ? (
+                // Tasks by when: what's late, today, this week, later, and undated.
+                WHEN.map((w) => {
+                  const group = open
+                    .filter((i) => whenOf(i.due, today) === w)
+                    .sort((a, b) => (a.due ?? "").localeCompare(b.due ?? ""));
+                  if (group.length === 0) return null;
+                  return (
+                    <View key={w}>
+                      <Text
+                        className={`mt-3 px-1 text-[12px] font-semibold ${w === "Overdue" ? "text-high" : "text-ink-3"}`}
+                      >
+                        {w} <Text style={TABULAR} className="text-ink-3 font-medium">{group.length}</Text>
+                      </Text>
+                      {group.map(row)}
+                    </View>
+                  );
+                })
               ) : (
                 open.map(row)
               )}
