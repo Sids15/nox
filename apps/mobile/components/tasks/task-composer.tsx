@@ -169,11 +169,17 @@ function TitleField({
 export function TaskComposer({
   initialDate,
   initialTime = null,
+  initialTitle = "",
+  spaceId = null,
   onClose,
   compact,
 }: {
-  /** Day the task starts on — the day focused in the Tasks week strip. */
-  initialDate: string;
+  /** Day the task starts on — the day focused in the Tasks week strip (null: no day). */
+  initialDate: string | null;
+  /** Words already typed (a space's Add box), so nothing is lost when opening the full composer. */
+  initialTitle?: string;
+  /** The space the task goes into (added from a space). */
+  spaceId?: string | null;
   /** Time to start with (a calendar slot that was clicked). */
   initialTime?: string | null;
   onClose: () => void;
@@ -184,7 +190,7 @@ export function TaskComposer({
   const createTask = useCreateTask();
   const today = todayKey();
 
-  const [raw, setRaw] = useState("");
+  const [raw, setRaw] = useState(initialTitle);
   const [description, setDescription] = useState("");
   const [parsing, setParsing] = useState(true);
   const [createMore, setCreateMore] = useState(false);
@@ -334,6 +340,7 @@ export function TaskComposer({
       priority,
       repeat: repeat.kind,
       repeat_config: repeat.kind === "custom" ? { weekdays: repeat.weekdays } : null,
+      ...(spaceId ? { space_id: spaceId } : {}),
     };
     createTask.create(input);
 

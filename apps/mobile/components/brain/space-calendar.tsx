@@ -8,6 +8,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { TABULAR } from "../menu";
 import { Popover } from "../popover";
+import { NewTaskDialog } from "../tasks/new-task-dialog";
 import { TimePicker } from "../tasks/time-picker";
 import { usePages } from "./pages";
 import { useQuickAdd } from "./use-quick-add";
@@ -34,6 +35,8 @@ export function SpaceCalendar({ space }: { space: Space }) {
   const [time, setTime] = useState<string | null>(null);
   const [timeOpen, setTimeOpen] = useState(false);
   const timeRef = useRef<View>(null);
+  // The full task composer on the picked day, started from what's typed.
+  const [composing, setComposing] = useState<string | null>(null);
 
   const add = () => {
     const raw = draft.trim();
@@ -168,6 +171,17 @@ export function SpaceCalendar({ space }: { space: Space }) {
             </Text>
           </Pressable>
         </View>
+        <Pressable
+          onPress={() => {
+            setComposing(draft.trim());
+            setDraft("");
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Add a task with priority, repeat, length or reminders"
+          className="hover:bg-chip h-[28px] justify-center rounded-[8px] px-2"
+        >
+          <Text className="text-ink-2 text-[13px] font-medium">Details</Text>
+        </Pressable>
         <Pressable onPress={add} disabled={!draft.trim()} accessibilityRole="button" className="bg-accent h-[28px] justify-center rounded-[8px] px-3" style={{ opacity: draft.trim() ? 1 : 0.5 }}>
           <Text className="text-on-accent text-[13px] font-semibold">Add</Text>
         </Pressable>
@@ -184,6 +198,18 @@ export function SpaceCalendar({ space }: { space: Space }) {
           />
         </View>
       </Popover>
+
+      <NewTaskDialog
+        visible={composing !== null}
+        initialDate={picked}
+        initialTime={time}
+        initialTitle={composing ?? ""}
+        spaceId={space.id}
+        onClose={() => {
+          setComposing(null);
+          setTime(null);
+        }}
+      />
 
       {dayTasks.length === 0 ? (
         <Text className="text-ink-3 mt-1 text-[13px]">No tasks on this day. Tasks you add here also show on your Tasks page, marked with this space.</Text>

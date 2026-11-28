@@ -30,11 +30,15 @@ export function NewTaskDialog({
   visible,
   initialDate,
   initialTime = null,
+  initialTitle,
+  spaceId,
   onClose,
 }: {
   visible: boolean;
-  initialDate: string;
+  initialDate: string | null;
   initialTime?: string | null;
+  initialTitle?: string;
+  spaceId?: string | null;
   onClose: () => void;
 }) {
   const isDesktop = useIsDesktop();
@@ -54,7 +58,7 @@ export function NewTaskDialog({
             style={{ maxHeight: win.height * 0.8, shadowColor: "#1B2131", shadowOpacity: 0.24, shadowRadius: 40, shadowOffset: { width: 0, height: 18 }, elevation: 20 }}
           >
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <TaskComposer initialDate={initialDate} initialTime={initialTime} onClose={onClose} compact={false} />
+              <TaskComposer initialDate={initialDate} initialTime={initialTime} initialTitle={initialTitle ?? ""} spaceId={spaceId ?? null} onClose={onClose} compact={false} />
             </ScrollView>
           </View>
           </DialogIn>
@@ -76,7 +80,7 @@ export function NewTaskDialog({
         >
           <View className="bg-ink-3 mt-2 h-1 w-9 self-center rounded-full opacity-50" />
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <TaskComposer initialDate={initialDate} initialTime={initialTime} onClose={onClose} compact />
+            <TaskComposer initialDate={initialDate} initialTime={initialTime} initialTitle={initialTitle ?? ""} spaceId={spaceId ?? null} onClose={onClose} compact />
           </ScrollView>
         </View>
       </KeyboardAvoidingView>

@@ -43,6 +43,7 @@ import { SpaceAsk } from "./space-ask";
 import { SpaceCalendar } from "./space-calendar";
 import { useAiEnabled } from "../../lib/use-ai";
 import { looksLikeUrl, useQuickAdd, type QuickKind } from "./use-quick-add";
+import { NewTaskDialog } from "../tasks/new-task-dialog";
 
 type Kind = QuickKind;
 type Filter = "all" | "tasks" | "ideas" | "notes" | "links";
@@ -80,6 +81,8 @@ export function SpaceView({ space }: { space: Space }) {
   const [showDone, setShowDone] = useState(false);
   const [menu, setMenu] = useState(false);
   const [asking, setAsking] = useState(false);
+  // The full task composer (day, time, priority, repeat, reminders…), started from what's typed.
+  const [composing, setComposing] = useState<string | null>(null);
   const aiOn = useAiEnabled();
   const [iconOpen, setIconOpen] = useState(false);
   const menuRef = useRef<View>(null);
@@ -431,6 +434,20 @@ export function SpaceView({ space }: { space: Space }) {
                   );
                 })}
                 <View className="flex-1" />
+                {effective === "task" ? (
+                  <Pressable
+                    onPress={() => {
+                      setComposing(draft.trim());
+                      setDraft("");
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add a task with a day, time, priority, repeat or reminders"
+                    className="hover:bg-chip h-[28px] flex-row items-center gap-1.5 rounded-[8px] px-2"
+                  >
+                    <CalendarDays size={13} color={c.ink2} strokeWidth={2} />
+                    <Text className="text-ink-2 text-[13px] font-medium">Details</Text>
+                  </Pressable>
+                ) : null}
                 <Pressable
                   onPress={() => void add()}
                   disabled={!draft.trim()}
@@ -587,6 +604,13 @@ export function SpaceView({ space }: { space: Space }) {
           />
         </View>
       </Popover>
+      <NewTaskDialog
+        visible={composing !== null}
+        initialDate={null}
+        initialTitle={composing ?? ""}
+        spaceId={space.id}
+        onClose={() => setComposing(null)}
+      />
       <SpaceAsk
         space={space}
         visible={asking}
