@@ -22,8 +22,8 @@ export function deadlineLabel(due: string, today: string = todayKey()): { text: 
   return { text: `${date} · ${left} ${left === 1 ? "day" : "days"} left`, late: false };
 }
 
-/** A thin bar: how many of a space's tasks are done. Nothing when it has no tasks. */
-export function SpaceProgress({ done, total, compact = false }: { done: number; total: number; compact?: boolean }) {
+/** A thin bar: how many of one space's tasks are done (only that space's). Nothing when it has no tasks. */
+export function SpaceProgress({ done, total, compact = false, name }: { done: number; total: number; compact?: boolean; name?: string }) {
   const c = useThemeColors();
   if (total === 0) return null;
   return (
@@ -32,12 +32,12 @@ export function SpaceProgress({ done, total, compact = false }: { done: number; 
         className="bg-chip h-[6px] flex-1 overflow-hidden rounded-full"
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: total, now: done }}
-        accessibilityLabel="Tasks done"
+        accessibilityLabel={name ? `${name} tasks done` : "Tasks done"}
       >
         <View style={{ width: `${(done / total) * 100}%`, height: "100%", backgroundColor: c.accent, borderRadius: 99 }} />
       </View>
       <Text style={TABULAR} className="text-ink-3 text-[12px] font-medium">
-        {compact ? `${done}/${total}` : `${done} of ${total} tasks done`}
+        {compact ? `${done}/${total}` : `${done} of ${total} ${name ? `${name} ` : ""}${total === 1 ? "task" : "tasks"} done`}
       </Text>
     </View>
   );
@@ -97,7 +97,7 @@ export function SpaceGoal({ space, done, total }: { space: Space; done: number; 
           )}
         </Pressable>
       </View>
-      <SpaceProgress done={done} total={total} />
+      <SpaceProgress done={done} total={total} name={space.name} />
 
       <Popover
         anchorRef={anchor}
