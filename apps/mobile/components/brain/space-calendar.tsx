@@ -3,11 +3,12 @@ import type { Property, Space } from "@nox/types";
 import { capitalize, relativeDayLabel, toDateKey, todayKey } from "@nox/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { useIsDesktop } from "../../lib/use-responsive";
 import { TABULAR } from "../menu";
 import { KindIcon } from "./kind-icon";
 import { openRef, usePages, type Page } from "./pages";
+import { useQuickAdd } from "./use-quick-add";
 
 const WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
@@ -41,6 +42,15 @@ export function SpaceCalendar({ space }: { space: Space }) {
   const today = todayKey();
   const [month, setMonth] = useState(() => today.slice(0, 7));
   const [picked, setPicked] = useState<string>(today);
+  const [draft, setDraft] = useState("");
+  const [kind, setKind] = useState<"task" | "idea">("task");
+  const quickAdd = useQuickAdd();
+  const add = () => {
+    const raw = draft.trim();
+    if (!raw) return;
+    setDraft("");
+    void quickAdd(raw, kind, { spaceId: space.id, date: picked });
+  };
 
   const byDay = useMemo(() => {
     const m = new Map<string, Dated[]>();
@@ -203,15 +213,32 @@ export function SpaceCalendar({ space }: { space: Space }) {
         ))}
       </View>
 
-      {/* The picked day. */}
+      {/* The picked day, and adding straight onto it. */}
       <Text className="text-ink-3 mb-1 mt-4 text-[12px] font-semibold">
         {capitalize(relativeDayLabel(picked, today))}
       </Text>
+      <View className="bg-surface border-line mb-1 flex-row items-center gap-1 rounded-[10px] border py-1 pl-3 pr-1">
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={add}
+          placeholder={`Add ${kind === "task" ? "a task" : "an idea"} on ${relativeDayLabel(picked, today)}…`}
+          placeholderTextColor={c.ink3}
+          returnKeyType="done"
+          maxLength={200}
+          accessibilityLabel="Add on this day"
+          className="text-ink flex-1 text-[14px]"
+          style={{ paddingVertical: 6 }}
+        />
+        {(["task", "idea"] as const).map((k) => (
+          <Pressable key={k} onPress={() => setKind(k)} accessibilityRole="radio" accessibilityState={{ checked: kind === k }} className={`h-[28px] flex-row items-center gap-1 rounded-[8px] px-2 ${kind === k ? "bg-accent/[0.12]" : "hover:bg-chip"}`}>
+            <KindIcon kind={k} color={kind === k ? c.accent : c.ink3} size={13} />
+            {isDesktop ? <Text className={`text-[13px] font-medium ${kind === k ? "text-accent" : "text-ink-3"}`}>{k === "task" ? "Task" : "Idea"}</Text> : null}
+          </Pressable>
+        ))}
+      </View>
       {dayItems.length === 0 ? (
-        <Text className="text-ink-3 text-[13px]">
-          Nothing on this day. Tasks show on their due day; notes and ideas on
-          their date field.
-        </Text>
+        <Text className="text-ink-3 mt-1 text-[13px]">Nothing on this day yet. Plan when things happen here: a filming day, a publish date, a deadline.</Text>
       ) : (
         dayItems.map((d) => (
           <Pressable

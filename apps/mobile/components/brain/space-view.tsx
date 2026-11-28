@@ -49,7 +49,7 @@ import { StageEditor } from "./stage-editor";
 import { looksLikeUrl, useQuickAdd, type QuickKind } from "./use-quick-add";
 
 type Kind = QuickKind;
-type Filter = "all" | "notes" | "tasks" | "links";
+type Filter = "all" | "tasks" | "ideas" | "notes" | "links";
 const DEFAULT_STAGES = ["To do", "In progress", "Done"];
 
 /** One row of the space's list: a task, a page (note or idea), or a saved link. */
@@ -169,21 +169,16 @@ export function SpaceView({ space }: { space: Space }) {
     return out.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   }, [pages, space.id, today]);
 
+  // Each filter is one kind; a filter with nothing in it isn't shown.
+  const KIND_OF: Record<Exclude<Filter, "all">, Item["kind"]> = { tasks: "task", ideas: "idea", notes: "note", links: "resource" };
   const counts = {
     all: items.filter((i) => !i.done).length,
-    notes: items.filter((i) => i.kind === "note" || i.kind === "idea").length,
     tasks: items.filter((i) => i.kind === "task" && !i.done).length,
+    ideas: items.filter((i) => i.kind === "idea").length,
+    notes: items.filter((i) => i.kind === "note").length,
     links: items.filter((i) => i.kind === "resource").length,
   };
-  const shown = items.filter((i) =>
-    filter === "all"
-      ? true
-      : filter === "notes"
-        ? i.kind === "note" || i.kind === "idea"
-        : filter === "tasks"
-          ? i.kind === "task"
-          : i.kind === "resource",
-  );
+  const shown = items.filter((i) => filter === "all" || i.kind === KIND_OF[filter]);
   const open = shown.filter((i) => !i.done);
   const done = shown.filter((i) => i.done);
 
@@ -295,8 +290,9 @@ export function SpaceView({ space }: { space: Space }) {
   ];
   const FILTERS: { key: Filter; label: string; n: number }[] = [
     { key: "all", label: "All", n: counts.all },
-    { key: "notes", label: "Notes", n: counts.notes },
     { key: "tasks", label: "Tasks", n: counts.tasks },
+    { key: "ideas", label: "Ideas", n: counts.ideas },
+    { key: "notes", label: "Notes", n: counts.notes },
     { key: "links", label: "Links", n: counts.links },
   ];
 
@@ -527,7 +523,7 @@ export function SpaceView({ space }: { space: Space }) {
                 className="mt-4"
                 contentContainerStyle={{ gap: 6 }}
               >
-                {FILTERS.map(({ key, label, n }) => {
+                {FILTERS.filter((f) => f.key === "all" || f.key === filter || items.some((i) => i.kind === KIND_OF[f.key as Exclude<Filter, "all">])).map(({ key, label, n }) => {
                   const on = filter === key;
                   return (
                     <Pressable

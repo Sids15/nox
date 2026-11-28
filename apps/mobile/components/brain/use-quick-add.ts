@@ -21,11 +21,13 @@ export function useQuickAdd() {
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
 
-  return async (raw: string, kind: QuickKind, where: { spaceId: string | null; stage?: string | null }): Promise<void> => {
+  return async (raw: string, kind: QuickKind, where: { spaceId: string | null; stage?: string | null; date?: string | null }): Promise<void> => {
     const text = raw.trim();
     if (!text) return;
     const space_id = where.spaceId;
     const stage = where.stage ?? null;
+    // On a day (from the calendar): a task is due then; an idea or note gets a Date field.
+    const dated = where.date ? { properties: [{ id: `d${Date.now().toString(36)}`, name: "Date", type: "date" as const, value: where.date }] } : {};
     if (kind === "link") {
       const url = /^https?:\/\//i.test(text) ? text : `https://${text}`;
       const thumb = videoThumbnail(url) ?? null;
@@ -33,15 +35,15 @@ export function useQuickAdd() {
       const meta = await fetchUrlMeta(url);
       if (meta?.title || (meta?.image && !thumb)) updateResource.mutate({ id, patch: { title: meta.title ?? null, ...(meta.image && !thumb ? { thumbnail_url: meta.image } : {}) } });
     } else if (kind === "idea") {
-      createIdea.create({ title: text.slice(0, 200), description: null, content: [], priority: "medium", status: "raw", tags: [], space_id, stage });
+      createIdea.create({ title: text.slice(0, 200), description: null, content: [], priority: "medium", status: "raw", tags: [], space_id, stage, ...dated });
     } else if (kind === "note") {
-      createNote.create({ title: text.slice(0, 200), type: "text", content: [{ type: "paragraph", text: "" }], folder_id: null, tags: [], space_id, stage });
+      createNote.create({ title: text.slice(0, 200), type: "text", content: [{ type: "paragraph", text: "" }], folder_id: null, tags: [], space_id, stage, ...dated });
     } else {
       const p = parseQuickAdd(text, todayKey());
       createTask.create({
         title: (p.title || text).slice(0, 200),
         notes: null,
-        due_date: p.date ?? null,
+        due_date: p.date ?? where.date ?? null,
         due_time: p.time ?? (p.tonight ? "20:00" : null),
         ...(p.duration ? { duration_minutes: p.duration } : {}),
         reminder_times: [],
