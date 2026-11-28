@@ -504,6 +504,9 @@ export default function SettingsScreen() {
         "Tasks & calendar",
         "How Tasks opens and what the calendar shows.",
         <Group>
+          <Row title="Import tasks" detail="From Todoist, TickTick, Notion, or any list (Apple Reminders, Markdown)." onPress={() => router.push("/import")}>
+            <ChevronRight size={16} color={c.ink3} strokeWidth={2} />
+          </Row>
           <Row title="Ask when and how long" detail="When you add a task with a day but no time, Nox suggests the next free slot and asks how long it takes. Press Enter to skip.">
             <Toggle label="Ask when and how long" value={calendar.askWhenAdding} onChange={(v) => cal({ askWhenAdding: v })} />
           </Row>

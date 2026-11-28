@@ -53,6 +53,12 @@ export function useCreateSpace() {
       mutation.mutate({ input: { position: spacesOf(qc).length, ...input }, id });
       return id;
     },
+    /** Create and wait until it's saved (before saving things that point at it, like an import). */
+    createAsync: async (input: SpaceInput): Promise<string> => {
+      const id = newId();
+      await mutation.mutateAsync({ input: { position: spacesOf(qc).length, ...input }, id });
+      return id;
+    },
   };
 }
 
