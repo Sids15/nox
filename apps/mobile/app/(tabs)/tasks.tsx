@@ -21,7 +21,7 @@ import { Fab, useHideOnScroll } from "../../components/fab";
 import { MenuDivider, MenuLabel, MenuRow, pressScale, TABULAR } from "../../components/menu";
 import { Popover } from "../../components/popover";
 import { ProfileAvatar } from "../../components/profile-avatar";
-import { InboxButton } from "../../components/inbox-button";
+import { PlanMenu } from "../../components/plan-menu";
 import { ListSkeleton } from "../../components/skeleton";
 import { NewTaskDialog } from "../../components/tasks/new-task-dialog";
 import { TaskCalendar } from "../../components/tasks/task-calendar";
@@ -423,7 +423,7 @@ export default function TasksScreen() {
             </Pressable>
           ) : (
             <>
-              <InboxButton />
+              <PlanMenu />
               <ProfileAvatar />
             </>
           )}

@@ -162,6 +162,7 @@ function RootNavigator() {
           <Stack.Screen name="inbox" />
           <Stack.Screen name="focus" />
           <Stack.Screen name="review" />
+          <Stack.Screen name="insights" />
         </Stack>
       </SyncChrome>
       {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}

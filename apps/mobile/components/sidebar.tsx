@@ -2,7 +2,7 @@ import { inboxItems, useIdeas, useNotes, usePrefs, useResources, useSpaces, useT
 import { LinearGradient } from "expo-linear-gradient";
 import { useIsFocused } from "@react-navigation/native";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, CalendarCheck, FileText, Inbox, Layers, Timer, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, CalendarCheck, ChartColumn, FileText, Inbox, Layers, Timer, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { addDays, formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
@@ -124,6 +124,7 @@ export function Sidebar() {
     { label: "Focus", icon: Timer, path: "/focus", count: 0 },
     // A dot once a week has passed since the last review.
     { label: "Review", icon: CalendarCheck, path: "/review", count: 0, dot: !lastReviewed || lastReviewed <= addDays(toDateKey(now), -7) },
+    { label: "Insights", icon: ChartColumn, path: "/insights", count: 0 },
   ];
 
   const { name, firstName, initials } = useIdentity();
