@@ -141,7 +141,7 @@ class NoxWidgetProvider : AppWidgetProvider() {
               row("•", t.optString("title"), t.optString("time"), "nox://task/${t.optString("id")}", markAccent = true)
             }
           }
-          "capture" -> row("+", "Add a task", null, "nox://tasks", markAccent = true)
+          "capture" -> row("+", "Add to Nox", null, "nox://add", markAccent = true)
           "space" -> {
             heading(s.optString("name"))
             val stages = s.optJSONArray("stages")
@@ -151,6 +151,7 @@ class NoxWidgetProvider : AppWidgetProvider() {
               parts.add("${st.optString("name")} ${st.optInt("count")}")
             }
             row("", if (parts.isEmpty()) "${s.optInt("pages")} pages" else parts.joinToString("  ·  "), null, "nox://space/${s.optString("spaceId")}")
+            row("+", "Add to ${s.optString("name")}", null, "nox://add?space=${s.optString("spaceId")}", markAccent = true)
           }
           "pinned" -> {
             heading("Pinned")

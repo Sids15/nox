@@ -8,5 +8,21 @@
   "orientation": "any",
   "background_color": "#F5F1E8",
   "theme_color": "#F5F1E8",
-  "icons": [{ "src": "/apple-touch-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }]
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "share_target": {
+    "action": "/add",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

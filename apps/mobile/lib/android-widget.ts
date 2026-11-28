@@ -1,4 +1,5 @@
 import { usePrefs, useThemeColors } from "@nox/features";
+import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { NoxWidget } from "../modules/nox-widget";
@@ -41,4 +42,28 @@ export function clearAndroidWidget(): void {
   } catch {
     // nothing to clear
   }
+}
+
+/**
+ * "Share to Nox" on Android: text or a link shared from another app opens "Add to Nox" with it
+ * filled in — on a cold start (once signed in) and while the app is already open.
+ */
+export function useAndroidShare(signedIn: boolean): void {
+  useEffect(() => {
+    if (Platform.OS !== "android" || !signedIn || !NoxWidget?.takeSharedText) return;
+    const open = (text: string) => router.push({ pathname: "/add", params: { text } });
+    // Let the first screen settle before opening the sheet over it.
+    const t = setTimeout(() => {
+      const text = NoxWidget?.takeSharedText?.();
+      if (text) open(text);
+    }, 400);
+    const sub = NoxWidget.addListener?.("onShare", () => {
+      const text = NoxWidget?.takeSharedText?.();
+      if (text) open(text);
+    });
+    return () => {
+      clearTimeout(t);
+      sub?.remove();
+    };
+  }, [signedIn]);
 }

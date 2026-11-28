@@ -26,7 +26,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [{ "action": "SEND", "category": ["DEFAULT"], "data": [{ "mimeType": "text/plain" }] }]
     },
     "plugins": [
       "expo-router",
