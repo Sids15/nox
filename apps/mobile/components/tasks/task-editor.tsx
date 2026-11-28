@@ -2,7 +2,8 @@ import { AiRepository } from "@nox/api";
 import { findFreeSlot, tasksOnDay, useCreateTask, usePrefs, useSkippedOccurrences, useTasks, useThemeColors, useToggleTask, useUpdateTask } from "@nox/features";
 import type { TaskInput } from "@nox/types";
 import { formatTime12, relativeDayLabel, relativeFromNow, shortDate, todayKey } from "@nox/utils";
-import { Check, ChevronLeft, CircleCheck, CircleDashed, MoreHorizontal, Repeat, RotateCcw, Sparkles, Trash2 } from "lucide-react-native";
+import { Check, ChevronLeft, CircleCheck, CircleDashed, MoreHorizontal, Repeat, RotateCcw, Sparkles, Timer, Trash2 } from "lucide-react-native";
+import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SpaceField } from "../brain/space-field";
@@ -155,6 +156,19 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
         {/* Top bar */}
         <View className="px-screen flex-row items-center justify-between pt-2">
           {back}
+          <View className="flex-row items-center gap-1">
+          {!complete ? (
+            <Pressable
+              onPress={() => router.push({ pathname: "/focus", params: { task: task.id } })}
+              accessibilityRole="button"
+              accessibilityLabel="Focus on this task"
+              style={pressScale}
+              className="hover:bg-chip h-[34px] flex-row items-center gap-1.5 rounded-[10px] px-2.5"
+            >
+              <Timer size={16} color={c.ink2} strokeWidth={2} />
+              <Text className="text-ink-2 text-[13px] font-semibold">Focus</Text>
+            </Pressable>
+          ) : null}
           <View ref={menuRef} collapsable={false}>
             <Pressable
               onPress={() => setMenuOpen(true)}
@@ -166,6 +180,7 @@ export function TaskEditor({ id, onClose }: { id: string; onClose: () => void })
             >
               <MoreHorizontal size={19} color={c.ink2} strokeWidth={2} />
             </Pressable>
+          </View>
           </View>
         </View>
 

@@ -2,7 +2,7 @@ import { inboxItems, useIdeas, useNotes, usePrefs, useResources, useSpaces, useT
 import { LinearGradient } from "expo-linear-gradient";
 import { useIsFocused } from "@react-navigation/native";
 import { usePathname, useRouter } from "expo-router";
-import { Bookmark, FileText, Inbox, Layers, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
+import { Bookmark, FileText, Inbox, Layers, Timer, Lightbulb, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings2, SquareCheckBig, type LucideIcon } from "lucide-react-native";
 import { formatTime12, toDateKey } from "@nox/utils";
 import { TABULAR } from "./menu";
 import { useEffect, useRef, useState } from "react";
@@ -120,6 +120,7 @@ export function Sidebar() {
   // Plan: the pages around your tasks (Inbox first: what still needs sorting).
   const tools: NavItem[] = [
     { label: "Inbox", icon: Inbox, path: "/inbox", count: inboxItems({ tasks, notes, ideas, resources }).length },
+    { label: "Focus", icon: Timer, path: "/focus", count: 0 },
   ];
 
   const { name, firstName, initials } = useIdentity();

@@ -63,3 +63,14 @@ export async function clearSchedule(): Promise<void> {
     /* best-effort */
   }
 }
+
+/** Fire one notification now (the focus timer ending). Desktop app only; a browser tab no-ops. */
+export async function notifyNow(title: string, body: string): Promise<void> {
+  if (!isTauri()) return;
+  try {
+    if (!(await ensurePermission())) return;
+    await invoke("notify_now", { title, body });
+  } catch {
+    /* best-effort */
+  }
+}

@@ -1,4 +1,5 @@
 import {
+  FocusRepository,
   FolderRepository,
   IdeaRepository,
   NoteRepository,
@@ -11,6 +12,7 @@ import {
   type ToggleableStatus,
 } from "@nox/api";
 import type {
+  FocusSessionInput,
   FolderInput,
   IdeaInput,
   NoteInput,
@@ -77,4 +79,8 @@ export function registerMutationDefaults(qc: QueryClient): void {
   def<string>(["space", "delete"], (id) => SpaceRepository.softDelete(id));
   def<{ input: TemplateInput; id: string }>(["template", "create"], ({ input, id }) => TemplateRepository.create(input, id));
   def<string>(["template", "delete"], (id) => TemplateRepository.softDelete(id));
+
+  // Focus sessions
+  def<{ input: FocusSessionInput; id: string }>(["focus", "create"], ({ input, id }) => FocusRepository.create(input, id));
+  def<string>(["focus", "delete"], (id) => FocusRepository.softDelete(id));
 }

@@ -98,3 +98,19 @@ export {
   type WidgetSnapshot,
   type WidgetTaskRow,
 } from "./widget/widget";
+export {
+  FOCUS_LENGTHS,
+  elapsedMs,
+  endsAt,
+  formatClock,
+  formatMinutes,
+  isFinished,
+  minutesToLog,
+  pauseTimer,
+  remainingMs,
+  resumeTimer,
+  startTimer,
+  type FocusTimer,
+} from "./focus/timer";
+export { useFocusStore } from "./focus/focus-store";
+export { focusKeys, useFocusSessions, useLogFocus } from "./focus/use-focus";

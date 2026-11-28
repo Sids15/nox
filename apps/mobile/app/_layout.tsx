@@ -37,6 +37,7 @@ import { useWebViewport } from "../lib/web-viewport";
 import { useAiAccountSync } from "../lib/use-ai";
 import { isWidgetWindow, useOpenFromWidget } from "../lib/desktop-widget";
 import { clearAndroidWidget, useAndroidShare, useAndroidWidgetSync } from "../lib/android-widget";
+import { useFocusAlert } from "../lib/use-focus-alert";
 import { DesktopWidget } from "../components/widget/desktop-widget";
 
 /** This window is the desktop widget (a second Tauri window), not the app. Fixed for its lifetime. */
@@ -102,6 +103,7 @@ function RootNavigator() {
   useOpenFromWidget();
   const status = useSessionStore((s) => s.status);
   useAndroidShare(status === "authenticated");
+  useFocusAlert(status === "authenticated");
   const prefsHydrated = usePrefs((s) => s.hydrated);
   const c = useThemeColors();
 
@@ -157,6 +159,8 @@ function RootNavigator() {
           <Stack.Screen name="folder/[id]" />
           <Stack.Screen name="space/[id]" />
           <Stack.Screen name="add" options={{ presentation: "modal" }} />
+          <Stack.Screen name="inbox" />
+          <Stack.Screen name="focus" />
         </Stack>
       </SyncChrome>
       {/* Renders Alert.alert() as a themed dialog on web; renders nothing on native. */}

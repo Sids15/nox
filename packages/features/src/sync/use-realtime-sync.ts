@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useSessionStore } from "../auth/session-store";
 
 /** Every synced table; its name is also the query-key head (e.g. `["tasks"]`). */
-const SYNCED_TABLES = ["tasks", "ideas", "notes", "folders", "resources", "tags", "spaces", "templates"] as const;
+const SYNCED_TABLES = ["tasks", "ideas", "notes", "folders", "resources", "tags", "spaces", "templates", "focus_sessions"] as const;
 
 /**
  * Keeps every module live across devices. Opens one Supabase Realtime `postgres_changes`
